@@ -1,0 +1,21 @@
+{
+  "name": "openchat-server",
+  "version": "1.0.0",
+  "description": "OpenChat Server",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "connect-history-api-fallback": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "firebase": "^7.14.4",
+    "nodemon": "^2.0.4",
+    "socket.io": "^2.3.0"
+  }
+}
