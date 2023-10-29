@@ -1,20 +1,41 @@
-# OpenChat
+# openchat
 
-A totally transparent messaging webapp, no login, no authentication, useful for fast communication
+This template should help get you started developing with Vue 3 in Vite.
 
-Just type your name and start communicating fast in groups
+## Recommended IDE Setup
 
-* Multi group, multi member 
-* File sharing (not limited to file type, go ahead and share your .exe's, .apk's, .anything)
-* Persistent file storage in browser
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
 
-Check it out [here](https://share-fast.herokuapp.com/)
+## Customize configuration
 
-![Show1](images/show1.png)
-![Show2](images/show2.png)
-![Show3](images/show3.png)
-![Show4](images/show4.png)
-![Show5](images/show5.png)
-![Show6](images/show6.png)
+See [Vite Configuration Reference](https://vitejs.dev/config/).
 
-Note: Don't send confidential info, because, its... OpenChat !
+## Project Setup
+
+```sh
+npm install
+```
+
+### Compile and Hot-Reload for Development
+
+```sh
+npm run dev
+```
+
+### Compile and Minify for Production
+
+```sh
+npm run build
+```
+
+### Run Unit Tests with [Vitest](https://vitest.dev/)
+
+```sh
+npm run test:unit
+```
+
+### Lint with [ESLint](https://eslint.org/)
+
+```sh
+npm run lint
+```
