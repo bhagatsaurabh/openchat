@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+
 import { themeClasses, themes } from '../utils/constants';
 
 export const usePreferencesStore = defineStore('preferences', () => {
