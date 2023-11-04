@@ -2,6 +2,7 @@ import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
 import { themeClasses, themes } from '../utils/constants';
+import { getPreferences } from './driver';
 
 export const usePreferencesStore = defineStore('preferences', () => {
   const userTheme = ref(themes.SYSTEM);
@@ -28,16 +29,15 @@ export const usePreferencesStore = defineStore('preferences', () => {
   function sanitizePrefs(prefs = {}) {
     prefs.theme = Object.values(themes).includes(prefs.theme) ? prefs.theme : themes.SYSTEM;
   }
-  function update() {
-    const serialized = JSON.stringify(serializableState);
-    // TODO: save user-prefs in indexed-db...
-    return serialized;
-  }
   async function load() {
-    const storedPreferences = JSON.parse(/* TODO: Fetch saved user-prefs from indexed-db... */);
-    sanitizePrefs(storedPreferences);
+    try {
+      const storedPreferences = await getPreferences();
+      sanitizePrefs(storedPreferences);
 
-    setTheme(storedPreferences.theme);
+      setTheme(storedPreferences.theme);
+    } catch (error) {
+      // notify
+    }
   }
   function setTheme(newTheme) {
     if (!Object.values(themes).includes(newTheme)) {
@@ -60,7 +60,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
     }
 
     userTheme.value = newTheme;
-    update();
   }
 
   return {
@@ -69,7 +68,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
     theme,
     currSystemTheme,
     serializableState,
-    update,
     load,
     setTheme
   };
