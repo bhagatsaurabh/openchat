@@ -21,10 +21,6 @@ onBeforeMount(async () => {
 
 <template>
   <MediaObserver />
-  <header>
-
-  </header>
-
   <RouterView />
 </template>
 
