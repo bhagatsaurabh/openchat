@@ -6,10 +6,10 @@ import { getPreferences } from './driver';
 
 export const usePreferencesStore = defineStore('preferences', () => {
   const userTheme = ref(themes.SYSTEM);
-  const systemTheme = ref(themes.LIGHT);
+  const systemTheme = ref(currSystemTheme());
 
-  const theme = computed(() => (userTheme.value === themes.SYSTEM ? currSystemTheme.value : userTheme.value));
-  const currSystemTheme = computed(() => {
+  const theme = computed(() => (userTheme.value === themes.SYSTEM ? currSystemTheme() : userTheme.value));
+  function currSystemTheme() {
     if (window.matchMedia('(prefers-contrast: more)').matches) {
       return themes.HIGH_CONTRAST;
     }
@@ -17,14 +17,14 @@ export const usePreferencesStore = defineStore('preferences', () => {
       return themes.DARK;
     }
     return themes.LIGHT;
-  });
+  }
   const serializableState = computed(() => ({
     theme: userTheme.value
   }));
 
   function getThemeClass(inTheme) {
     inTheme = inTheme ?? userTheme.value;
-    return themeClasses[inTheme === themes.SYSTEM ? currSystemTheme.value : inTheme];
+    return themeClasses[inTheme === themes.SYSTEM ? currSystemTheme() : inTheme];
   }
   function sanitizePrefs(prefs = {}) {
     prefs.theme = Object.values(themes).includes(prefs.theme) ? prefs.theme : themes.SYSTEM;
@@ -44,13 +44,13 @@ export const usePreferencesStore = defineStore('preferences', () => {
       return false;
     }
 
-    const themeClass = getThemeClass(newTheme === themes.SYSTEM ? currSystemTheme.value : newTheme);
+    const themeClass = getThemeClass(newTheme === themes.SYSTEM ? currSystemTheme() : newTheme);
 
     const docRoot = document.documentElement;
     docRoot.dataset.theme = themeClass;
     if (newTheme === themes.SYSTEM) {
       docRoot.className = themeClass;
-      systemTheme.value = currSystemTheme.value;
+      systemTheme.value = currSystemTheme();
     } else {
       if (docRoot.className === '') {
         docRoot.classList.add(themeClass);
