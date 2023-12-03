@@ -1,10 +1,10 @@
 <script setup>
 import { onBeforeMount } from 'vue';
 
-import { usePreferencesStore } from '@/stores/preferences';
 import MediaObserver from '@/components/MediaObserver/MediaObserver.vue';
-import { openDB } from './stores/database';
-import { registerPersistence } from './stores/driver';
+import { usePreferencesStore } from '@/stores/preferences';
+import { openDB } from '@/database/database';
+import { registerPersistence } from '@/database/driver';
 
 const preferences = usePreferencesStore();
 
@@ -27,3 +27,4 @@ onBeforeMount(async () => {
 <style scoped>
 /*  */
 </style>
+./database/database./database/driver

@@ -1,12 +1,13 @@
 <script setup>
 import Button from '@/components/Common/Button/Button.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
-import Header from '@/components/Common/Header/Header.vue';
+import Footer from '@/components/Common/Footer/Footer.vue';
+import SignIn from '@/components/SignIn/SignIn.vue';
 </script>
 
 <template>
   <div class="auth-container">
-    <Header>
+    <Footer>
       <template #right>
         <a class="github-link" href="https://github.com/saurabh-prosoft/openchat" target="_blank">
           <Button :complementary="false" circular no-padding no-border>
@@ -14,12 +15,9 @@ import Header from '@/components/Common/Header/Header.vue';
           </Button>
         </a>
       </template>
-    </Header>
+    </Footer>
     <main class="main">
-      <section class="brand">
-        <img class="auth-hero" src="/assets/images/logo.png" alt="OpenChat Hero Image" />
-        <h2 class="auth-title">OpenChat</h2>
-      </section>
+      <SignIn />
     </main>
     <footer>The Footer</footer>
   </div>
@@ -39,22 +37,8 @@ import Header from '@/components/Common/Header/Header.vue';
   justify-content: space-between;
 }
 .github-link:deep(img) {
-  opacity: 0.5 !important;
+  opacity: 0.4 !important;
 }
-
-.brand {
-  text-align: center;
-}
-
-.auth-hero {
-  width: 7rem;
-}
-
-.auth-title {
-  font-weight: lighter;
-  font-size: 2rem;
-}
-
 .main {
   margin: auto;
 }
