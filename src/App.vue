@@ -16,7 +16,7 @@ onBeforeMount(async () => {
   } catch (error) {
     // TODO: error-handling
   }
-})
+});
 </script>
 
 <template>

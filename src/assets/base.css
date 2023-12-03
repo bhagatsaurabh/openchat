@@ -32,10 +32,13 @@
   --fx-transition-duration-1: 0.2s;
   --fx-transition-duration-2: 0.3s;
 
-  --theme-color-transition: color var(--fx-transition-duration-2) linear;
-  --theme-border-transition: border var(--fx-transition-duration-2) linear;
-  --theme-bg-transition: background-color var(--fx-transition-duration-2) linear;
-  --theme-shadow-transition: box-shadow var(--fx-transition-duration-2) linear;
+  --theme-color-transition: color var(--fx-transition-duration-1) linear;
+  --theme-border-transition: border var(--fx-transition-duration-1) linear;
+  --theme-bg-transition: background-color var(--fx-transition-duration-1) linear;
+  --theme-shadow-transition: box-shadow var(--fx-transition-duration-1) linear;
+  --theme-opacity-transition: opacity var(--fx-transition-duration-1) linear;
+
+  --header-height: 3rem;
 }
 
 :root,
