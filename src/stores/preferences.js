@@ -7,8 +7,12 @@ import { getPreferences } from './driver';
 export const usePreferencesStore = defineStore('preferences', () => {
   const userTheme = ref(themes.SYSTEM);
   const systemTheme = ref(currSystemTheme());
+  const theme = computed(() => (userTheme.value === themes.SYSTEM ? systemTheme.value : userTheme.value));
 
-  const theme = computed(() => (userTheme.value === themes.SYSTEM ? currSystemTheme() : userTheme.value));
+  const serializableState = computed(() => ({
+    theme: userTheme.value
+  }));
+
   function currSystemTheme() {
     if (window.matchMedia('(prefers-contrast: more)').matches) {
       return themes.HIGH_CONTRAST;
@@ -18,10 +22,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
     }
     return themes.LIGHT;
   }
-  const serializableState = computed(() => ({
-    theme: userTheme.value
-  }));
-
   function getThemeClass(inTheme) {
     inTheme = inTheme ?? userTheme.value;
     return themeClasses[inTheme === themes.SYSTEM ? currSystemTheme() : inTheme];

@@ -1,69 +1,85 @@
-<template>
-  <span class="icon-container">
-    <img v-hide="!adaptive && !singular && theme === themes.DARK" :alt="alt"
-      :style="{ ...config, maxWidth: `${size}rem` }" :class="{
-        'icon-adaptive': adaptive,
-        icon: !adaptive,
-        invert,
-      }" :src="lightSource" />
-    <img v-if="!adaptive && !singular" v-hide="theme === themes.LIGHT" :alt="alt"
-      :style="{ ...config, maxWidth: `${size}rem` }" class="icon dark" :src="darkSource" />
-  </span>
-</template>
-
 <script setup>
 import { computed, ref, onUpdated } from 'vue';
-import { useStore } from 'vuex';
-import { themes } from '@/store/constants';
+import { usePreferencesStore } from '@/stores/preferences';
+import { themes } from '@/utils/constants';
 
 const props = defineProps({
   alt: {
     type: String,
-    required: true,
+    required: true
   },
   name: {
     type: String,
-    required: true,
+    required: true
   },
   adaptive: {
     type: Boolean,
-    default: false,
+    default: false
   },
   singular: {
     type: Boolean,
-    default: false,
+    default: false
   },
   size: {
     type: Number,
-    default: 1,
+    default: 1
   },
   invert: {
     type: Boolean,
-    default: false,
+    default: false
   },
   config: {
     type: Object,
-    default: {},
+    default: new Object()
   },
+  animated: {
+    type: Boolean,
+    default: false
+  }
 });
 
-const store = useStore();
-const theme = computed(() => store.getters.theme);
+const preferences = usePreferencesStore();
+const theme = computed(() => preferences.theme);
 
+const extn = props.animated ? 'gif' : 'png';
 const metaUrl = import.meta.url;
-const lightSource = ref(new URL(`/assets/${props.name}.png`, metaUrl).href);
+const lightSource = ref(new URL(`/assets/icons/${props.name}.${extn}`, metaUrl).href);
 const darkSource = ref(null);
 if (!props.adaptive && !props.singular) {
-  darkSource.value = new URL(`/assets/${props.name}-dark.png`, metaUrl).href;
+  darkSource.value = new URL(`/assets/icons/${props.name}-dark.${extn}`, metaUrl).href;
 }
 
 onUpdated(() => {
-  lightSource.value = new URL(`/assets/${props.name}.png`, metaUrl).href;
+  lightSource.value = new URL(`/assets/icons/${props.name}.${extn}`, metaUrl).href;
   if (!props.adaptive && !props.singular) {
-    darkSource.value = new URL(`/assets/${props.name}-dark.png`, metaUrl).href;
+    darkSource.value = new URL(`/assets/icons/${props.name}-dark.${extn}`, metaUrl).href;
   }
 });
 </script>
+
+<template>
+  <span class="icon-container">
+    <img
+      v-hide="!adaptive && !singular && theme === themes.DARK"
+      :alt="alt"
+      :style="{ ...config, maxWidth: `${size}rem` }"
+      :class="{
+        'icon-adaptive': adaptive,
+        icon: !adaptive,
+        invert
+      }"
+      :src="lightSource"
+    />
+    <img
+      v-if="!adaptive && !singular"
+      v-hide="theme === themes.LIGHT"
+      :alt="alt"
+      :style="{ ...config, maxWidth: `${size}rem` }"
+      class="icon dark"
+      :src="darkSource"
+    />
+  </span>
+</template>
 
 <style scoped>
 .icon-container {
