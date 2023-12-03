@@ -2,7 +2,7 @@ import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
 import { themeClasses, themes } from '../utils/constants';
-import { getPreferences } from './driver';
+import { getPreferences } from '../database/driver';
 
 export const usePreferencesStore = defineStore('preferences', () => {
   const userTheme = ref(themes.SYSTEM);

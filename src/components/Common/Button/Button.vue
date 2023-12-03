@@ -42,6 +42,10 @@ defineProps({
   noBorder: {
     type: Boolean,
     default: false
+  },
+  accented: {
+    type: Boolean,
+    default: false
   }
 });
 </script>
@@ -53,7 +57,8 @@ defineProps({
       circular,
       complementary,
       'no-padding': noPadding,
-      'no-border': noBorder
+      'no-border': noBorder,
+      accented
     }"
     :disabled="disabled || busy"
   >
@@ -100,11 +105,19 @@ defineProps({
   padding: 0.5rem 1rem;
   background-color: var(--c-background-0);
   border-radius: 0.5rem;
-  transition: var(--theme-bg-transition), var(--theme-color-transition), var(--theme-border-transition),
-    var(--theme-shadow-transition), var(--theme-opacity-transition);
-  box-shadow: 0 0 10px 0 var(--c-shadow-0);
+  transition:
+    var(--theme-bg-transition),
+    var(--theme-color-transition),
+    var(--theme-border-transition),
+    box-shadow var(--fx-transition-duration-0) linear,
+    var(--theme-opacity-transition);
+  box-shadow:
+    2.5px 2.5px 5px 0 var(--c-shadow-0),
+    0 0 0 0 var(--c-shadow-0) inset;
 }
-
+.control.accented {
+  background-color: #c18eda !important;
+}
 .control.circular {
   padding: 0.5rem;
   border-radius: 999px;
@@ -118,11 +131,18 @@ defineProps({
 
 .control.complementary {
   background-color: var(--c-text-0);
-  color: var(--c-background);
+  color: var(--c-background-0);
 }
 
 .control:active {
-  box-shadow: 0 0 5px 0 var(--c-shadow-0);
+  box-shadow:
+    0 0 0 0 var(--c-shadow-0),
+    2.5px 2.5px 5px 0 var(--c-shadow-0) inset !important;
+}
+.control.accented:active {
+  box-shadow:
+    0 0 0 0 var(--c-shadow-0),
+    2.5px 2.5px 5px 0 #6d6d6d inset !important;
 }
 
 @media (hover: hover) {
@@ -132,6 +152,9 @@ defineProps({
 
   .control:hover {
     background-color: var(--c-background-2);
+    box-shadow:
+      4px 4px 8px 0 var(--c-shadow-0),
+      0 0 0 0 var(--c-shadow-0) inset;
   }
 }
 
