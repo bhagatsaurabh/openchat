@@ -1,12 +1,28 @@
 <script setup>
+import { ref } from 'vue';
+
 import Button from '@/components/Common/Button/Button.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
 import Footer from '@/components/Common/Footer/Footer.vue';
+import Header from '@/components/Common/Header/Header.vue';
 import SignIn from '@/components/SignIn/SignIn.vue';
+import Brand from '@/components/Common/Brand/Brand.vue';
+
+const showHeaderBrand = ref(false);
 </script>
 
 <template>
   <div class="auth-container">
+    <Header>
+      <template #left>
+        <Transition name="fade">
+          <Brand v-if="showHeaderBrand" />
+        </Transition>
+      </template>
+    </Header>
+    <main class="main">
+      <SignIn @home="(val) => (showHeaderBrand = !val)" />
+    </main>
     <Footer>
       <template #right>
         <a class="github-link" href="https://github.com/saurabh-prosoft/openchat" target="_blank">
@@ -16,10 +32,6 @@ import SignIn from '@/components/SignIn/SignIn.vue';
         </a>
       </template>
     </Footer>
-    <main class="main">
-      <SignIn />
-    </main>
-    <footer>The Footer</footer>
   </div>
 </template>
 
@@ -30,16 +42,15 @@ import SignIn from '@/components/SignIn/SignIn.vue';
   place-items: center;
   flex-direction: column;
 }
-.auth-container header {
-  position: fixed;
-  height: var(--header-height);
-  display: flex;
-  justify-content: space-between;
-}
 .github-link:deep(img) {
   opacity: 0.4 !important;
 }
 .main {
-  margin: auto;
+  width: 100vw;
+  height: calc(100vh - var(--header-height) - var(--footer-height));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 </style>

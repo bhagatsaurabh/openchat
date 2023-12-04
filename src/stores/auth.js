@@ -1,9 +1,16 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
+import { RecaptchaVerifier, getAuth, onAuthStateChanged } from 'firebase/auth';
+
+import { app } from '@/config/firebase';
+
+const auth = getAuth(app);
+auth.useDeviceLanguage();
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
-  const status = ref(null);
+  const status = ref('pending');
+  const unsubFn = ref(null);
 
   function setUser(signedInUser) {
     user.value = signedInUser;
@@ -11,11 +18,37 @@ export const useAuthStore = defineStore('auth', () => {
   function setStatus(inStatus) {
     status.value = inStatus;
   }
+  function registerAuthListener() {
+    if (unsubFn.value) return;
+
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'sign-in-button', {
+      size: 'invisible',
+      callback: (response) => {
+        console.log(response);
+        // onSignInSubmit();
+      }
+    });
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+        setStatus('signedin');
+      } else {
+        setStatus('signedout');
+      }
+    });
+    unsubFn.value = unsubscribe;
+  }
+  function deRegisterAuthListener() {
+    unsubFn.value();
+  }
 
   return {
     user,
     status,
     setUser,
-    setStatus
+    setStatus,
+    registerAuthListener,
+    deRegisterAuthListener
   };
 });

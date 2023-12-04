@@ -1,26 +1,63 @@
 <script setup>
-import { Transition } from 'vue';
+import { onMounted, ref, watch } from 'vue';
+
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
 import Button from '@/components/Common/Button/Button.vue';
+import SignInProviders from '@/components/SignInProviders/SignInProviders.vue';
 import { useAuthStore } from '@/stores/auth';
 
+const emit = defineEmits(['home']);
+
 const auth = useAuthStore();
+const currCard = ref(0);
+
+watch(currCard, () => emit('home', currCard.value === 0));
+
+const handleProvider = (provider) => {
+  if (provider === 'phone') currCard.value = 2;
+  else currCard.value = 3;
+};
+
+onMounted(() => {
+  auth.registerAuthListener();
+});
 </script>
 
 <template>
-  <section class="brand">
-    <img class="auth-hero" src="/assets/images/logo.png" alt="OpenChat Hero Image" />
-    <h2 class="auth-title">OpenChat</h2>
-  </section>
-  <section class="signin-control">
-    <Spinner :size="1" :blob-count="4" />
-    <Transition name="fade">
-      <Button v-if="!auth.status" accented>Sign In</Button>
-    </Transition>
-  </section>
+  <Transition name="fade-slide">
+    <div v-show="currCard === 0" class="auth-card">
+      <section class="brand">
+        <img class="auth-hero" src="/assets/images/logo.png" alt="OpenChat Hero Image" />
+        <h2 class="auth-title">OpenChat</h2>
+      </section>
+      <section class="signin-control">
+        <Transition name="fade" appear>
+          <Spinner v-show="auth.status === 'pending'" :size="1" :blob-count="4" />
+        </Transition>
+        <Transition name="fade" appear>
+          <Button
+            @click="() => (currCard = 1)"
+            v-show="auth.status === 'signedout'"
+            accented
+            id="sign-in-button"
+            >Sign In</Button
+          >
+        </Transition>
+      </section>
+    </div>
+  </Transition>
+  <Transition name="fade-slide">
+    <div v-show="currCard === 1" class="auth-card">
+      <SignInProviders @provider="handleProvider" />
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
+.auth-card {
+  position: absolute;
+  width: 100vw;
+}
 .brand {
   text-align: center;
   background-color: var(--c-background-0);
@@ -34,27 +71,19 @@ const auth = useAuthStore();
   font-size: 2rem;
 }
 
-@keyframes fade-slide {
-  0% {
-    max-height: 0rem;
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-    max-height: 7rem;
-  }
-}
-
 .signin-control {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-height: 0rem;
-  overflow: hidden;
-  margin: 1rem;
-  animation: fade-slide 1s cubic-bezier(0, 0, 0.33, 0.99) 0.2s 1 forwards normal;
+  justify-content: center;
+  padding: 1rem;
+  height: 4rem;
 }
 .signin-control button {
   margin-bottom: 0.5rem;
+}
+
+.signin-control .spinner {
+  position: absolute;
 }
 </style>
