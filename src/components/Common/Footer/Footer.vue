@@ -1,7 +1,14 @@
-<script setup></script>
+<script setup>
+defineProps({
+  fixed: {
+    type: Boolean,
+    default: false
+  }
+});
+</script>
 
 <template>
-  <footer :class="{ footer: true }">
+  <footer :class="{ footer: true, fixed }">
     <div class="left">
       <slot name="left"></slot>
     </div>
@@ -17,10 +24,13 @@
   width: 100%;
   height: var(--footer-height);
   bottom: 0;
-  position: fixed;
   z-index: 10;
   background-color: var(--c-background-0);
   border-top: 1px solid var(--c-box-border);
+}
+
+.footer.fixed {
+  position: fixed;
 }
 .footer.drop {
   box-shadow: 0 0 5px 0 var(--c-shadow-0);

@@ -1,7 +1,14 @@
-<script setup></script>
+<script setup>
+defineProps({
+  fixed: {
+    type: Boolean,
+    default: false
+  }
+});
+</script>
 
 <template>
-  <header :class="{ header: true }">
+  <header :class="{ header: true, fixed }">
     <div class="left">
       <slot name="left"></slot>
     </div>
@@ -17,10 +24,12 @@
   width: 100%;
   height: var(--header-height);
   top: 0;
-  position: fixed;
   z-index: 10;
   background-color: var(--c-background-0);
   border-bottom: 1px solid var(--c-box-border);
+}
+.header.fixed {
+  position: fixed;
 }
 .header.drop {
   box-shadow: 0 0 5px 0 var(--c-shadow-0);

@@ -15,6 +15,10 @@ defineProps({
     type: Boolean,
     default: false
   },
+  size: {
+    type: Number,
+    default: 1
+  },
   circular: {
     type: Boolean,
     default: false
@@ -60,6 +64,7 @@ defineProps({
       'no-border': noBorder,
       accented
     }"
+    :style="{ fontSize: `${size}rem` }"
     :disabled="disabled || busy"
   >
     <Icon
@@ -70,6 +75,7 @@ defineProps({
       :name="icon"
       adaptive
       :invert="complementary"
+      :size="size"
     />
     <Icon
       v-if="icon && !iconLeft && !iconRight"
@@ -78,6 +84,7 @@ defineProps({
       :name="icon"
       adaptive
       :invert="complementary"
+      :size="size"
     />
     <span v-hide="busy">
       <slot></slot>
@@ -90,6 +97,7 @@ defineProps({
       :name="icon"
       adaptive
       :invert="complementary"
+      :size="size"
     />
     <Spinner v-if="async" v-hide="!busy" :size="1.5" :invert="complementary" />
   </button>
@@ -116,7 +124,7 @@ defineProps({
     0 0 0 0 var(--c-shadow-0) inset;
 }
 .control.accented {
-  background-color: #c18eda !important;
+  background-color: var(--c-accent) !important;
 }
 .control.circular {
   padding: 0.5rem;
