@@ -1,4 +1,5 @@
 @import './base.css';
+@import './flags.css';
 
 #app {
   font-weight: normal;
@@ -21,26 +22,42 @@
   opacity: 0;
 }
 
-.fade-slide-enter-active {
+.fade-slide-ltr-enter-active,
+.fade-slide-ltr-leave-active {
   transition:
     opacity 0.75s ease,
     transform 0.75s ease;
 }
-.fade-slide-leave-active {
-  transition:
-    opacity 0.75s ease,
-    transform 0.75s ease;
-}
-.fade-slide-enter-from {
+.fade-slide-ltr-enter-from {
   opacity: 0;
   transform: translateX(100%);
 }
-.fade-slide-leave-to {
+.fade-slide-ltr-leave-to {
   opacity: 0;
   transform: translateX(-100%);
 }
-.fade-slide-enter-to,
-.fade-slide-leave-from {
+.fade-slide-ltr-enter-to,
+.fade-slide-ltr-leave-from {
+  opacity: 1;
+  transform: translateX(0%);
+}
+
+.fade-slide-rtl-enter-active,
+.fade-slide-rtl-leave-active {
+  transition:
+    opacity 0.75s ease,
+    transform 0.75s ease;
+}
+.fade-slide-rtl-enter-from {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+.fade-slide-rtl-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+.fade-slide-rtl-enter-to,
+.fade-slide-rtl-leave-from {
   opacity: 1;
   transform: translateX(0%);
 }

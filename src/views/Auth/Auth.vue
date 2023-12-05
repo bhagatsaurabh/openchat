@@ -26,7 +26,7 @@ const showHeaderBrand = ref(false);
     <Footer>
       <template #right>
         <a class="github-link" href="https://github.com/saurabh-prosoft/openchat" target="_blank">
-          <Button :complementary="false" circular no-padding no-border>
+          <Button :complementary="false" circular visual>
             <Icon name="github" alt="GitHub icon" :size="5" adaptive />
           </Button>
         </a>

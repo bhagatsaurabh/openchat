@@ -39,11 +39,7 @@ defineProps({
     type: Boolean,
     default: false
   },
-  noPadding: {
-    type: Boolean,
-    default: false
-  },
-  noBorder: {
+  visual: {
     type: Boolean,
     default: false
   },
@@ -60,8 +56,7 @@ defineProps({
       control: true,
       circular,
       complementary,
-      'no-padding': noPadding,
-      'no-border': noBorder,
+      visual,
       accented
     }"
     :style="{ fontSize: `${size}rem` }"
@@ -86,9 +81,9 @@ defineProps({
       :invert="complementary"
       :size="size"
     />
-    <span v-hide="busy">
+    <div v-hide="busy">
       <slot></slot>
-    </span>
+    </div>
     <Icon
       class="ml-0p5"
       v-if="icon && iconRight"
@@ -130,11 +125,12 @@ defineProps({
   padding: 0.5rem;
   border-radius: 999px;
 }
-.control.no-padding {
+.control.visual {
   padding: 0rem;
-}
-.control.no-border {
   border: 0;
+}
+.control.visual div {
+  font-size: 0;
 }
 
 .control.complementary {
@@ -173,6 +169,9 @@ defineProps({
 .control:deep(span) {
   display: inline-flex;
   transition: opacity 0.2s linear;
+}
+.control div {
+  display: inline-block;
 }
 
 .control:deep(.spinner) {
