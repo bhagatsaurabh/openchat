@@ -35,6 +35,10 @@ const props = defineProps({
   animated: {
     type: Boolean,
     default: false
+  },
+  accented: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -66,7 +70,8 @@ onUpdated(() => {
       :class="{
         'icon-adaptive': adaptive,
         icon: !adaptive,
-        invert
+        invert,
+        accented
       }"
       :src="lightSource"
     />
@@ -92,6 +97,9 @@ onUpdated(() => {
 
 .icon-adaptive {
   transition: filter var(--theme-transition-duration) linear;
+}
+.icon-adaptive.accented {
+  filter: invert(61%) sepia(72%) saturate(258%) hue-rotate(234deg) brightness(90%) contrast(88%) !important;
 }
 
 .icon-adaptive.invert {
