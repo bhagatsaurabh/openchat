@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import { RecaptchaVerifier, getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 import { app } from '@/config/firebase';
 
@@ -20,14 +20,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
   function registerAuthListener() {
     if (unsubFn.value) return;
-
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'sign-in-button', {
-      size: 'invisible',
-      callback: (response) => {
-        console.log(response);
-        // onSignInSubmit();
-      }
-    });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {

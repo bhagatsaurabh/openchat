@@ -157,7 +157,7 @@ defineProps({
   .control:hover {
     background-color: var(--c-background-2);
     box-shadow:
-      4px 4px 8px 0 var(--c-shadow-0),
+      2px 2px 4px 0 var(--c-shadow-0),
       0 0 0 0 var(--c-shadow-0) inset;
   }
 }
@@ -171,7 +171,8 @@ defineProps({
   transition: opacity 0.2s linear;
 }
 .control div {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 }
 
 .control:deep(.spinner) {
