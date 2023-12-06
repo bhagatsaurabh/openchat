@@ -7,6 +7,7 @@ import Button from '@/components/Common/Button/Button.vue';
 import SignInProviders from '@/components/SignInProviders/SignInProviders.vue';
 import Brand from '../Common/Brand/Brand.vue';
 import PhoneProvider from '@/components/PhoneProvider/PhoneProvider.vue';
+import AnonymousProvider from '@/components/AnonymousProvider/AnonymousProvider.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const emit = defineEmits(['home']);
@@ -37,6 +38,7 @@ const handleForward = (nextStep) => {
 let unregisterGuard = () => {};
 onMounted(() => {
   auth.registerAuthListener();
+
   unregisterGuard = router.beforeEach((to, from, next) => {
     prevStep.value = parseInt(from.hash.substring(1) || 0);
     currStep.value = parseInt(to.hash.substring(1) || 0);
@@ -70,6 +72,11 @@ onBeforeUnmount(() => unregisterGuard());
   <Transition :name="transitionName">
     <div v-show="currStep === 2" class="auth-card">
       <PhoneProvider />
+    </div>
+  </Transition>
+  <Transition :name="transitionName">
+    <div v-show="currStep === 3" class="auth-card">
+      <AnonymousProvider />
     </div>
   </Transition>
 </template>

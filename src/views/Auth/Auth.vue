@@ -47,7 +47,7 @@ const showHeaderBrand = ref(false);
 }
 .main {
   width: 100vw;
-  height: calc(100vh - var(--header-height) - var(--footer-height));
+  min-height: calc(100vh - var(--header-height) - var(--footer-height));
   display: flex;
   justify-content: center;
   align-items: center;

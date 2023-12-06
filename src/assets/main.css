@@ -6,11 +6,40 @@
   min-height: 100vh;
 }
 
+.scroll-shadows {
+  max-height: 39vh;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+  background:
+    linear-gradient(var(--c-background-2) 30%, rgba(255, 255, 255, 0)) center top,
+    linear-gradient(rgba(255, 255, 255, 0), var(--c-background-2) 70%) center bottom,
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center top,
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center bottom;
+  background-repeat: no-repeat;
+  background-size:
+    100% 40px,
+    100% 40px,
+    100% 14px,
+    100% 14px;
+  background-attachment: local, local, scroll, scroll;
+}
+
 .mr-0p5 {
   margin-right: 0.5rem;
 }
 .ml-0p5 {
   margin-left: 0.5rem;
+}
+.mr-1 {
+  margin-right: 1rem;
+}
+.px-0p5 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.c-bg-2 {
+  background-color: var(--c-background-2);
 }
 
 .fade-enter-active,
