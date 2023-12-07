@@ -3,12 +3,16 @@ defineProps({
   fixed: {
     type: Boolean,
     default: false
+  },
+  transparent: {
+    type: Boolean,
+    default: false
   }
 });
 </script>
 
 <template>
-  <footer :class="{ footer: true, fixed }">
+  <footer :class="['footer', { fixed, transparent }]">
     <div class="left">
       <slot name="left"></slot>
     </div>
@@ -34,6 +38,9 @@ defineProps({
 }
 .footer.drop {
   box-shadow: 0 0 5px 0 var(--c-shadow-0);
+}
+.footer.transparent {
+  background-color: transparent;
 }
 
 footer.footer .left,
