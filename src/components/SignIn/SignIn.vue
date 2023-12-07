@@ -85,6 +85,10 @@ onBeforeUnmount(() => unregisterGuard());
 .auth-card {
   position: absolute;
   width: 100vw;
+  padding: 0 1rem 0 1rem;
+}
+.auth-card:deep(section) {
+  width: 100%;
 }
 .signin-control {
   display: flex;

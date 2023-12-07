@@ -23,7 +23,7 @@ const showHeaderBrand = ref(false);
     <main class="main">
       <SignIn @home="(val) => (showHeaderBrand = !val)" />
     </main>
-    <Footer>
+    <Footer transparent>
       <template #right>
         <a class="github-link" href="https://github.com/saurabh-prosoft/openchat" target="_blank">
           <Button :complementary="false" circular visual>

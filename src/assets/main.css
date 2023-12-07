@@ -7,7 +7,6 @@
 }
 
 .scroll-shadows {
-  max-height: 39vh;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   overflow-scrolling: touch;
@@ -40,6 +39,9 @@
 }
 .c-bg-2 {
   background-color: var(--c-background-2);
+}
+.flex-1 {
+  flex: 1;
 }
 
 .fade-enter-active,
@@ -89,4 +91,24 @@
 .fade-slide-rtl-leave-from {
   opacity: 1;
   transform: translateX(0%);
+}
+
+@media (hover: hover) {
+  * {
+    scrollbar-track-color: transparent;
+    scrollbar-color: var(--c-text-2);
+    scrollbar-width: 0.5rem;
+  }
+  *::-webkit-scrollbar {
+    background-color: transparent;
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+  *::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--c-text-2);
+    border-radius: 1rem;
+  }
 }
