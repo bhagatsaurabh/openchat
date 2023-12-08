@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from 'vue';
+
 defineProps({
   type: {
     type: String,
@@ -8,32 +10,49 @@ defineProps({
     type: String,
     default: null
   },
-  outline: {
-    type: Boolean,
-    default: true
-  },
   attrs: {
     type: Object,
     default: () => ({})
   },
+  noTitle: {
+    type: Boolean,
+    default: false
+  },
   modelValue: String
 });
+
+const native = ref(null);
+
+defineExpose({ native });
 </script>
 
 <template>
-  <span :class="{ input: true, 'no-outline': !outline, blank: !modelValue }" :data-placeholder="placeholder">
+  <span :class="{ input: true, blank: !modelValue, 'no-title': noTitle }" :data-placeholder="placeholder">
     <input
+      ref="native"
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
       :type="type"
       v-bind="attrs"
+      :placeholder="noTitle ? placeholder : null"
     />
   </span>
 </template>
 
 <style scoped>
+.input {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+.input.no-title {
+  margin-bottom: 0;
+}
+.input.no-title::before {
+  display: none;
+}
 .input input {
   height: 100%;
+  width: 100%;
   font-size: 1rem;
   border: none;
   padding: 0.5rem 0 0.5rem 0;
@@ -77,7 +96,7 @@ defineProps({
   top: 75%;
   font-size: 0.75rem;
 }
-.input.no-outline input:focus {
+.input input:focus {
   outline: none;
 }
 </style>
