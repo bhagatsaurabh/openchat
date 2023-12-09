@@ -8,6 +8,7 @@ import SignInProviders from '@/components/SignInProviders/SignInProviders.vue';
 import Brand from '../Common/Brand/Brand.vue';
 import PhoneProvider from '@/components/PhoneProvider/PhoneProvider.vue';
 import AnonymousProvider from '@/components/AnonymousProvider/AnonymousProvider.vue';
+import PhoneProviderVerify from '@/components/PhoneProviderVerify/PhoneProviderVerify.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const emit = defineEmits(['home']);
@@ -72,6 +73,11 @@ onBeforeUnmount(() => unregisterGuard());
   <Transition :name="transitionName">
     <div v-show="currStep === 2" class="auth-card">
       <PhoneProvider />
+    </div>
+  </Transition>
+  <Transition :name="transitionName">
+    <div v-show="currStep === 4" class="auth-card">
+      <PhoneProviderVerify />
     </div>
   </Transition>
   <Transition :name="transitionName">

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, toRaw, watch } from 'vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import InputText from '../InputText/InputText.vue';
 
@@ -27,31 +27,40 @@ const selected = ref(
     : props.items[0]
 );
 const selectedIdx = computed(() =>
-  props.items.findIndex((item) => item[props.itemKey] === selected.value[props.itemKey])
+  filteredItems.value.findIndex((item) => item[props.itemKey] === selected.value[props.itemKey])
 );
 const filteredItems = computed(() =>
   props.items.filter((item) => item[0].toLocaleLowerCase().includes(search.value.toLocaleLowerCase()))
 );
 
 const handleKey = (e) => {
-  if (props.open) {
-    let newIdx = selectedIdx.value;
-    if (e.code === 'ArrowUp') {
-      newIdx -= 1;
-    } else if (e.code === 'ArrowDown') {
-      newIdx += 1;
+  if (props.open && ['ArrowUp', 'ArrowDown'].includes(e.code)) {
+    let idx = selectedIdx.value;
+    if (filteredItems.value.length === 0) return;
+    if (!filteredItems.value.includes(toRaw(selected.value))) {
+      idx = 0;
     }
-    handleSelect(
-      props.items[(newIdx < 0 ? props.items.length - Math.abs(newIdx) : newIdx) % props.items.length],
-      false
-    );
+
+    if (e.code === 'ArrowUp') {
+      idx -= 1;
+    } else if (e.code === 'ArrowDown') {
+      idx += 1;
+    }
+    const item =
+      filteredItems.value[
+        (idx < 0 ? filteredItems.value.length - Math.abs(idx) : idx) % filteredItems.value.length
+      ];
+
+    handleSelect(item, false);
   }
 };
 const handleSelect = (item, dismiss = true) => {
   selected.value = item;
   dismiss && emit('dismiss');
 };
-const handleScroll = () => {
+const handleScroll = async () => {
+  if (filteredItems.value.length === 0) return;
+  await nextTick();
   listEl.value?.children[selectedIdx.value].scrollIntoView({
     behavior: 'instant',
     block: 'center'
@@ -66,6 +75,7 @@ watch(
   () => props.open,
   () => {
     if (props.open) {
+      search.value = '';
       handleScroll();
       searchEl.value?.native.focus();
     }
@@ -84,6 +94,7 @@ watch(
       placeholder="Search"
       :attrs="{ spellcheck: false }"
       no-title
+      validation="Off"
     />
     <ul ref="listEl" class="scroll-shadows">
       <li class="not-found" v-if="filteredItems.length === 0">

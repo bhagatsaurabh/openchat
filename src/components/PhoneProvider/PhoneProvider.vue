@@ -1,84 +1,75 @@
 <script setup>
-import { onMounted, ref } from 'vue';
-import { RecaptchaVerifier, getAuth, signInWithPhoneNumber } from 'firebase/auth';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { getAuth, signInWithPhoneNumber } from 'firebase/auth';
 
 import { app } from '@/config/firebase';
-import { useAuthStore } from '@/stores/auth';
 import Button from '../Common/Button/Button.vue';
 import InputText from '../Common/InputText/InputText.vue';
 import CountryInput from '@/components/CountryInput/CountryInput.vue';
+import Recaptcha from '../Recaptcha/Recaptcha.vue';
 
-let verifier = null;
-let confirmationResult = null;
 const auth = getAuth(app);
+const phoneUtil = window.libphonenumber.PhoneNumberUtil.getInstance();
+
 const countryCode = ref(null);
-
 const phoneNum = ref(null);
-const authStore = useAuthStore();
+const inputEl = ref(null);
+const captcha = ref(null);
+const router = useRouter();
 
-const validatePhoneNumber = () => {
-  if (!phoneNum.value) return false;
-
-  const phoneUtil = window.libphonenumber.PhoneNumberUtil.getInstance();
+const verifyPhoneNumber = async () => {
   try {
-    return phoneUtil.isValidNumber(phoneUtil.parse(phoneNum));
+    window.phoneConfirmation = await signInWithPhoneNumber(
+      auth,
+      `+${countryCode.value}${phoneNum.value}`,
+      window.verifier
+    );
+    return true;
   } catch (error) {
     console.log(error);
+    window.grecaptcha.reset(await captcha.value.render());
     return false;
   }
 };
-const verifyPhoneNumber = async () => {
+const validate = (val) => {
+  if (!val) return 'Provide a phone number';
   try {
-    confirmationResult = await signInWithPhoneNumber(
-      auth,
-      `+${countryCode.value}${phoneNum.value}`,
-      verifier
-    );
-  } catch (error) {
-    console.log(error);
-    verifier.render().then((widgetId) => window.grecaptcha.reset(widgetId));
-  }
-};
-const signIn = async (code) => {
-  try {
-    const result = await confirmationResult?.confirm(code);
-    authStore.setUser(result.user);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-onMounted(async () => {
-  verifier = new RecaptchaVerifier(auth, 'phone-recaptcha', {
-    size: 'normal',
-    callback: (response) => {
-      console.log(response);
-    },
-    'expired-callback': () => {
-      console.log('expired');
+    if (!phoneUtil.isValidNumber(phoneUtil.parse(`+${countryCode.value}${val}`))) {
+      return 'Enter a valid phone number';
     }
-  });
-
-  await verifier.render();
-});
+    return null;
+  } catch (error) {
+    return 'Enter a valid phone number';
+  }
+};
+const handleVerify = async () => {
+  if (!inputEl.value.validate(phoneNum.value) && captcha.value.validate()) {
+    if (await verifyPhoneNumber()) {
+      router.push({ hash: '#4', params: { countryCode: countryCode.value, phone: phoneNum.value } });
+    }
+  }
+};
 </script>
 
 <template>
   <section class="country-input">
     <CountryInput @select="(country) => (countryCode = country[2])" />
     <InputText
+      ref="inputEl"
       class="flex-1"
       type="tel"
       placeholder="Phone Number"
       v-model="phoneNum"
       :attrs="{ spellcheck: false, autocomplete: 'off' }"
+      :validator="validate"
     />
   </section>
-  <section class="captcha">
-    <div id="phone-recaptcha"></div>
+  <section class="captcha-container">
+    <Recaptcha ref="captcha" />
   </section>
   <section class="controls">
-    <Button accented>Verify</Button>
+    <Button @click="handleVerify" accented>Verify</Button>
   </section>
   <section class="notice">
     <span> By tapping Verify, an SMS may be sent. Message & data rates may apply. </span>
@@ -87,7 +78,7 @@ onMounted(async () => {
 
 <style scoped>
 .country-input,
-.captcha {
+.captcha-container {
   margin: auto;
   width: max-content;
   margin-top: 1rem;
@@ -97,12 +88,13 @@ onMounted(async () => {
   align-items: flex-start;
 }
 .controls {
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 .controls button {
   margin-left: auto;
 }
 .notice {
   margin-top: 3rem;
+  color: var(--c-text-2);
 }
 </style>
