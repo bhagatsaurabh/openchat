@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 
-defineProps({
+const props = defineProps({
   type: {
     type: String,
     default: 'text'
@@ -18,24 +18,62 @@ defineProps({
     type: Boolean,
     default: false
   },
+  validator: {
+    type: Function,
+    default: () => true
+  },
+  validation: {
+    type: String,
+    default: 'Lazy',
+    validator: (val) => ['Lazy', 'Eager', 'Off'].includes(val)
+  },
   modelValue: String
 });
+const emit = defineEmits(['update:modelValue']);
 
 const native = ref(null);
+const errormsg = ref(null);
 
-defineExpose({ native });
+const handleInput = (e) => {
+  if (props.validation === 'Eager') validate(e.target.value);
+  else {
+    errormsg.value = null;
+    native.value?.setCustomValidity('');
+  }
+
+  emit('update:modelValue', e.target.value);
+};
+const validate = (val) => {
+  errormsg.value = props.validator(val);
+  native.value?.setCustomValidity(errormsg.value ? 'invalid' : '');
+  return errormsg.value;
+};
+
+defineExpose({ native, validate });
 </script>
 
 <template>
-  <span :class="{ input: true, blank: !modelValue, 'no-title': noTitle }" :data-placeholder="placeholder">
+  <span
+    :class="{
+      input: true,
+      blank: !modelValue,
+      'no-title': noTitle,
+      invalid: !!errormsg,
+      'mt-1p5': validation !== 'Off'
+    }"
+    :data-placeholder="placeholder"
+  >
     <input
       ref="native"
       :value="modelValue"
-      @input="$emit('update:modelValue', $event.target.value)"
+      @input="handleInput"
       :type="type"
       v-bind="attrs"
       :placeholder="noTitle ? placeholder : null"
     />
+    <Transition name="slide">
+      <span v-if="validation !== 'Off' && !!errormsg" class="errormsg">{{ errormsg }}</span>
+    </Transition>
   </span>
 </template>
 
@@ -73,6 +111,7 @@ defineExpose({ native });
   top: 75%;
   font-size: 0.75rem;
 }
+
 .input.blank::before {
   top: 0;
   font-size: 1rem;
@@ -85,12 +124,17 @@ defineExpose({ native });
   height: 1px;
   bottom: 0;
   left: 0;
-  transition: height var(--fx-transition-duration-0) linear;
+  transition:
+    height var(--fx-transition-duration-0) linear,
+    background-color var(--fx-transition-duration-0) linear;
   background-color: gray;
 }
 .input:focus-within::after {
   background-color: #c18eda;
   height: 4px;
+}
+.input.invalid:focus-within::after {
+  background-color: #ff4b4b;
 }
 .input:focus-within::before {
   top: 75%;
@@ -98,5 +142,17 @@ defineExpose({ native });
 }
 .input input:focus {
   outline: none;
+}
+.errormsg {
+  position: absolute;
+  width: 100%;
+  bottom: 100%;
+  left: 0;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #ff4b4b;
+  transform-origin: bottom;
 }
 </style>

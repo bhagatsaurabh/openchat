@@ -21,7 +21,7 @@ defineExpose({ countries });
 </script>
 
 <template>
-  <div>
+  <div class="mt-1p5">
     <Button
       @click="isCntrsOpen = !isCntrsOpen"
       class="country-control mr-1"
