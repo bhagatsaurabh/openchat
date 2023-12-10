@@ -36,15 +36,27 @@
 .mt-1p5 {
   margin-top: 1.5rem;
 }
+.mt-1 {
+  margin-top: 1rem;
+}
 .px-0p5 {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+}
+.pt-2 {
+  padding-top: 2rem;
 }
 .c-bg-2 {
   background-color: var(--c-background-2);
 }
 .flex-1 {
   flex: 1;
+}
+.mb-1 {
+  margin-bottom: 1rem;
+}
+.mb-2 {
+  margin-bottom: 2rem;
 }
 
 .fade-enter-active,

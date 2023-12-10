@@ -32,7 +32,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const native = ref(null);
-const errormsg = ref(null);
+const errormsg = ref('');
 
 const handleInput = (e) => {
   if (props.validation === 'Eager') validate(e.target.value);
@@ -45,11 +45,15 @@ const handleInput = (e) => {
 };
 const validate = (val) => {
   errormsg.value = props.validator(val);
-  native.value?.setCustomValidity(errormsg.value ? 'invalid' : '');
+  native.value?.setCustomValidity(errormsg.value);
   return errormsg.value;
 };
+const invalidate = (msg) => {
+  errormsg.value = msg;
+  native.value?.setCustomValidity(errormsg.value);
+};
 
-defineExpose({ native, validate });
+defineExpose({ native, validate, invalidate });
 </script>
 
 <template>
