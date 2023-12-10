@@ -4,16 +4,19 @@ import { useRoute, useRouter } from 'vue-router';
 import { AuthErrorCodes } from 'firebase/auth';
 
 import { useAuthStore } from '@/stores/auth';
+import { useNotificationStore } from '@/stores/notification';
 import InputText from '../Common/InputText/InputText.vue';
 import Button from '../Common/Button/Button.vue';
 
 const authStore = useAuthStore();
+const notify = useNotificationStore();
 const route = useRoute();
 const router = useRouter();
 const code = ref(null);
 const timerHandle = ref(-1);
 const countDown = ref(30);
 const codeEl = ref(null);
+const isSigningIn = ref(false);
 
 const phone = computed(() =>
   route.params.countryCode ? `+${route.params.countryCode} ${route.params.phone}` : ''
@@ -36,17 +39,21 @@ const validate = (val) => {
   return null;
 };
 const signIn = async (code) => {
+  isSigningIn.value = true;
   try {
     const result = await window.phoneConfirmation?.confirm(code);
     authStore.setUser(result.user);
   } catch (error) {
     if (error.code === AuthErrorCodes.INVALID_CODE) {
       codeEl.value.invalidate('Wrong code. Try again');
+    } else if (error.code === AuthErrorCodes.CODE_EXPIRED) {
+      codeEl.value.invalidate('Code expired, request a new one');
     } else {
+      notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
       console.log(error);
-      // Default action
     }
   }
+  isSigningIn.value = false;
 };
 const handleCancel = () => router.back();
 const handleSubmit = () => {
@@ -91,7 +98,7 @@ onBeforeUnmount(() => clearTimeout(timerHandle.value));
   </section>
   <section class="controls mt-1 mb-2">
     <Button @click="handleCancel" accented>Cancel</Button>
-    <Button @click="handleSubmit" accented>Continue</Button>
+    <Button @click="handleSubmit" :busy="isSigningIn" async accented>Continue</Button>
   </section>
   <section class="resend pt-2">
     <Button :disabled="countDown >= 0" @click="handleResend" :complementary="false">

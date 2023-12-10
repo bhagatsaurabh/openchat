@@ -94,7 +94,7 @@ defineProps({
       :invert="complementary"
       :size="size"
     />
-    <Spinner v-if="async" v-hide="!busy" :size="1.5" :invert="complementary" />
+    <Spinner v-if="async" v-hide="!busy" :size="0.75" :blob-count="3" :invert="complementary" />
   </button>
 </template>
 
@@ -164,6 +164,11 @@ defineProps({
 
 .control:disabled {
   opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+.control.accented:disabled {
+  background-color: var(--c-background-2) !important;
 }
 
 .control:deep(span) {

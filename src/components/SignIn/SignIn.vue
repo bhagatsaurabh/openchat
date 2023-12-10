@@ -36,6 +36,13 @@ const handleForward = (nextStep) => {
   router.push({ hash: `#${nextStep}` });
 };
 
+watch(
+  () => auth.user,
+  () => {
+    if (auth.user) router.push('/');
+  }
+);
+
 let unregisterGuard = () => {};
 onMounted(() => {
   auth.registerAuthListener();
