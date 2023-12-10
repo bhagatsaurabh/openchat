@@ -7,6 +7,7 @@ import { openDB } from '@/database/database';
 import { registerPersistence } from '@/database/driver';
 import MediaObserver from '@/components/MediaObserver/MediaObserver.vue';
 import Recaptcha from '@/components/Recaptcha/Recaptcha.vue';
+import Notification from '@/components/Common/Notification/Notification.vue';
 
 const preferences = usePreferencesStore();
 const auth = useAuthStore();
@@ -30,6 +31,7 @@ onBeforeUnmount(() => {
   <MediaObserver />
   <RouterView />
   <Recaptcha default />
+  <Notification />
 </template>
 
 <style scoped>

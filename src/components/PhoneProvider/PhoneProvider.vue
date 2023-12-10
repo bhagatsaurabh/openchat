@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { getAuth, signInWithPhoneNumber } from 'firebase/auth';
+import { AuthErrorCodes, getAuth, signInWithPhoneNumber } from 'firebase/auth';
 
 import { app } from '@/config/firebase';
 import Button from '../Common/Button/Button.vue';
@@ -16,6 +16,7 @@ const countryCode = ref(null);
 const phoneNum = ref(null);
 const inputEl = ref(null);
 const captcha = ref(null);
+const isVerifying = ref(false);
 const router = useRouter();
 
 const verifyPhoneNumber = async () => {
@@ -27,7 +28,9 @@ const verifyPhoneNumber = async () => {
     );
     return true;
   } catch (error) {
-    console.log(error);
+    if (error.code === AuthErrorCodes.CAPTCHA_CHECK_FAILED) {
+      captcha.value.invalidate('Captcha check failed, please try again');
+    }
     window.grecaptcha.reset(await captcha.value.render());
     return false;
   }
@@ -44,11 +47,13 @@ const validate = (val) => {
   }
 };
 const handleVerify = async () => {
+  isVerifying.value = true;
   if (!inputEl.value.validate(phoneNum.value) && captcha.value.validate()) {
     if (await verifyPhoneNumber()) {
       router.push({ hash: '#4', params: { countryCode: countryCode.value, phone: phoneNum.value } });
     }
   }
+  isVerifying.value = false;
 };
 </script>
 
@@ -69,7 +74,7 @@ const handleVerify = async () => {
     <Recaptcha ref="captcha" />
   </section>
   <section class="controls">
-    <Button @click="handleVerify" accented>Verify</Button>
+    <Button @click="handleVerify" :busy="isVerifying" async accented>Verify</Button>
   </section>
   <section class="notice">
     <span> By tapping Verify, an SMS may be sent. Message & data rates may apply. </span>

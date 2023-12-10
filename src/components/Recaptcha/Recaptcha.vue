@@ -47,6 +47,9 @@ const validate = () => {
   if (!solved) captchaStore.errormsg = 'Please solve reCAPTCHA';
   return solved;
 };
+const invalidate = (msg) => {
+  captchaStore.errormsg = msg;
+};
 
 onMounted(async () => {
   if (!window.verifier && isDefault.value) {
@@ -75,7 +78,7 @@ watch(
   () => !isDefault.value && render()
 );
 
-defineExpose({ render, validate });
+defineExpose({ render, validate, invalidate });
 </script>
 
 <template>
