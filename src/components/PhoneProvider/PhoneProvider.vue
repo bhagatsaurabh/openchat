@@ -1,17 +1,17 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { AuthErrorCodes, getAuth, signInWithPhoneNumber } from 'firebase/auth';
+import { AuthErrorCodes } from 'firebase/auth';
 
-import { app } from '@/config/firebase';
-import Button from '../Common/Button/Button.vue';
-import InputText from '../Common/InputText/InputText.vue';
+import { useAuthStore } from '@/stores/auth';
+import Button from '@/components/Common/Button/Button.vue';
+import InputText from '@/components/Common/InputText/InputText.vue';
 import CountryInput from '@/components/CountryInput/CountryInput.vue';
-import Recaptcha from '../Recaptcha/Recaptcha.vue';
+import Recaptcha from '@/components/Recaptcha/Recaptcha.vue';
 
-const auth = getAuth(app);
 const phoneUtil = window.libphonenumber.PhoneNumberUtil.getInstance();
 
+const authStore = useAuthStore();
 const countryCode = ref(null);
 const phoneNum = ref(null);
 const inputEl = ref(null);
@@ -19,22 +19,6 @@ const captcha = ref(null);
 const isVerifying = ref(false);
 const router = useRouter();
 
-const verifyPhoneNumber = async () => {
-  try {
-    window.phoneConfirmation = await signInWithPhoneNumber(
-      auth,
-      `+${countryCode.value}${phoneNum.value}`,
-      window.verifier
-    );
-    return true;
-  } catch (error) {
-    if (error.code === AuthErrorCodes.CAPTCHA_CHECK_FAILED) {
-      captcha.value.invalidate('Captcha check failed, please try again');
-    }
-    window.grecaptcha.reset(await captcha.value.render());
-    return false;
-  }
-};
 const validate = (val) => {
   if (!val) return 'Provide a phone number';
   try {
@@ -49,8 +33,13 @@ const validate = (val) => {
 const handleVerify = async () => {
   isVerifying.value = true;
   if (!inputEl.value.validate(phoneNum.value) && captcha.value.validate()) {
-    if (await verifyPhoneNumber()) {
+    try {
+      await authStore.signIn('phone', { countryCode: countryCode.value, phoneNum: phoneNum.value });
       router.push({ hash: '#4', params: { countryCode: countryCode.value, phone: phoneNum.value } });
+    } catch (error) {
+      if (error.code === AuthErrorCodes.CAPTCHA_CHECK_FAILED) {
+        captcha.value.invalidate('Captcha check failed, please try again');
+      }
     }
   }
   isVerifying.value = false;
