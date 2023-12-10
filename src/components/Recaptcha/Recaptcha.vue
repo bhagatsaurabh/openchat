@@ -63,7 +63,8 @@ onMounted(async () => {
         emit('expired');
       }
     });
-    await window.verifier.render();
+    const widgetId = await window.verifier.render();
+    captchaStore.widgetId = widgetId;
     captchaStore.ready = true;
   }
 });

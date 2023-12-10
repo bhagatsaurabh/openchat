@@ -38,32 +38,28 @@ const validate = (val) => {
   }
   return null;
 };
-const signIn = async (code) => {
+const handleCancel = () => router.back();
+const handleSubmit = async () => {
   isSigningIn.value = true;
-  try {
-    const result = await window.phoneConfirmation?.confirm(code);
-    authStore.setUser(result.user);
-  } catch (error) {
-    if (error.code === AuthErrorCodes.INVALID_CODE) {
-      codeEl.value.invalidate('Wrong code. Try again');
-    } else if (error.code === AuthErrorCodes.CODE_EXPIRED) {
-      codeEl.value.invalidate('Code expired, request a new one');
-    } else {
-      notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
-      console.log(error);
+  if (!codeEl.value.validate(code.value)) {
+    try {
+      await authStore.signIn('phone-verify', { code: code.value });
+    } catch (error) {
+      if (error.code === AuthErrorCodes.INVALID_CODE) {
+        codeEl.value.invalidate('Wrong code. Try again');
+      } else if (error.code === AuthErrorCodes.CODE_EXPIRED) {
+        codeEl.value.invalidate('Code expired, request a new one');
+      } else {
+        notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
+        console.log(error);
+      }
     }
   }
   isSigningIn.value = false;
 };
-const handleCancel = () => router.back();
-const handleSubmit = () => {
-  if (!codeEl.value.validate(code.value)) {
-    signIn(code.value);
-  }
-};
 const handleResend = () => {
-  // TODO: Resend code
-  startResendTimer();
+  clearTimeout(timerHandle.value);
+  handleCancel();
 };
 
 watch(phone, () => {

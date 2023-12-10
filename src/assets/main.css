@@ -58,6 +58,12 @@
 .mb-2 {
   margin-bottom: 2rem;
 }
+.v-middle {
+  vertical-align: middle;
+}
+.d-inline {
+  display: inline;
+}
 
 .fade-enter-active,
 .fade-leave-active {

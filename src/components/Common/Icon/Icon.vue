@@ -87,10 +87,6 @@ onUpdated(() => {
 </template>
 
 <style scoped>
-.icon-container {
-  vertical-align: -18%;
-}
-
 .icon {
   transition: opacity var(--theme-transition-duration) linear;
 }
