@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { openDB } from '@/database/database';
 import { registerPersistence } from '@/database/driver';
 import MediaObserver from '@/components/MediaObserver/MediaObserver.vue';
-import Recaptcha from '@/components/Recaptcha/Recaptcha.vue';
+import Recaptcha from '@/components/Common/Recaptcha/Recaptcha.vue';
 import Notification from '@/components/Common/Notification/Notification.vue';
 
 const preferences = usePreferencesStore();

@@ -23,8 +23,9 @@ const handleContinue = async () => {
     <div class="mb-1">
       <Icon class="v-middle mr-0p5" alt="warn" name="warn" singular />
       <h3 class="d-inline">
-        Only this device will be able to access the newly created Guest account and will be permanently
-        deleted/lost if:
+        {{
+          'Only this device will be able to access the newly created Guest account and will be permanently deleted/lost if:'
+        }}
       </h3>
     </div>
     <ul>
