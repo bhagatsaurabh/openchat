@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth';
 import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import CountryInput from '@/components/CountryInput/CountryInput.vue';
-import Recaptcha from '@/components/Recaptcha/Recaptcha.vue';
+import Recaptcha from '@/components/Common/Recaptcha/Recaptcha.vue';
 
 const phoneUtil = window.libphonenumber.PhoneNumberUtil.getInstance();
 

@@ -9,3 +9,8 @@ export const authGuard = async (_to, _from, next) => {
     next('/auth');
   }
 };
+
+export const noAuthGuard = async () => {
+  const auth = useAuthStore();
+  return auth.user;
+};
