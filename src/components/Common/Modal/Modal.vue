@@ -110,12 +110,12 @@ onBeforeUnmount(unregisterGuard);
         adaptive
         @click="handleDismiss"
       />
-      <div class="title">{{ title }}</div>
+      <h2 class="title">{{ title }}</h2>
       <div class="content">
         <slot></slot>
       </div>
       <div v-if="controls.length" class="controls">
-        <Button v-for="control in controls" :key="control" @click="() => handleAction(control)">
+        <Button v-for="control in controls" :key="control" @click="() => handleAction(control)" accented>
           {{ control }}
         </Button>
       </div>
@@ -127,26 +127,31 @@ onBeforeUnmount(unregisterGuard);
 .modal {
   position: fixed;
   z-index: 102;
-  border: 1px solid var(--c-text);
-  box-shadow: 0 0 10px 0px var(--c-shadow);
+  border: 1px solid var(--c-border-0);
+  box-shadow: 0 0 10px 0px var(--c-shadow-0);
   left: 10vw;
   right: 10vw;
   top: 50vh;
-  background-color: var(--c-background-mute);
+  background-color: var(--c-background-2);
   transform: translateY(-50%);
-  padding: 0.3rem 0.3rem 1rem 0.3rem;
-  color: var(--c-text);
+  padding: 1rem;
+  color: var(--c-text-0);
   transform-origin: center;
 }
 
 .modal .content {
-  padding: 0 0.5rem;
   white-space: break-spaces;
+  margin-bottom: 2rem;
 }
 .modal .title {
-  font-weight: bold;
+  font-weight: light;
   margin-bottom: 1rem;
-  padding: 0 0.5rem;
+  padding: 0 0.25rem;
+}
+.modal .controls {
+  display: flex;
+  justify-content: flex-end;
+  column-gap: 1rem;
 }
 .close-icon {
   margin-left: calc(100% - 1.1rem);

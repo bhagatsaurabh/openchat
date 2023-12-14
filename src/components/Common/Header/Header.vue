@@ -3,12 +3,16 @@ defineProps({
   fixed: {
     type: Boolean,
     default: false
+  },
+  border: {
+    type: Boolean,
+    default: false
   }
 });
 </script>
 
 <template>
-  <header :class="{ header: true, fixed }">
+  <header :class="{ header: true, fixed, border }">
     <div class="left">
       <slot name="left"></slot>
     </div>
@@ -33,6 +37,9 @@ defineProps({
 }
 .header.drop {
   box-shadow: 0 0 5px 0 var(--c-shadow-0);
+}
+.header.border {
+  border-bottom: 1px solid var(--c-border-0);
 }
 
 header.header .left,

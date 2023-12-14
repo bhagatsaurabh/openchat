@@ -38,8 +38,8 @@
   --theme-shadow-transition: box-shadow var(--fx-transition-duration-1) linear;
   --theme-opacity-transition: opacity var(--fx-transition-duration-1) linear;
 
-  --header-height: 3rem;
-  --footer-height: 3rem;
+  --header-height: 4rem;
+  --footer-height: 4rem;
 
   --c-accent: #c18eda;
 }
