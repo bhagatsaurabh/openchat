@@ -7,10 +7,12 @@ import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
 import Avatar from '@/components/Avatar/Avatar.vue';
+import ChatSearch from '@/components/ChatSearch/ChatSearch.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
+const query = ref('');
 
 const handleSignOut = async () => {
   await authStore.signOut();
@@ -20,13 +22,13 @@ const handleSettings = () => {};
 </script>
 
 <template>
-  <Header>
+  <Header border>
     <template #left>
       <Avatar />
     </template>
     <template #right>
       <Button
-        class="mr-1"
+        class="chat-control mr-1"
         :size="1.5"
         icon="logout"
         @click="() => (confirmSignOut = true)"
@@ -34,7 +36,15 @@ const handleSettings = () => {};
         visual
         circular
       />
-      <Button :size="1.5" icon="cog" @click="() => handleSettings()" :complementary="false" visual circular />
+      <Button
+        class="chat-control mr-0p5"
+        :size="1.5"
+        icon="cog"
+        @click="() => handleSettings()"
+        :complementary="false"
+        visual
+        circular
+      />
     </template>
   </Header>
   <main class="chat-container">
@@ -44,7 +54,10 @@ const handleSettings = () => {};
       :controls="['Cancel', 'Sign out']"
       @dismiss="() => (confirmSignOut = false)"
       @action="(action) => action === 'Sign out' && handleSignOut()"
-    />
+    >
+      Are you sure ?
+    </Modal>
+    <ChatSearch @search="(val) => (query = val)" />
   </main>
 </template>
 
@@ -52,5 +65,11 @@ const handleSettings = () => {};
 .chat-container {
   min-height: calc(100vh - var(--header-height));
   width: 100vw;
+}
+.chat-control {
+  box-shadow: none !important;
+}
+.chat-control:deep(img) {
+  filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
 }
 </style>
