@@ -4,17 +4,21 @@ import { ref, watch } from 'vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
 import Button from '@/components/Common/Button/Button.vue';
+import Toggle from '@/components/Common/Toggle/Toggle.vue';
 
 const emit = defineEmits(['search']);
 
 const query = ref('');
+const filterUnread = ref(false);
+
+const handleClear = () => (query.value = '');
 
 watch(query, () => emit('search', query.value));
 </script>
 
 <template>
   <section class="search">
-    <Icon :size="1.2" class="search-icon" alt="Search icon" name="search" adaptive />
+    <Icon :size="1" class="search-icon ml-1" alt="Search icon" name="search" adaptive />
     <InputText
       v-model="query"
       class="search-input"
@@ -27,21 +31,31 @@ watch(query, () => emit('search', query.value));
     <Transition name="fade">
       <Button
         v-if="query"
-        :size="0.8"
+        :size="0.7"
         class="clear-control"
         icon="close"
         :complementary="false"
         circular
-        visual
+        flat
+        @click="handleClear"
       />
     </Transition>
+    <Toggle :size="1.2" class="unread-filter" v-model="filterUnread" />
   </section>
 </template>
 
 <style scoped>
+.search {
+  display: flex;
+  align-items: center;
+  box-shadow: 0 0 10px 0px grey;
+}
 .search-input {
-  padding: 0.25rem 3rem 0.25rem 3rem;
-  width: 100%;
+  padding: 0.25rem 5.5rem 0.4rem 3rem;
+  flex: 1;
+}
+.search-input:deep(input) {
+  font-family: system-ui;
 }
 .search-input:deep(input) {
   color: var(--c-text-2);
@@ -50,20 +64,20 @@ watch(query, () => emit('search', query.value));
 .search-icon,
 .clear-control {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
   font-size: 0;
-}
-.search-icon {
-  margin-left: 0.8rem;
 }
 .search-icon:deep(img),
 .clear-control:deep(img) {
   filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
 }
 .clear-control {
-  padding: 0.3rem !important;
-  right: 0.8rem;
-  box-shadow: none !important;
+  right: 3rem;
+}
+.unread-filter {
+  position: absolute;
+  right: 0.5rem;
+}
+.unread-filter:deep(img) {
+  filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
 }
 </style>

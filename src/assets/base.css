@@ -42,6 +42,10 @@
   --footer-height: 4rem;
 
   --c-accent: #c18eda;
+  --c-accent-light-0: #cca5e0;
+  --c-accent-light-1: #d7b6e8;
+  --c-accent-light-2: #e3c9ef;
+  --c-accent-light-3: #eddaf6;
 }
 
 :root,

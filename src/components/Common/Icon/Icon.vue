@@ -74,6 +74,7 @@ onUpdated(() => {
         accented
       }"
       :src="lightSource"
+      :draggable="false"
     />
     <img
       v-if="!adaptive && !singular"
@@ -82,11 +83,15 @@ onUpdated(() => {
       :style="{ ...config, maxWidth: `${size}rem` }"
       class="icon dark"
       :src="darkSource"
+      :draggable="false"
     />
   </span>
 </template>
 
 <style scoped>
+.icon-container {
+  user-select: none;
+}
 .icon {
   transition: opacity var(--theme-transition-duration) linear;
 }

@@ -24,26 +24,26 @@ const handleSettings = () => {};
 <template>
   <Header border>
     <template #left>
-      <Avatar />
+      <Avatar class="ml-0p5" />
     </template>
     <template #right>
       <Button
-        class="chat-control mr-1"
-        :size="1.5"
+        class="chat-control mr-0p5"
+        :size="1.3"
         icon="logout"
         @click="() => (confirmSignOut = true)"
         :complementary="false"
-        visual
         circular
+        flat
       />
       <Button
         class="chat-control mr-0p5"
-        :size="1.5"
+        :size="1.3"
         icon="cog"
         @click="() => handleSettings()"
         :complementary="false"
-        visual
         circular
+        flat
       />
     </template>
   </Header>
@@ -65,9 +65,6 @@ const handleSettings = () => {};
 .chat-container {
   min-height: calc(100vh - var(--header-height));
   width: 100vw;
-}
-.chat-control {
-  box-shadow: none !important;
 }
 .chat-control:deep(img) {
   filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
