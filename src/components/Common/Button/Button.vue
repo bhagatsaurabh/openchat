@@ -46,6 +46,10 @@ defineProps({
   accented: {
     type: Boolean,
     default: false
+  },
+  flat: {
+    type: Boolean,
+    default: false
   }
 });
 </script>
@@ -57,7 +61,8 @@ defineProps({
       circular,
       complementary,
       visual,
-      accented
+      accented,
+      flat
     }"
     :style="{ fontSize: `${size}rem` }"
     :disabled="disabled || busy"
@@ -94,7 +99,7 @@ defineProps({
       :invert="complementary"
       :size="size"
     />
-    <Spinner v-if="async" v-hide="!busy" :size="0.75" :blob-count="3" :invert="complementary" />
+    <Spinner v-if="async" v-hide="!busy" :size="0.75 * size" :blob-count="3" :invert="complementary" />
   </button>
 </template>
 
@@ -118,8 +123,9 @@ defineProps({
     2.5px 2.5px 5px 0 var(--c-shadow-0),
     0 0 0 0 var(--c-shadow-0) inset;
 }
-.control.accented {
-  background-color: var(--c-accent) !important;
+.control.complementary {
+  background-color: var(--c-text-0);
+  color: var(--c-background-0);
 }
 .control.circular {
   padding: 0.5rem;
@@ -132,34 +138,8 @@ defineProps({
 .control.visual div {
   font-size: 0;
 }
-
-.control.complementary {
-  background-color: var(--c-text-0);
-  color: var(--c-background-0);
-}
-
-.control:active {
-  box-shadow:
-    0 0 0 0 var(--c-shadow-0),
-    2.5px 2.5px 5px 0 var(--c-shadow-0) inset !important;
-}
-.control.accented:active {
-  box-shadow:
-    0 0 0 0 var(--c-shadow-0),
-    2.5px 2.5px 5px 0 #6d6d6d inset !important;
-}
-
-@media (hover: hover) {
-  .control.complementary:hover {
-    background-color: var(--c-text-2);
-  }
-
-  .control:hover {
-    background-color: var(--c-background-2);
-    box-shadow:
-      2px 2px 4px 0 var(--c-shadow-0),
-      0 0 0 0 var(--c-shadow-0) inset;
-  }
+.control.accented {
+  background-color: var(--c-accent);
 }
 
 .control:disabled {
@@ -168,7 +148,7 @@ defineProps({
   cursor: not-allowed;
 }
 .control.accented:disabled {
-  background-color: var(--c-background-2) !important;
+  background-color: var(--c-background-2);
 }
 
 .control:deep(span) {
@@ -185,5 +165,44 @@ defineProps({
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+}
+
+.control.flat {
+  box-shadow:
+    0 0 0 0 var(--c-shadow-0),
+    0 0 0 0 var(--c-shadow-0) inset;
+}
+
+@media (hover: hover) {
+  .control:hover {
+    background-color: var(--c-background-2);
+    box-shadow:
+      2px 2px 4px 0 var(--c-shadow-0),
+      0 0 0 0 var(--c-shadow-0) inset;
+  }
+  .control.flat:hover {
+    box-shadow:
+      0 0 0 0 var(--c-shadow-0),
+      0 0 0 0 var(--c-shadow-0) inset;
+  }
+  .control.complementary:hover {
+    background-color: var(--c-text-2);
+  }
+}
+
+.control:active {
+  box-shadow:
+    0 0 0 0 var(--c-shadow-0),
+    2.5px 2.5px 5px 0 var(--c-shadow-0) inset;
+}
+.control.accented:active {
+  box-shadow:
+    0 0 0 0 var(--c-shadow-0),
+    2.5px 2.5px 5px 0 #6d6d6d inset;
+}
+.control.flat:active {
+  box-shadow:
+    0 0 0 0 var(--c-shadow-0),
+    2.5px 2.5px 5px 0 var(--c-shadow-0) inset;
 }
 </style>
