@@ -1,4 +1,4 @@
-export const getSlug = (title) => `#pop-${title.toLowerCase().replace(' ', '-')}`;
+export const getSlug = (title) => `#pop-${title.toLowerCase().replaceAll(' ', '-')}`;
 
 export const trapBetween = (root) => {
   if (!root) return { first: null, last: null };
@@ -21,4 +21,25 @@ export const trapBetween = (root) => {
   if (!lastTabbableNode) lastTabbableNode = firstTabbableNode;
 
   return { first: firstTabbableNode, last: lastTabbableNode };
+};
+
+export const trapFocus = (event, el, bound) => {
+  if (event.key === 'Tab') {
+    if (!el.contains(document.activeElement)) {
+      bound.first?.focus();
+      return;
+    }
+
+    if (event.shiftKey) {
+      if (document.activeElement === bound.first) {
+        bound.last.focus();
+        event.preventDefault();
+      }
+    } else {
+      if (document.activeElement === bound.last) {
+        bound.first.focus();
+        event.preventDefault();
+      }
+    }
+  }
 };

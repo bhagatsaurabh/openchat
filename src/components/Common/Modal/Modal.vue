@@ -2,7 +2,7 @@
 import { watch, onBeforeUnmount, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { getSlug, trapBetween } from '@/utils/utils';
+import { getSlug, trapBetween, trapFocus } from '@/utils/utils';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
 import Button from '@/components/Common/Button/Button.vue';
@@ -26,30 +26,11 @@ const queuedAction = ref(null);
 const bound = ref(null);
 const show = ref(false);
 
-const trapFocus = (event) => {
-  if (event.key === 'Tab') {
-    if (!el.value.contains(document.activeElement)) {
-      bound.value.first?.focus();
-      return;
-    }
-
-    if (event.shiftKey) {
-      if (document.activeElement === bound.value.first) {
-        bound.value.last.focus();
-        event.preventDefault();
-      }
-    } else {
-      if (document.activeElement === bound.value.last) {
-        bound.value.first.focus();
-        event.preventDefault();
-      }
-    }
-  }
-};
+const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
 const handleDismiss = () => {
   if (show.value) {
-    window.removeEventListener('keydown', trapFocus);
+    window.removeEventListener('keydown', keyListener);
     show.value = false;
     router.back();
   }
@@ -74,8 +55,8 @@ watch(
 
       unregisterGuard = router.beforeEach((_to, from, next) => {
         if (from.hash.startsWith('#pop')) {
-          window.removeEventListener('keydown', trapFocus);
-          emit('dismiss');
+          window.removeEventListener('keydown', keyListener);
+          show.value = false;
         }
         unregisterGuard();
         next();
@@ -87,7 +68,7 @@ watch(
 watch(el, () => {
   if (el.value) {
     bound.value = trapBetween(el.value);
-    window.addEventListener('keydown', trapFocus);
+    window.addEventListener('keydown', keyListener);
   }
 });
 
@@ -100,7 +81,7 @@ onBeforeUnmount(unregisterGuard);
 
 <template>
   <Backdrop :show="show" @dismiss="handleDismiss" />
-  <Transition :duration="200" @after-leave="handleLeave" v-bind="$attrs" name="scale-fade">
+  <Transition @after-leave="handleLeave" v-bind="$attrs" name="scale-fade" appear>
     <div v-if="show" ref="el" class="modal" role="dialog">
       <Icon
         v-if="!controls.length"
@@ -133,7 +114,7 @@ onBeforeUnmount(unregisterGuard);
   right: 10vw;
   top: 50vh;
   background-color: var(--c-background-2);
-  transform: translateY(-50%);
+  transform: translateY(-50%) scale(1);
   padding: 1rem;
   color: var(--c-text-0);
   transform-origin: center;

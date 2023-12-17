@@ -128,11 +128,11 @@
 
 .scale-fade-enter-active,
 .scale-fade-leave-active {
-  transition: transform 0.2s ease;
+  transition: transform var(--fx-transition-duration-2) cubic-bezier(0.53, 0, 0.53, 1);
 }
 .scale-fade-enter-from,
 .scale-fade-leave-to {
-  transform: scale(0);
+  transform: translateY(-50%) scale(0) !important;
 }
 
 @keyframes shrink {
