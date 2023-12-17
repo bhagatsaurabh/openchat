@@ -10,6 +10,7 @@ import PhoneProvider from '@/components/PhoneProvider/PhoneProvider.vue';
 import AnonymousProvider from '@/components/AnonymousProvider/AnonymousProvider.vue';
 import PhoneProviderVerify from '@/components/PhoneProviderVerify/PhoneProviderVerify.vue';
 import { useAuthStore } from '@/stores/auth';
+import { generatePrivateKey } from '@/utils/crypto';
 
 const emit = defineEmits(['home']);
 
@@ -38,8 +39,12 @@ const handleForward = (nextStep) => {
 
 watch(
   () => auth.user,
-  () => {
-    if (auth.user) router.push('/');
+  async () => {
+    if (auth.user) {
+      const { publicKey } = await generatePrivateKey();
+      // TODO: Store publicKey on Server
+      router.push('/');
+    }
   }
 );
 
