@@ -10,6 +10,9 @@ const openDB = async () => {
       if (!database.objectStoreNames.contains('preferences')) {
         database.createObjectStore('preferences');
       }
+      if (!database.objectStoreNames.contains('keys')) {
+        database.createObjectStore('keys');
+      }
 
       db = database;
       db.addEventListener('close', closeListener);
@@ -70,4 +73,31 @@ const updateSingleton = async (name, value) => {
   });
 };
 
-export { openDB, closeDB, getSingleton, updateSingleton };
+const getObject = async (objectStore, key) => {
+  return new Promise((resolve, reject) => {
+    if (!db) resolve(null);
+    else {
+      let request;
+      try {
+        request = db.transaction(objectStore).objectStore(objectStore).get(key);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      } catch (error) {
+        reject(error);
+      }
+    }
+  });
+};
+const updateObject = async (objectStore, value, key) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const request = db.transaction(objectStore, 'readwrite').objectStore(objectStore).put(value, key);
+      request.onsuccess = () => resolve();
+      request.onerror = (event) => reject(event.target.error);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export { db, openDB, closeDB, getSingleton, updateSingleton, getObject, updateObject };
