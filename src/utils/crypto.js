@@ -1,3 +1,5 @@
+import { updateObject } from '@/database/database';
+
 const crypto = window.crypto.subtle;
 
 export const generatePrivateKey = async () => {
@@ -14,7 +16,8 @@ export const generatePrivateKey = async () => {
 
   const publicKey = await crypto.exportKey('jwk', key.publicKey);
 
-  // TODO: Store RSA keys in IndexedDB
+  await updateObject('keys', key.privateKey, 'private');
+  await updateObject('keys', key.publicKey, 'public');
 
   return { key, publicKey };
 };

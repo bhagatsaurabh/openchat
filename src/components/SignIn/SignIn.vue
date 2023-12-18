@@ -11,11 +11,13 @@ import AnonymousProvider from '@/components/AnonymousProvider/AnonymousProvider.
 import PhoneProviderVerify from '@/components/PhoneProviderVerify/PhoneProviderVerify.vue';
 import { useAuthStore } from '@/stores/auth';
 import { generatePrivateKey } from '@/utils/crypto';
+import { useRemoteDBStore } from '@/stores/database';
 
 const emit = defineEmits(['home']);
 
 const router = useRouter();
 const auth = useAuthStore();
+const db = useRemoteDBStore();
 
 const prevStep = ref(null);
 const currStep = ref(0);
@@ -42,7 +44,7 @@ watch(
   async () => {
     if (auth.user) {
       const { publicKey } = await generatePrivateKey();
-      // TODO: Store publicKey on Server
+      await db.storePublicKey(publicKey);
       router.push('/');
     }
   }
