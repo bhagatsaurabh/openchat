@@ -8,6 +8,7 @@ import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
 import Avatar from '@/components/Avatar/Avatar.vue';
 import ChatSearch from '@/components/ChatSearch/ChatSearch.vue';
+import ChatList from '@/components/ChatList/ChatList.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -58,6 +59,7 @@ const handleSettings = () => {};
       Are you sure ?
     </Modal>
     <ChatSearch @search="(val) => (query = val)" />
+    <ChatList />
   </main>
 </template>
 

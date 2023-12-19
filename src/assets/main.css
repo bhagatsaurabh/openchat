@@ -6,15 +6,24 @@
   min-height: 100vh;
 }
 
-.scroll-shadows {
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  overflow-scrolling: touch;
+.scroll-shadows-0 {
+  background:
+    linear-gradient(var(--c-background-0) 30%, rgba(255, 255, 255, 0)) center top,
+    linear-gradient(rgba(255, 255, 255, 0), var(--c-background-0) 70%) center bottom,
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center top,
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center bottom;
+}
+.scroll-shadows-2 {
   background:
     linear-gradient(var(--c-background-2) 30%, rgba(255, 255, 255, 0)) center top,
     linear-gradient(rgba(255, 255, 255, 0), var(--c-background-2) 70%) center bottom,
     radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center top,
     radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center bottom;
+}
+.scroll-shadows {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
   background-repeat: no-repeat;
   background-size:
     100% 40px,

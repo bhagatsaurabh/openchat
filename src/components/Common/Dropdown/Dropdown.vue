@@ -96,7 +96,7 @@ watch(
       no-title
       validation="Off"
     />
-    <ul ref="listEl" class="scroll-shadows">
+    <ul ref="listEl" class="scroll-shadows scroll-shadows-2">
       <li class="not-found" v-if="filteredItems.length === 0">
         <span>Found no match for&nbsp;</span><span class="query">{{ search }}</span>
       </li>
