@@ -11,10 +11,12 @@
   --c-black-soft: #222222;
   --c-black-mute: #282828;
 
-  --c-divider-light-0: rgb(182, 182, 182);
-  --c-divider-light-1: rgb(134, 134, 134);
-  --c-divider-dark-0: rgb(116, 116, 116);
-  --c-divider-dark-1: rgb(77, 77, 77);
+  --c-divider-light-0: rgb(201, 201, 201);
+  --c-divider-light-1: rgb(182, 182, 182);
+  --c-divider-light-2: rgb(134, 134, 134);
+  --c-divider-dark-0: rgb(140, 140, 140);
+  --c-divider-dark-1: rgb(116, 116, 116);
+  --c-divider-dark-2: rgb(77, 77, 77);
 
   --c-text-light-0: var(--c-black);
   --c-text-light-1: rgb(60, 60, 60);
@@ -57,6 +59,7 @@
 
   --c-border-0: var(--c-divider-light-0);
   --c-border-1: var(--c-divider-light-1);
+  --c-border-2: var(--c-divider-light-2);
   --c-box-border: transparent;
 
   --c-text-0: var(--c-text-light-0);
@@ -75,6 +78,7 @@
 
   --c-border-0: var(--c-divider-dark-0);
   --c-border-1: var(--c-divider-dark-1);
+  --c-border-2: var(--c-divider-dark-2);
   --c-box-border: transparent;
 
   --c-text-0: var(--c-text-dark-0);
@@ -93,6 +97,7 @@
 
   --c-border-0: var(--c-white);
   --c-border-1: var(--c-white);
+  --c-border-2: var(--c-white);
   --c-box-border: var(--c-white);
 
   --c-text-0: var(--c-white);
@@ -113,6 +118,7 @@
 
     --c-border-0: var(--c-divider-dark-0);
     --c-border-1: var(--c-divider-dark-1);
+    --c-border-2: var(--c-divider-dark-2);
     --c-box-border: transparent;
 
     --c-text-0: var(--c-text-dark-0);
@@ -132,6 +138,7 @@
 
     --c-border-0: var(--c-white);
     --c-border-1: var(--c-white);
+    --c-border-2: var(--c-white);
     --c-box-border: var(--c-white);
 
     --c-text-0: var(--c-white);
