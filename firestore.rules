@@ -1,0 +1,131 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn(request) {
+    	return request.auth != null;
+    }
+    function signedInUser(request, userId) {
+    	return signedIn(request) && request.auth.uid == userId;
+    }
+    function validateUserCreation(request) {
+      let inbound = request.resource.data;
+      let validKeys = ['name', 'avatarUrl', 'id', 'phone'];
+    	return inbound.keys().hasAll(['profile']) && inbound.keys().hasOnly(['profile']) &&
+             inbound.profile is map &&
+             inbound.profile.hasAll(validKeys) && inbound.profile.hasOnly(validKeys) &&
+             inbound.profile.name is string && inbound.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
+             inbound.profile.avatarUrl is string &&
+             inbound.profile.id is string && inbound.profile.id == request.auth.uid &&
+             inbound.profile.phone is string && inbound.profile.phone == request.auth.token.phone_number;
+    }
+    function validateUserUpdation(request, resource) {
+      let existing = resource.data;
+    	let inbound = request.resource.data;
+    	return inbound.keys().hasOnly(['profile']) &&
+             inbound.profile is map &&
+             inbound.profile.hasOnly(['name', 'avatarUrl', 'id', 'phone']) &&
+             inbound.profile.name is string && inbound.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
+             inbound.profile.avatarUrl is string &&
+             inbound.profile.id is string && inbound.profile.id == existing.id &&
+             inbound.profile.phone is string && inbound.profile.phone == existing.phone;
+    }
+    function isAMember(request, resource) {
+    	return signedIn(request) && request.auth.uid in resource.data.members;
+    }
+    function isAnAdmin(request, resource) {
+    	return isAMember(request, resource) && request.auth.uid in resource.data.admins;
+    }
+    function validateGroupMembership(request) {
+    	return request.auth.uid in request.resource.data.members;
+    }
+    function validateGroupAdminship(request) {
+    	return request.auth.uid in request.resource.data.admins;
+    }
+    function validateGroupCreation(request) {
+      let inbound = request.resource.data;
+      let validKeys = ['members', 'admins', 'active', 'type'];
+    	return request.resource.data.hasAll(validKeys) && request.resource.data.hasOnly(validKeys) &&
+             inbound.active is bool && inbound.active == true &&
+             inbound.members is list && validateGroupMembership(request) && inbound.members.size() > 1 &&
+             inbound.admins is list && validateGroupAdminship(request) && inbound.admins.size() > 1 &&
+             inbound.type is string && inbound.type in ['group', 'private'];
+    }
+    function validateGroupUpdation(request, resource) {
+      let inbound = request.resource.data;
+      let existing = resource.data;
+      let validKeys = ['members', 'admins', 'active'];
+    	return request.resource.data.hasOnly(validKeys) &&
+             'active' in inbound ? inbound.active is bool && inbound.active != existing.active : true &&
+             'members' in inbound ? inbound.members is list && validateGroupMembership(request) && inbound.members.size() > 1 : true &&
+             'admins' in inbound ? inbound.admins is list && validateGroupAdminship(request) && inbound.admins.size() > 1 : true;
+    }
+    function isGroupActive(resource) {
+      return resource.data.active
+    }
+    function validateMessageCreation(request) {
+      let inbound = request.resource.data;
+      let validKeys = ['by', 'timestamp', 'expiry', 'text', 'type'];
+      return request.resource.data.hasAll(validKeys) && request.resource.data.hasOnly(validKeys) &&
+             inbound.by is string && inbound.by == request.auth.uid &&
+             inbound.timestamp is timestamp &&
+             inbound.expiry is timestamp && inbound.expiry.toMillis() - inbound.timestamp.toMillis() == 1296000000 &&
+             inbound.text is string &&
+             inbound.type is string && inbound.type in ['text', 'image', 'video', 'doc', 'meta:edit', 'meta:delete'];
+    }
+    function validateMessageDeletion(request, resource) {
+      return request.auth.uid == resource.data.by;
+    }
+    function validateRecentMessageUpdation(request, resource) {
+      let inbound = request.resource.data;
+      let existing = resource.data;
+      let validKeys = ['modified', 'text'];
+      return request.resource.data.hasAll(validKeys) && request.resource.data.hasOnly(validKeys) &&
+             inbound.modified is timestamp &&
+             inbound.text is string && inbound.text != existing.text;
+    }
+
+    match /publicKeys/{userId} {
+      // Anyone can read other user's publicKey
+      allow read: if signedIn(request)
+      // A user can create/update their own publicKey
+      allow create, delete: if signedInUser(request, userId)
+      // publicKey cannot be updated
+      allow update: if false
+    }
+
+    // Anyone can read other user's profile, but cannot write to it
+    match /users/{userId} {
+    	allow create: if signedInUser(request, userId) && validateUserCreation(request)
+      allow read: if signedIn(request)
+      allow update: if signedInUser(request, userId) && validateUserUpdation(request, resource)
+      allow delete: if signedInUser(request, userId)
+    }
+
+    // A user can only read chats if they are a member and update chats if they are an admin
+    // A user can only create a chat if they are a member and an admin
+    // Direct deletion is not allowed due to firestore limitations on collection
+    match /groups/{chatId} {
+      allow create: if signedIn(request) && validateGroupCreation(request)
+    	allow read: if isGroupActive(resource) && isAMember(request, resource)
+      allow update: if isGroupActive(resource) && isAnAdmin(request, resource) && validateGroupUpdation(request, resource)
+      allow delete: if false
+    }
+
+    // Any user can create a message according to rules
+    // No updation allowed (editing messages is achieved through creating a meta message)
+    // A user can only delete their own messages
+    match /groups/{chatId}/messages/{messageId} {
+      allow create: if signedIn(request) && validateMessageCreation(request)
+      allow update: if false
+      allow delete: if signedIn(request) && validateMessageDeletion(request, resource)
+    }
+
+    match /groups/{chatId}/recentMsg/{docName} {
+      allow create: if docName == 'default' && signedIn(request) && validateMessageCreation(request)
+      allow update: if docName == 'default' && signedIn(request) && validateRecentMessageUpdation(request, resource)
+      allow delete: if docName == 'default' && signedIn(request) && validateMessageDeletion(request, resource)
+    }
+  }
+}
