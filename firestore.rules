@@ -10,26 +10,29 @@ service cloud.firestore {
     	return signedIn(request) && request.auth.uid == userId;
     }
     function validateUserCreation(request) {
-      let inbound = request.resource.data;
+      let input = request.resource.data;
       let validKeys = ['name', 'avatarUrl', 'id', 'phone'];
-    	return inbound.keys().hasAll(['profile']) && inbound.keys().hasOnly(['profile']) &&
-             inbound.profile is map &&
-             inbound.profile.hasAll(validKeys) && inbound.profile.hasOnly(validKeys) &&
-             inbound.profile.name is string && inbound.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
-             inbound.profile.avatarUrl is string &&
-             inbound.profile.id is string && inbound.profile.id == request.auth.uid &&
-             inbound.profile.phone is string && inbound.profile.phone == request.auth.token.phone_number;
+      let isValid = input.keys().hasAll(['profile']) && input.keys().hasOnly(['profile']) &&
+                    input.profile is map &&
+                    input.profile.hasAll(validKeys) && input.profile.hasOnly(validKeys) &&
+                    input.profile.name is string && input.profile.id is string &&
+                    input.profile.avatarUrl is string && input.profile.phone is string;
+    	return isValid &&
+             input.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
+             input.profile.id == request.auth.uid &&
+             input.profile.phone == request.auth.token.phone_number;
     }
     function validateUserUpdation(request, resource) {
       let existing = resource.data;
-    	let inbound = request.resource.data;
-    	return inbound.keys().hasOnly(['profile']) &&
-             inbound.profile is map &&
-             inbound.profile.hasOnly(['name', 'avatarUrl', 'id', 'phone']) &&
-             inbound.profile.name is string && inbound.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
-             inbound.profile.avatarUrl is string &&
-             inbound.profile.id is string && inbound.profile.id == existing.id &&
-             inbound.profile.phone is string && inbound.profile.phone == existing.phone;
+    	let input = request.resource.data;
+      let isValid = input.keys().hasAll(['profile']) && input.keys().hasOnly(['profile']) &&
+                    input.profile is map && input.profile.hasOnly(['name', 'avatarUrl', 'id', 'phone']) &&
+                    input.profile.name is string && input.profile.avatarUrl is string &&
+                    input.profile.id is string && input.profile.phone is string;
+    	return isValid &&
+             input.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
+             input.profile.id == existing.id &&
+             input.profile.phone == existing.phone;
     }
     function isAMember(request, resource) {
     	return signedIn(request) && request.auth.uid in resource.data.members;
@@ -43,47 +46,123 @@ service cloud.firestore {
     function validateGroupAdminship(request) {
     	return request.auth.uid in request.resource.data.admins;
     }
+    function validateBCGroupCreation(input, request) {
+      let isValid = input.members.toSet().size() > 2 && input.admins.toSet().size() > 0;
+      let check1 = isValid && input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0]));
+      let check2 = check1 && input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1]));
+      let checkF = check2 && input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2]));
+
+      return checkF && validateGroupMembership(request) && validateGroupAdminship(request);
+    }
+    function validateDMGroupCreation(input, request) {
+      let isValid = input.members.toSet().size() == 2 && input.admins.toSet().size() == 2 &&
+                    input.members[0] == input.admins[0] && input.members[1] == input.admins[1];
+      let check1 = isValid && input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0]));
+      let checkF = check1 && input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1]));
+      
+      return validateGroupMembership(request) && validateGroupAdminship(request) && checkF
+    }
     function validateGroupCreation(request) {
-      let inbound = request.resource.data;
-      let validKeys = ['members', 'admins', 'active', 'type'];
-    	return request.resource.data.hasAll(validKeys) && request.resource.data.hasOnly(validKeys) &&
-             inbound.active is bool && inbound.active == true &&
-             inbound.members is list && validateGroupMembership(request) && inbound.members.size() > 1 &&
-             inbound.admins is list && validateGroupAdminship(request) && inbound.admins.size() > 1 &&
-             inbound.type is string && inbound.type in ['group', 'private'];
+      let input = request.resource.data;
+      let validKeys = ['members', 'admins', 'active', 'type', 'seen', 'timestamp'];
+      let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
+                    input.active is bool && input.members is list &&
+                    input.admins is list && input.type is string &&
+                    input.type in ['broadcast', 'private'] &&
+                    input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
+                    input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
+                    input.timestamp is timestamp;
+    	return isValid && input.active == true &&
+             input.type == 'broadcast'
+               ? validateBCGroupCreation(input, request)
+               : validateDMGroupCreation(input, request);
+    }
+    function validateDMGroupUpdation(input, existing) {
+      return 'seen' in input
+               ? input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
+                 input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
+                 input.seen[request.auth.uid] > existing.timestamp
+               : false;
+    }
+    function validateBCGroupUpdation(input, existing) {
+      let validKeys = ['members', 'admins', 'active'];
+
+      return input.keys().hasOnly(validKeys) &&
+             'active' in input ? input.active is bool && input.active != existing.active : true &&
+             'members' in input
+               ? input.members is list && validateGroupMembership(request) &&
+                 input.members.toSet().size() > 2 &&
+                 input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0])) &&
+                 input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1])) &&
+                 input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2]))
+               : true &&
+             'admins' in input
+               ? input.admins is list && validateGroupAdminship(request) &&
+                 input.admins.toSet().size() > 0
+               : true &&
+             'seen' in input
+               ? input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
+                 input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
+                 input.seen[request.auth.uid] > existing.timestamp
+               : true;
     }
     function validateGroupUpdation(request, resource) {
-      let inbound = request.resource.data;
+      let input = request.resource.data;
       let existing = resource.data;
-      let validKeys = ['members', 'admins', 'active'];
-    	return request.resource.data.hasOnly(validKeys) &&
-             'active' in inbound ? inbound.active is bool && inbound.active != existing.active : true &&
-             'members' in inbound ? inbound.members is list && validateGroupMembership(request) && inbound.members.size() > 1 : true &&
-             'admins' in inbound ? inbound.admins is list && validateGroupAdminship(request) && inbound.admins.size() > 1 : true;
+    	return existing.type == 'private'
+               ? validateDMGroupUpdation(input, existing)
+               : validateBCGroupUpdation(input, existing);
     }
     function isGroupActive(resource) {
       return resource.data.active
     }
-    function validateMessageCreation(request) {
-      let inbound = request.resource.data;
-      let validKeys = ['by', 'timestamp', 'expiry', 'text', 'type'];
-      return request.resource.data.hasAll(validKeys) && request.resource.data.hasOnly(validKeys) &&
-             inbound.by is string && inbound.by == request.auth.uid &&
-             inbound.timestamp is timestamp &&
-             inbound.expiry is timestamp && inbound.expiry.toMillis() - inbound.timestamp.toMillis() == 1296000000 &&
-             inbound.text is string &&
-             inbound.type is string && inbound.type in ['text', 'image', 'video', 'doc', 'meta:edit', 'meta:delete'];
+    function validateMessageCreation(request, chatId) {
+      let input = request.resource.data;
+      let validKeys = ['by', 'timestamp', 'expiry', 'text', 'type', 'unseenCount'];
+      let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
+                    input.by is string && input.timestamp is timestamp &&
+                    input.expiry is timestamp && input.text is string &&
+                    input.unseenCount is int &&
+                    input.unseenCount == get(/databases/$(database)/documents/groups/$(chatId)).data.members.size();
+      let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
+      return isValid && input.by == request.auth.uid &&
+             delta > 1292400000 && delta < 1296000000
+    }
+    function validateMessageUpdation(request, chatId) {
+      let input = request.resource.data;
+      let validUpdationKeys = ['type', 'modified', 'text', 'id', 'expiry'];
+      let validDeletionKeys = ['type', 'id', 'expiry'];
+      let isValid = 'type' in request.resource.data && request.resource.data.type is string &&
+                    input.type == 'meta:edit'
+                      ? input.keys().hasAll(validUpdationKeys) && input.keys().hasOnly(validUpdationKeys) &&
+                        input.modified is timestamp && input.text is string &&
+                        input.id is string && input.expiry is timestamp
+                      : input.keys().hasAll(validDeletionKeys) && input.keys().hasOnly(validDeletionKeys) &&
+                        input.id is string && input.expiry is timestamp;
+      let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
+      let message = get(/databases/$(database)/documents/groups/$(chatId)/messages/$(request.resource.data.id)).data;
+      return isValid && message.by == request.auth.uid &&
+             delta > 82800000 && delta < 86400000;
+    }
+    function validateMessage(request, chatId) {
+      let input = request.resource.data;
+      return 'type' in input && input.type is string &&
+             input.type in ['text', 'image', 'video', 'doc']
+               ? validateMessageCreation(request, chatId)
+               : input.type in ['meta:edit', 'meta:delete']
+                 ? validateMessageUpdation(request, chatId)
+                 : false;
     }
     function validateMessageDeletion(request, resource) {
       return request.auth.uid == resource.data.by;
     }
-    function validateRecentMessageUpdation(request, resource) {
-      let inbound = request.resource.data;
-      let existing = resource.data;
-      let validKeys = ['modified', 'text'];
-      return request.resource.data.hasAll(validKeys) && request.resource.data.hasOnly(validKeys) &&
-             inbound.modified is timestamp &&
-             inbound.text is string && inbound.text != existing.text;
+    function validateRecentMessageUpdation(request) {
+      let input = request.resource.data;
+      let validKeys = ['by', 'timestamp', 'text', 'type'];
+      return input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
+             input.by is string && input.by == request.auth.uid &&
+             input.timestamp is timestamp && input.text is string &&
+             input.type is string && input.type in ['text', 'image', 'video', 'doc'];
     }
 
     match /publicKeys/{userId} {
@@ -117,14 +196,18 @@ service cloud.firestore {
     // No updation allowed (editing messages is achieved through creating a meta message)
     // A user can only delete their own messages
     match /groups/{chatId}/messages/{messageId} {
-      allow create: if signedIn(request) && validateMessageCreation(request)
-      allow update: if false
-      allow delete: if signedIn(request) && validateMessageDeletion(request, resource)
+      allow create: if signedIn(request) && validateMessage(request, chatId)
+      allow update: if signedIn(request) &&
+                    request.resource.data.hasAll(['unseenCount']) && request.resource.data.hasOnly(['unseenCount']) &&
+                    request.resource.data.unseenCount is int &&
+                    request.resource.data.unseenCount == resource.data.unseenCount - 1
+      allow delete: if signedIn(request) &&
+                    (validateMessageDeletion(request, resource) || resource.data.unseenCount == 0)
     }
 
     match /groups/{chatId}/recentMsg/{docName} {
-      allow create: if docName == 'default' && signedIn(request) && validateMessageCreation(request)
-      allow update: if docName == 'default' && signedIn(request) && validateRecentMessageUpdation(request, resource)
+      allow create: if docName == 'default' && signedIn(request) && validateMessageCreation(request, chatId)
+      allow update: if docName == 'default' && signedIn(request) && validateRecentMessageUpdation(request)
       allow delete: if docName == 'default' && signedIn(request) && validateMessageDeletion(request, resource)
     }
   }
