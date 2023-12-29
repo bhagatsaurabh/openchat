@@ -5,6 +5,10 @@ defineProps({
   chatList: {
     type: Array,
     default: () => []
+  },
+  query: {
+    type: String,
+    default: ''
   }
 });
 </script>
@@ -113,6 +117,6 @@ defineProps({
 
 <style scoped>
 .chat-list {
-  height: calc(100vh - var(--header-height) - 3.25rem);
+  height: 100%;
 }
 </style>

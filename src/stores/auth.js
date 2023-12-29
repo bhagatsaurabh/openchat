@@ -11,6 +11,7 @@ auth.useDeviceLanguage();
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
+  const name = ref(null);
   const status = ref('pending');
   const unsubFn = ref(null);
 
@@ -78,6 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user,
+    name,
     status,
     setUser,
     setStatus,

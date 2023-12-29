@@ -4,14 +4,27 @@ import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import Icon from '../Common/Icon/Icon.vue';
 import Button from '../Common/Button/Button.vue';
+import InputText from '../Common/InputText/InputText.vue';
 
 const authStore = useAuthStore();
 const isBusy = ref(false);
+const name = ref(null);
+const inputEl = ref(null);
 
 const handleContinue = async () => {
+  if (inputEl.value.validate(name.value)) return;
+
   isBusy.value = true;
+  authStore.name = name.value;
   await authStore.signIn('guest');
   isBusy.value = false;
+};
+const validateName = (val) => {
+  if (!val) return 'Provide a name';
+  if (!/^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/.test(val)) {
+    return 'Enter a valid name';
+  }
+  return null;
 };
 </script>
 
@@ -47,6 +60,16 @@ const handleContinue = async () => {
       </ul>
     </h4>
   </section>
+  <section class="name-input">
+    <InputText
+      ref="inputEl"
+      type="text"
+      placeholder="Name"
+      v-model="name"
+      :attrs="{ spellcheck: false, autocomplete: 'off' }"
+      :validator="validateName"
+    />
+  </section>
   <section class="controls">
     <Button class="continue-action" @click="handleContinue" :busy="isBusy" async accented>Continue</Button>
   </section>
@@ -55,5 +78,8 @@ const handleContinue = async () => {
 <style scoped>
 .continue-action {
   margin-left: auto;
+}
+.name-input span {
+  width: 100%;
 }
 </style>

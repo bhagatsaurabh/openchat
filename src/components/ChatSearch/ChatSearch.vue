@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 
+import { throttle } from '@/utils/utils';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
 import Button from '@/components/Common/Button/Button.vue';
@@ -12,8 +13,9 @@ const query = ref('');
 const filterUnread = ref(false);
 
 const handleClear = () => (query.value = '');
+const throttledEmit = throttle(() => emit('search', query.value), 1000);
 
-watch(query, () => emit('search', query.value));
+watch(query, () => throttledEmit());
 </script>
 
 <template>
