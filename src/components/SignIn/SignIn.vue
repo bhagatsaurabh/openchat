@@ -45,6 +45,20 @@ watch(
     if (auth.user) {
       const { publicKey } = await generatePrivateKey();
       await db.storePublicKey(publicKey);
+      await db.storeUserInfo(
+        auth.user.phoneNumber
+          ? {
+              name: auth.name,
+              avatarUrl: '',
+              id: auth.user.uid,
+              phone: auth.user.phoneNumber
+            }
+          : {
+              name: auth.name,
+              avatarUrl: '',
+              id: auth.user.uid
+            }
+      );
       router.push('/');
     }
   }

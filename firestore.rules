@@ -11,28 +11,32 @@ service cloud.firestore {
     }
     function validateUserCreation(request) {
       let input = request.resource.data;
-      let validKeys = ['name', 'avatarUrl', 'id', 'phone'];
-      let isValid = input.keys().hasAll(['profile']) && input.keys().hasOnly(['profile']) &&
-                    input.profile is map &&
-                    input.profile.hasAll(validKeys) && input.profile.hasOnly(validKeys) &&
-                    input.profile.name is string && input.profile.id is string &&
-                    input.profile.avatarUrl is string && input.profile.phone is string;
+      let validKeys = ['name', 'avatarUrl', 'id'];
+      let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys.concat(['phone'])) &&
+                    input.name is string && input.id is string &&
+                    input.avatarUrl is string &&
+                    ('phone' in input ? input.phone is string : true);
     	return isValid &&
-             input.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
-             input.profile.id == request.auth.uid &&
-             input.profile.phone == request.auth.token.phone_number;
+             input.name.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$') &&
+             input.id == request.auth.uid &&
+             ('phone' in input ? input.phone == request.auth.token.phone_number : true);
     }
     function validateUserUpdation(request, resource) {
       let existing = resource.data;
     	let input = request.resource.data;
-      let isValid = input.keys().hasAll(['profile']) && input.keys().hasOnly(['profile']) &&
-                    input.profile is map && input.profile.hasOnly(['name', 'avatarUrl', 'id', 'phone']) &&
-                    input.profile.name is string && input.profile.avatarUrl is string &&
-                    input.profile.id is string && input.profile.phone is string;
+      let isValid = input.keys().hasOnly(['name', 'avatarUrl', 'id', 'phone']) &&
+                    input.name is string && input.avatarUrl is string &&
+                    input.id is string && input.phone is string;
     	return isValid &&
-             input.profile.name.matches('.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{4,}') &&
-             input.profile.id == existing.id &&
-             input.profile.phone == existing.phone;
+             input.name.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$') &&
+             input.id == existing.id &&
+             ('phone' in existing
+               ? input.phone == existing.phone
+               : ('phone' in input
+                   ? input.phone == request.auth.token.phone_number
+                   : true
+                 )
+             );
     }
     function isAMember(request, resource) {
     	return signedIn(request) && request.auth.uid in resource.data.members;
@@ -73,38 +77,38 @@ service cloud.firestore {
                     input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
                     input.timestamp is timestamp;
     	return isValid && input.active == true &&
-             input.type == 'broadcast'
+             (input.type == 'broadcast'
                ? validateBCGroupCreation(input, request)
-               : validateDMGroupCreation(input, request);
+               : validateDMGroupCreation(input, request));
     }
     function validateDMGroupUpdation(input, existing) {
       return 'seen' in input
-               ? input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
+               ? (input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
-                 input.seen[request.auth.uid] > existing.timestamp
+                 input.seen[request.auth.uid] > existing.timestamp)
                : false;
     }
     function validateBCGroupUpdation(input, existing) {
       let validKeys = ['members', 'admins', 'active'];
 
       return input.keys().hasOnly(validKeys) &&
-             'active' in input ? input.active is bool && input.active != existing.active : true &&
-             'members' in input
-               ? input.members is list && validateGroupMembership(request) &&
+             ('active' in input ? input.active is bool && input.active != existing.active : true) &&
+             ('members' in input
+               ? (input.members is list && validateGroupMembership(request) &&
                  input.members.toSet().size() > 2 &&
                  input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0])) &&
                  input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1])) &&
-                 input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2]))
-               : true &&
-             'admins' in input
-               ? input.admins is list && validateGroupAdminship(request) &&
-                 input.admins.toSet().size() > 0
-               : true &&
-             'seen' in input
-               ? input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
+                 input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2])))
+               : true) &&
+             ('admins' in input
+               ? (input.admins is list && validateGroupAdminship(request) &&
+                 input.admins.toSet().size() > 0)
+               : true) &&
+             ('seen' in input
+               ? (input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
-                 input.seen[request.auth.uid] > existing.timestamp
-               : true;
+                 input.seen[request.auth.uid] > existing.timestamp)
+               : true);
     }
     function validateGroupUpdation(request, resource) {
       let input = request.resource.data;
@@ -133,12 +137,12 @@ service cloud.firestore {
       let validUpdationKeys = ['type', 'modified', 'text', 'id', 'expiry'];
       let validDeletionKeys = ['type', 'id', 'expiry'];
       let isValid = 'type' in request.resource.data && request.resource.data.type is string &&
-                    input.type == 'meta:edit'
-                      ? input.keys().hasAll(validUpdationKeys) && input.keys().hasOnly(validUpdationKeys) &&
+                    (input.type == 'meta:edit'
+                      ? (input.keys().hasAll(validUpdationKeys) && input.keys().hasOnly(validUpdationKeys) &&
                         input.modified is timestamp && input.text is string &&
-                        input.id is string && input.expiry is timestamp
-                      : input.keys().hasAll(validDeletionKeys) && input.keys().hasOnly(validDeletionKeys) &&
-                        input.id is string && input.expiry is timestamp;
+                        input.id is string && input.expiry is timestamp)
+                      : (input.keys().hasAll(validDeletionKeys) && input.keys().hasOnly(validDeletionKeys) &&
+                        input.id is string && input.expiry is timestamp));
       let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
       let message = get(/databases/$(database)/documents/groups/$(chatId)/messages/$(request.resource.data.id)).data;
       return isValid && message.by == request.auth.uid &&
@@ -147,11 +151,11 @@ service cloud.firestore {
     function validateMessage(request, chatId) {
       let input = request.resource.data;
       return 'type' in input && input.type is string &&
-             input.type in ['text', 'image', 'video', 'doc']
+             (input.type in ['text', 'image', 'video', 'doc']
                ? validateMessageCreation(request, chatId)
-               : input.type in ['meta:edit', 'meta:delete']
+               : (input.type in ['meta:edit', 'meta:delete']
                  ? validateMessageUpdation(request, chatId)
-                 : false;
+                 : false));
     }
     function validateMessageDeletion(request, resource) {
       return request.auth.uid == resource.data.by;

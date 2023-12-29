@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
@@ -9,17 +9,28 @@ import Modal from '@/components/Common/Modal/Modal.vue';
 import Avatar from '@/components/Avatar/Avatar.vue';
 import ChatSearch from '@/components/ChatSearch/ChatSearch.vue';
 import ChatList from '@/components/ChatList/ChatList.vue';
+import ChatSearchList from '@/components/ChatSearchList/ChatSearchList.vue';
+import Tabs from '@/components/Common/Tabs/Tabs.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
-const query = ref('');
+const activeTab = ref(0);
+const query = ref(null);
+const tabs = ref([
+  { name: 'My Chats', id: 'my-chats', icon: 'chats' },
+  { name: 'Find', id: 'find', icon: 'globe' }
+]);
 
 const handleSignOut = async () => {
   await authStore.signOut();
   router.push('/auth');
 };
 const handleSettings = () => {};
+
+watch(query, () => {
+  if (!query.value) activeTab.value = 0;
+});
 </script>
 
 <template>
@@ -59,7 +70,14 @@ const handleSettings = () => {};
       Are you sure ?
     </Modal>
     <ChatSearch @search="(val) => (query = val)" />
-    <ChatList />
+    <Tabs :tabs="tabs" :active="activeTab" :show-header="!!query" @change="(val) => (activeTab = val)">
+      <template #my-chats>
+        <ChatList :query="query" />
+      </template>
+      <template #find>
+        <ChatSearchList :query="query" />
+      </template>
+    </Tabs>
   </main>
 </template>
 

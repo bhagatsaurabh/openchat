@@ -14,12 +14,14 @@ const phoneUtil = window.libphonenumber.PhoneNumberUtil.getInstance();
 const authStore = useAuthStore();
 const countryCode = ref(null);
 const phoneNum = ref(null);
+const name = ref(null);
 const inputEl = ref(null);
+const nameInputEl = ref(null);
 const captcha = ref(null);
 const isVerifying = ref(false);
 const router = useRouter();
 
-const validate = (val) => {
+const validatePhone = (val) => {
   if (!val) return 'Provide a phone number';
   try {
     if (!phoneUtil.isValidNumber(phoneUtil.parse(`+${countryCode.value}${val}`))) {
@@ -30,12 +32,27 @@ const validate = (val) => {
     return 'Enter a valid phone number';
   }
 };
+const validateName = (val) => {
+  if (!val) return 'Provide a name';
+  if (!/^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/.test(val)) {
+    return 'Enter a valid name';
+  }
+  return null;
+};
 const handleVerify = async () => {
   isVerifying.value = true;
-  if (!inputEl.value.validate(phoneNum.value) && captcha.value.validate()) {
+  if (
+    !nameInputEl.value.validate(name.value) &&
+    !inputEl.value.validate(phoneNum.value) &&
+    captcha.value.validate()
+  ) {
     try {
+      authStore.name = name.value;
       await authStore.signIn('phone', { countryCode: countryCode.value, phoneNum: phoneNum.value });
-      router.push({ hash: '#4', params: { countryCode: countryCode.value, phone: phoneNum.value } });
+      router.push({
+        hash: '#4',
+        params: { countryCode: countryCode.value, phone: phoneNum.value, name: name.value }
+      });
     } catch (error) {
       if (error.code === AuthErrorCodes.CAPTCHA_CHECK_FAILED) {
         captcha.value.invalidate('Captcha check failed, please try again');
@@ -47,6 +64,16 @@ const handleVerify = async () => {
 </script>
 
 <template>
+  <section class="name-input">
+    <InputText
+      ref="nameInputEl"
+      type="text"
+      placeholder="Name"
+      v-model="name"
+      :attrs="{ spellcheck: false, autocomplete: 'off' }"
+      :validator="validateName"
+    />
+  </section>
   <section class="country-input">
     <CountryInput @select="(country) => (countryCode = country[2])" />
     <InputText
@@ -56,7 +83,7 @@ const handleVerify = async () => {
       placeholder="Phone Number"
       v-model="phoneNum"
       :attrs="{ spellcheck: false, autocomplete: 'off' }"
-      :validator="validate"
+      :validator="validatePhone"
     />
   </section>
   <section class="captcha-container">
@@ -80,6 +107,10 @@ const handleVerify = async () => {
 .country-input {
   display: flex;
   align-items: flex-start;
+  margin-top: 0;
+}
+.name-input span {
+  width: 100%;
 }
 .controls {
   margin-top: 1rem;

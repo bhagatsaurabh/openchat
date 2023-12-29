@@ -43,3 +43,21 @@ export const trapFocus = (event, el, bound) => {
     }
   }
 };
+
+export const throttle = (cb, delay) => {
+  let timerHandle, args;
+  const throttled = (...a) => {
+    args = a;
+    if (!timerHandle) {
+      cb(...args);
+      args = null;
+      timerHandle = setTimeout(() => {
+        timerHandle = null;
+        if (args) {
+          throttled(...args);
+        }
+      }, delay);
+    }
+  };
+  return throttled;
+};
