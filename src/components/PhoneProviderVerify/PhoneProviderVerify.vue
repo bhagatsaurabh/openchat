@@ -31,7 +31,6 @@ const startResendTimer = () => {
   }, 1000);
 };
 const validate = (val) => {
-  console.log(val);
   if (!val) return 'Provide the 6 digit code';
   if (isNaN(parseInt(val)) || val.toString().length !== 6) {
     return 'Enter a valid code';
@@ -44,6 +43,7 @@ const handleSubmit = async () => {
   if (!codeEl.value.validate(code.value)) {
     try {
       await authStore.signIn('phone-verify', { code: code.value });
+      isSigningIn.value = false;
     } catch (error) {
       if (error.code === AuthErrorCodes.INVALID_CODE) {
         codeEl.value.invalidate('Wrong code. Try again');

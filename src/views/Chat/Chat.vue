@@ -16,7 +16,7 @@ const authStore = useAuthStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
 const activeTab = ref(0);
-const query = ref(null);
+const query = ref('');
 const tabs = ref([
   { name: 'My Chats', id: 'my-chats', icon: 'chats' },
   { name: 'Find', id: 'find', icon: 'globe' }

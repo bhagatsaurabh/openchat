@@ -1,8 +1,8 @@
-import { updateObject } from '@/database/database';
+import { updateObject, getObject } from '@/database/database';
 
 const crypto = window.crypto.subtle;
 
-export const generatePrivateKey = async () => {
+export const generatePrivateKey = async (uid) => {
   const key = await crypto.generateKey(
     {
       name: 'RSA-OAEP',
@@ -16,14 +16,19 @@ export const generatePrivateKey = async () => {
 
   const publicKey = await crypto.exportKey('jwk', key.publicKey);
 
-  await updateObject('keys', key.privateKey, 'private');
-  await updateObject('keys', key.publicKey, 'public');
+  await updateObject('keys', key.privateKey, `private:${uid}`);
+  await updateObject('keys', key.publicKey, `public:${uid}`);
 
   return { key, publicKey };
 };
 
 export const importPublicKey = async (data) => {
-  return await crypto.importKey('jwk', data, { name: 'RSA-OAEP', hash: 'SHA-512' }, true, []);
+  const key = await crypto.importKey('jwk', data, { name: 'RSA-OAEP', hash: 'SHA-512' }, true, []);
+  return key;
+};
+
+export const getPublicKey = async (uid) => {
+  return await getObject('keys', `public:${uid}`);
 };
 
 export const generateGroupKey = async (publicKeys) => {

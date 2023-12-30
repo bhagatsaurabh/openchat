@@ -1,34 +1,18 @@
 <script setup>
 import { computed } from 'vue';
 
-import { days } from '@/utils/constants';
-
 const props = defineProps({
   meta: Object
 });
 const emit = defineEmits(['select']);
 
-const msInADay = 1000 * 60 * 60 * 24;
-const avatarUrl = computed(
-  () => props.meta.avatarUrl ?? `/assets/icons/avatar${props.meta.type === 'group' ? '-group' : ''}.png`
-);
-const timestamp = computed(() => {
-  const date = new Date(props.meta.lastMsg.timestamp);
-  const today = new Date();
-  const delta = (today - date) / msInADay;
-  if (delta < 1) {
-    return date.toTimeString().slice(0, 5);
-  } else if (delta < 5) {
-    return days[date.getDay()];
-  } else {
-    return date.toISOString().slice(0, 10).replaceAll('-', '/');
-  }
-});
+const avatarUrl = computed(() => (!props.meta.avatarUrl ? '/assets/icons/user.png' : props.meta.avatarUrl));
+const isVerified = computed(() => !!props.meta.phone);
 </script>
 
 <template>
-  <div class="chat-item" tabindex="0" @click="emit('select', meta)">
-    <span class="avatar">
+  <div class="user-item" tabindex="0" @click="emit('select', meta)">
+    <span class="avatar" :class="{ verified: isVerified }">
       <img :src="avatarUrl" />
     </span>
     <div class="details">
@@ -36,17 +20,17 @@ const timestamp = computed(() => {
         <span class="name">
           {{ meta.name }}
         </span>
-        <span class="time">
-          {{ timestamp }}
+        <span class="status">
+          {{ isVerified ? 'Verified' : 'Guest' }}
         </span>
       </div>
-      <div class="msg">{{ meta.lastMsg.data }}</div>
+      <div class="phone">{{ meta.phone }}</div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.chat-item {
+.user-item {
   display: flex;
   padding: 0.5rem 1rem 0.5rem 1rem;
   align-items: center;
@@ -59,6 +43,24 @@ const timestamp = computed(() => {
   border-radius: 5rem;
   font-size: 0;
   border: 1px solid var(--c-border-0);
+}
+.avatar.verified {
+  border: 1px solid var(--c-accent);
+}
+.avatar::after {
+  content: '';
+  position: absolute;
+  bottom: -0.125rem;
+  width: 1rem;
+  box-shadow: 0 0 5px 0px grey;
+  border-radius: 1rem;
+  right: -0.125rem;
+  height: 1rem;
+  background-image: url(/assets/icons/verified.png);
+  background-size: 100%;
+}
+.avatar img {
+  opacity: 0.3;
 }
 .details {
   flex: 1;
@@ -75,10 +77,10 @@ const timestamp = computed(() => {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.title .time {
+.title .status {
   color: var(--c-text-2);
 }
-.msg {
+.phone {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;

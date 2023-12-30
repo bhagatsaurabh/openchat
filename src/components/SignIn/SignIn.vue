@@ -10,14 +10,11 @@ import PhoneProvider from '@/components/PhoneProvider/PhoneProvider.vue';
 import AnonymousProvider from '@/components/AnonymousProvider/AnonymousProvider.vue';
 import PhoneProviderVerify from '@/components/PhoneProviderVerify/PhoneProviderVerify.vue';
 import { useAuthStore } from '@/stores/auth';
-import { generatePrivateKey } from '@/utils/crypto';
-import { useRemoteDBStore } from '@/stores/database';
 
 const emit = defineEmits(['home']);
 
 const router = useRouter();
 const auth = useAuthStore();
-const db = useRemoteDBStore();
 
 const prevStep = ref(null);
 const currStep = ref(0);
@@ -39,31 +36,6 @@ const handleForward = (nextStep) => {
   router.push({ hash: `#${nextStep}` });
 };
 
-watch(
-  () => auth.user,
-  async () => {
-    if (auth.user) {
-      const { publicKey } = await generatePrivateKey();
-      await db.storePublicKey(publicKey);
-      await db.storeUserInfo(
-        auth.user.phoneNumber
-          ? {
-              name: auth.name,
-              avatarUrl: '',
-              id: auth.user.uid,
-              phone: auth.user.phoneNumber
-            }
-          : {
-              name: auth.name,
-              avatarUrl: '',
-              id: auth.user.uid
-            }
-      );
-      router.push('/');
-    }
-  }
-);
-
 let unregisterGuard = () => {};
 onMounted(() => {
   auth.registerAuthListener();
@@ -75,6 +47,13 @@ onMounted(() => {
   });
 });
 onBeforeUnmount(() => unregisterGuard());
+
+watch(
+  () => auth.status,
+  () => {
+    if (auth.status === 'signedin') router.push('/');
+  }
+);
 </script>
 
 <template>
