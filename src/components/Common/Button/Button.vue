@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 import Icon from '../Icon/Icon.vue';
 import Spinner from '../Spinner/Spinner.vue';
 
@@ -52,10 +53,17 @@ defineProps({
     default: false
   }
 });
+
+const el = ref(null);
+
+defineExpose({
+  native: el
+});
 </script>
 
 <template>
   <button
+    ref="el"
     :class="{
       control: true,
       circular,
