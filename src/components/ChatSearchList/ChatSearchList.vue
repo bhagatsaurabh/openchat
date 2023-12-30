@@ -1,5 +1,5 @@
 <script setup>
-import { watch, ref, computed } from 'vue';
+import { watch, ref, computed, onMounted, onUnmounted } from 'vue';
 
 import { useRemoteDBStore } from '@/stores/database';
 import ChatSearchListItem from '@/components/ChatSearchListItem/ChatSearchListItem.vue';
@@ -17,6 +17,8 @@ const list = ref([]);
 const page = ref(0);
 const numPages = ref(0);
 const isBusy = ref(false);
+const listEl = ref(null);
+const ctrlEl = ref(null);
 const fbType = computed(() => {
   if (props.query.length < 3) return 'q-lt-3';
   else if (!isBusy.value && page.value === numPages.value && list.value.length !== 0) return 'eos';
@@ -34,10 +36,15 @@ const searchUsers = async () => {
   } else {
     const { users } = await db.searchUsers(props.query, page.value);
     list.value = [...list.value, ...users];
+    page.value += 1;
   }
   isBusy.value = false;
 };
-
+const handleNextPage = async (entries) => {
+  if (!isBusy.value && entries[0].isIntersecting && list.value.length > 0 && page.value !== numPages.value) {
+    await searchUsers();
+  }
+};
 const handleSelect = (user) => {
   console.log(user);
 };
@@ -56,17 +63,30 @@ watch(
     }
   }
 );
+
+let observer;
+onMounted(() => {
+  observer = new IntersectionObserver(handleNextPage, {
+    root: listEl.value,
+    rootMargin: '0px',
+    threshold: 1.0
+  });
+  observer.observe(ctrlEl.value.native);
+});
+onUnmounted(() => observer?.disconnect());
 </script>
 
 <template>
-  <section class="chat-search-list scroll-shadows-0 scroll-shadows">
+  <section ref="listEl" class="chat-search-list scroll-shadows-0 scroll-shadows">
     <ChatSearchListItem v-for="user in list" :key="user.id" :meta="user" @select="handleSelect" />
     <div class="list-fb">
       <h3 v-if="fbType === 'q-lt-3'"><i>Please type at least 3 characters to search</i></h3>
       <h3 v-if="fbType === 'eos'"><i>End of search</i></h3>
       <h3 v-if="fbType === 'not-found'"><i>No users found</i></h3>
       <Button
-        v-show="query.length >= 3 && (isBusy || page !== numPages)"
+        ref="ctrlEl"
+        @click="searchUsers"
+        v-show="(query.length >= 3 && isBusy) || page !== numPages"
         class="control"
         :complementary="false"
         :busy="isBusy"

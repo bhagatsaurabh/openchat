@@ -30,6 +30,7 @@ const handleSettings = () => {};
 
 watch(query, () => {
   if (!query.value) activeTab.value = 0;
+  else activeTab.value = 1;
 });
 </script>
 

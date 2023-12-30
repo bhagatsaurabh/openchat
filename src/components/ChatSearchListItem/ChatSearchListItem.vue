@@ -47,7 +47,7 @@ const isVerified = computed(() => !!props.meta.phone);
 .avatar.verified {
   border: 1px solid var(--c-accent);
 }
-.avatar::after {
+.avatar.verified::after {
   content: '';
   position: absolute;
   bottom: -0.125rem;
