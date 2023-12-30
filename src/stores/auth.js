@@ -1,10 +1,18 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import { getAuth, onAuthStateChanged, signInWithPhoneNumber, signInAnonymously } from 'firebase/auth';
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPhoneNumber,
+  signInAnonymously,
+  getAdditionalUserInfo
+} from 'firebase/auth';
 
 import { app } from '@/config/firebase';
 import { useNotificationStore } from './notification';
 import { useRecaptchaStore } from './recaptcha';
+import { useRemoteDBStore } from '@/stores/database';
+import { generatePrivateKey, getPublicKey } from '@/utils/crypto';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
@@ -14,9 +22,11 @@ export const useAuthStore = defineStore('auth', () => {
   const name = ref(null);
   const status = ref('pending');
   const unsubFn = ref(null);
+  const encKey = ref(null);
 
   const captcha = useRecaptchaStore();
   const notify = useNotificationStore();
+  const db = useRemoteDBStore();
 
   function setUser(signedInUser) {
     user.value = signedInUser;
@@ -27,10 +37,13 @@ export const useAuthStore = defineStore('auth', () => {
   function registerAuthListener() {
     if (unsubFn.value) return;
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
-        setStatus('signedin');
+    const unsubscribe = onAuthStateChanged(auth, async (usr) => {
+      if (usr) {
+        setUser(usr);
+        if (status.value !== 'signingIn') {
+          await handleExistingUser();
+          setStatus('signedin');
+        }
       } else {
         setStatus('signedout');
       }
@@ -40,7 +53,22 @@ export const useAuthStore = defineStore('auth', () => {
   function deRegisterAuthListener() {
     unsubFn.value();
   }
+  async function handleNewUser() {
+    const { publicKey } = await generatePrivateKey(user.value.uid);
+    encKey.value = publicKey;
+    await db.storePublicKey(publicKey);
+    await db.storeUserInfo({
+      name: name.value,
+      avatarUrl: '',
+      id: user.value.uid,
+      phone: user.value.phoneNumber
+    });
+  }
+  async function handleExistingUser() {
+    encKey.value = await getPublicKey(user.value.uid);
+  }
   async function signIn(type, options) {
+    setStatus('signingIn');
     if (type === 'phone') {
       const { countryCode, phoneNum } = options;
       try {
@@ -56,11 +84,21 @@ export const useAuthStore = defineStore('auth', () => {
     } else if (type === 'phone-verify') {
       const { code } = options;
       const result = await window.phoneConfirmation?.confirm(code);
-      setUser(result.user);
+      if (getAdditionalUserInfo(result).isNewUser) {
+        await handleNewUser();
+      } else {
+        await handleExistingUser();
+      }
+      setStatus('signedin');
     } else if (type === 'guest') {
       try {
         const result = await signInAnonymously(auth);
-        setUser(result.user);
+        if (getAdditionalUserInfo(result).isNewUser) {
+          await handleNewUser();
+        } else {
+          await handleExistingUser();
+        }
+        setStatus('signedin');
       } catch (error) {
         console.log(error);
         notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
@@ -71,6 +109,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await auth.signOut();
       user.value = null;
+      name.value = null;
+      encKey.value = null;
     } catch (error) {
       console.log(error);
       notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
@@ -81,6 +121,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     name,
     status,
+    encKey,
     setUser,
     setStatus,
     registerAuthListener,

@@ -11,6 +11,10 @@ defineProps({
     default: ''
   }
 });
+
+const handleSelect = (chat) => {
+  console.log(chat);
+};
 </script>
 
 <template>

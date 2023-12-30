@@ -1,24 +1,15 @@
 import { defineStore } from 'pinia';
-import {
-  doc,
-  setDoc,
-  collection,
-  where,
-  query,
-  getDocs,
-  or,
-  orderBy,
-  limit,
-  startAfter
-} from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
+import { fetchUsers } from '@/services/user-search';
 
 export const useRemoteDBStore = defineStore('database', () => {
   const authStore = useAuthStore();
 
   async function storeUserInfo(userInfo) {
+    if (!userInfo.phone) delete userInfo.phone;
     try {
       await setDoc(doc(remoteDB, 'users', authStore.user.uid), userInfo);
     } catch (e) {
@@ -32,26 +23,13 @@ export const useRemoteDBStore = defineStore('database', () => {
       console.error(e);
     }
   }
-  async function searchUsers(searchQ, lastDoc) {
-    let q;
-    if (lastDoc) {
-      q = query(
-        collection(remoteDB, 'users'),
-        or(where('profile.name', '==', searchQ), where('profile.phone', '==', searchQ)),
-        orderBy('profile.name'),
-        startAfter(lastDoc),
-        limit(10)
-      );
-    } else {
-      q = query(
-        collection(remoteDB, 'users'),
-        or(where('profile.name', '==', searchQ), where('profile.phone', '==', searchQ)),
-        orderBy('profile.name'),
-        limit(10)
-      );
+  async function searchUsers(searchQ, page) {
+    try {
+      const data = await (await fetchUsers(searchQ, page)).json();
+      return { users: data.hits, nbPages: data.nbPages };
+    } catch (error) {
+      console.log(error);
     }
-    const querySnapshot = await getDocs(q);
-    return querySnapshot;
   }
 
   return {
