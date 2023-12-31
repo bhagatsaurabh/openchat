@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue';
 
+import Button from '@/components/Common/Button/Button.vue';
+
 const props = defineProps({
   type: {
     type: String,
@@ -27,12 +29,22 @@ const props = defineProps({
     default: 'Lazy',
     validator: (val) => ['Lazy', 'Eager', 'Off'].includes(val)
   },
+  async: {
+    type: Boolean,
+    default: false
+  },
+  action: {
+    type: Function,
+    default: () => true
+  },
   modelValue: String
 });
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'save']);
 
 const native = ref(null);
+const org = ref(props.modelValue);
 const errormsg = ref('');
+const isBusy = ref(false);
 
 const handleInput = (e) => {
   if (props.validation === 'Eager') validate(e.target.value);
@@ -52,6 +64,13 @@ const invalidate = (msg) => {
   errormsg.value = msg;
   native.value?.setCustomValidity(errormsg.value);
 };
+const handleAction = async () => {
+  isBusy.value = true;
+  if (await props.action()) {
+    org.value = props.modelValue;
+  }
+  isBusy.value = false;
+};
 
 defineExpose({ native, validate, invalidate });
 </script>
@@ -63,7 +82,8 @@ defineExpose({ native, validate, invalidate });
       blank: !modelValue,
       'no-title': noTitle,
       invalid: !!errormsg,
-      'mt-1p5': validation !== 'Off'
+      'mt-1p5': validation !== 'Off',
+      async
     }"
     :data-placeholder="placeholder"
   >
@@ -72,8 +92,21 @@ defineExpose({ native, validate, invalidate });
       :value="modelValue"
       @input="handleInput"
       :type="type"
-      v-bind="attrs"
       :placeholder="noTitle ? placeholder : null"
+      :disabled="async ? (isBusy ? true : null) : null"
+      v-bind="attrs"
+    />
+    <Button
+      @click="handleAction"
+      class="control"
+      v-if="async && modelValue !== org"
+      icon="check"
+      :complementary="false"
+      :spinner-size="2"
+      :busy="isBusy"
+      async
+      circular
+      flat
     />
     <Transition name="slide">
       <span v-if="validation !== 'Off' && !!errormsg" class="errormsg">{{ errormsg }}</span>
@@ -114,6 +147,16 @@ defineExpose({ native, validate, invalidate });
   transition: all var(--fx-transition-duration-0) ease-out;
   top: 75%;
   font-size: 0.75rem;
+}
+
+.input .control {
+  position: absolute;
+  right: 0;
+  top: 0.1rem;
+  padding: 0.4rem;
+}
+.input.async input {
+  padding-right: 2.5rem;
 }
 
 .input.blank::before {

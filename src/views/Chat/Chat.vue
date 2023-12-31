@@ -6,15 +6,17 @@ import { useAuthStore } from '@/stores/auth';
 import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
-import Avatar from '@/components/Avatar/Avatar.vue';
+import Avatar from '@/components/Common/Avatar/Avatar.vue';
 import ChatSearch from '@/components/ChatSearch/ChatSearch.vue';
 import ChatList from '@/components/ChatList/ChatList.vue';
 import ChatSearchList from '@/components/ChatSearchList/ChatSearchList.vue';
 import Tabs from '@/components/Common/Tabs/Tabs.vue';
+import Profile from '@/components/Profile/Profile.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
+const showProfile = ref(false);
 const activeTab = ref(0);
 const query = ref('');
 const tabs = ref([
@@ -37,7 +39,7 @@ watch(query, () => {
 <template>
   <Header border>
     <template #left>
-      <Avatar class="ml-0p5" />
+      <Avatar class="ml-0p5" @open="showProfile = true" />
     </template>
     <template #right>
       <Button
@@ -79,6 +81,7 @@ watch(query, () => {
         <ChatSearchList :query="query" />
       </template>
     </Tabs>
+    <Profile v-if="showProfile" @back="() => (showProfile = false)" />
   </main>
 </template>
 

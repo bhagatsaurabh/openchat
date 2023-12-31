@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
@@ -15,6 +15,15 @@ export const useRemoteDBStore = defineStore('database', () => {
     } catch (e) {
       console.log(e);
     }
+  }
+  async function updateProfile(profile) {
+    try {
+      await updateDoc(doc(remoteDB, 'users', authStore.user.uid), profile);
+      return true;
+    } catch (error) {
+      console.log(error);
+    }
+    return false;
   }
   async function storePublicKey(publicKey) {
     try {
@@ -35,6 +44,7 @@ export const useRemoteDBStore = defineStore('database', () => {
   return {
     storePublicKey,
     storeUserInfo,
-    searchUsers
+    searchUsers,
+    updateProfile
   };
 });
