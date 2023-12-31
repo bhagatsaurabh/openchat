@@ -61,3 +61,34 @@ export const throttle = (cb, delay) => {
   };
   return throttled;
 };
+
+export const getImageDimensions = async (file) => {
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  await img.decode();
+  return {
+    img,
+    width: img.width,
+    height: img.height
+  };
+};
+
+export const resizeImage = async (image, width, height) => {
+  const bitmap = await createImageBitmap(image, {
+    resizeWidth: width,
+    resizeHeight: height
+  });
+
+  return bitmap;
+
+  /* const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('bitmaprenderer');
+  ctx.transferFromImageBitmap(bitmap);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve));
+  const resizedImage = new Image();
+  resizedImage.src = URL.createObjectURL(blob);
+  await resizedImage.decode();
+  return resizedImage; */
+};

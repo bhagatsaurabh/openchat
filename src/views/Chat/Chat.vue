@@ -29,6 +29,12 @@ const handleSignOut = async () => {
   router.push('/auth');
 };
 const handleSettings = () => {};
+const handleSelectExisting = (data) => {
+  console.log(data);
+};
+const handleSelectNew = (data) => {
+  console.log(data);
+};
 
 watch(query, () => {
   if (!query.value) activeTab.value = 0;
@@ -75,10 +81,10 @@ watch(query, () => {
     <ChatSearch @search="(val) => (query = val)" />
     <Tabs :tabs="tabs" :active="activeTab" :show-header="!!query" @change="(val) => (activeTab = val)">
       <template #my-chats>
-        <ChatList :query="query" />
+        <ChatList :query="query" @select="handleSelectExisting" />
       </template>
       <template #find>
-        <ChatSearchList :query="query" />
+        <ChatSearchList :query="query" @select="handleSelectNew" />
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />

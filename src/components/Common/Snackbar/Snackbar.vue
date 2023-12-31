@@ -42,5 +42,6 @@ const emit = defineEmits(['dismiss', 'action']);
 }
 .snackbar .message {
   margin-right: 0.5rem;
+  flex: 1;
 }
 </style>
