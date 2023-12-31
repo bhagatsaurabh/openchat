@@ -12,6 +12,8 @@ defineProps({
   }
 });
 
+const emit = defineEmits(['select']);
+
 const handleSelect = (chat) => {
   console.log(chat);
 };
@@ -25,6 +27,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -35,6 +38,7 @@ const handleSelect = (chat) => {
           timestamp: '2023-12-15T10:00:00'
         }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -45,6 +49,7 @@ const handleSelect = (chat) => {
           timestamp: '2023-12-10T10:00:00'
         }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -52,6 +57,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -59,6 +65,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -66,6 +73,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -73,6 +81,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -80,6 +89,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -87,6 +97,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -94,6 +105,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -101,6 +113,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -108,6 +121,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
     <ChatListItem
       :meta="{
@@ -115,6 +129,7 @@ const handleSelect = (chat) => {
         name: 'Test Group',
         lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
       }"
+      @select="(e) => emit('select', e)"
     />
   </section>
 </template>

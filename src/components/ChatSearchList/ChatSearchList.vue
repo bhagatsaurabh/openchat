@@ -1,5 +1,5 @@
 <script setup>
-import { watch, ref, computed, onMounted, onUnmounted } from 'vue';
+import { watch, ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
 import { useRemoteDBStore } from '@/stores/database';
 import ChatSearchListItem from '@/components/ChatSearchListItem/ChatSearchListItem.vue';
@@ -11,6 +11,7 @@ const props = defineProps({
     default: ''
   }
 });
+const emit = defineEmits(['select']);
 
 const db = useRemoteDBStore();
 const list = ref([]);
@@ -45,9 +46,6 @@ const handleNextPage = async (entries) => {
     await searchUsers();
   }
 };
-const handleSelect = (user) => {
-  console.log(user);
-};
 
 watch(
   () => props.query,
@@ -73,12 +71,17 @@ onMounted(() => {
   });
   observer.observe(ctrlEl.value.native);
 });
-onUnmounted(() => observer?.disconnect());
+onBeforeUnmount(() => observer?.disconnect());
 </script>
 
 <template>
   <section ref="listEl" class="chat-search-list scroll-shadows-0 scroll-shadows">
-    <ChatSearchListItem v-for="user in list" :key="user.id" :meta="user" @select="handleSelect" />
+    <ChatSearchListItem
+      v-for="user in list"
+      :key="user.id"
+      :meta="user"
+      @select="() => emit('select', user)"
+    />
     <div class="list-fb">
       <h3 v-if="fbType === 'q-lt-3'"><i>Please type at least 3 characters to search</i></h3>
       <h3 v-if="fbType === 'eos'"><i>End of search</i></h3>

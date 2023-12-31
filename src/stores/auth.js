@@ -65,7 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     await db.storePublicKey(publicKey);
     await db.storeUserInfo({
       name: name.value,
-      avatarUrl: '',
+      avatarUrl: null,
       id: user.value.uid,
       phone: user.value.phoneNumber
     });

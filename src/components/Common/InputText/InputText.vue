@@ -155,6 +155,9 @@ defineExpose({ native, validate, invalidate });
   top: 0.1rem;
   padding: 0.4rem;
 }
+.input .control:deep(img) {
+  filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
+}
 .input.async input {
   padding-right: 2.5rem;
 }

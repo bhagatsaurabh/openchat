@@ -144,9 +144,6 @@ onBeforeUnmount(unregisterGuard);
   background-color: transparent;
 }
 
-.profile .avatar-selector {
-}
-
 .profile .info {
   display: flex;
   flex-direction: column;
