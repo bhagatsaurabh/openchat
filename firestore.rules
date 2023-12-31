@@ -26,7 +26,7 @@ service cloud.firestore {
     	let input = request.resource.data;
       let isValid = input.keys().hasOnly(['name', 'avatarUrl', 'id', 'phone']) &&
                     input.name is string && input.avatarUrl is string &&
-                    input.id is string && input.phone is string;
+                    input.id is string && ('phone' in input ? input.phone is string : true);
     	return isValid &&
              input.name.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$') &&
              input.id == existing.id &&

@@ -51,6 +51,10 @@ defineProps({
   flat: {
     type: Boolean,
     default: false
+  },
+  spinnerSize: {
+    type: Number,
+    default: 3
   }
 });
 
@@ -107,7 +111,13 @@ defineExpose({
       :invert="complementary"
       :size="size"
     />
-    <Spinner v-if="async" v-hide="!busy" :size="0.75 * size" :blob-count="3" :invert="complementary" />
+    <Spinner
+      v-if="async"
+      v-hide="!busy"
+      :size="0.75 * size"
+      :blob-count="spinnerSize"
+      :invert="complementary"
+    />
   </button>
 </template>
 

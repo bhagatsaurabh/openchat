@@ -7,8 +7,9 @@ import {
   signInAnonymously,
   getAdditionalUserInfo
 } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
-import { app } from '@/config/firebase';
+import { app, remoteDB } from '@/config/firebase';
 import { useNotificationStore } from './notification';
 import { useRecaptchaStore } from './recaptcha';
 import { useRemoteDBStore } from '@/stores/database';
@@ -23,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
   const status = ref('pending');
   const unsubFn = ref(null);
   const encKey = ref(null);
+  const profile = ref(null);
 
   const captcha = useRecaptchaStore();
   const notify = useNotificationStore();
@@ -53,6 +55,10 @@ export const useAuthStore = defineStore('auth', () => {
   function deRegisterAuthListener() {
     unsubFn.value();
   }
+  async function fetchUserProfile(uid) {
+    const snap = await getDoc(doc(remoteDB, 'users', uid));
+    profile.value = snap.data();
+  }
   async function handleNewUser() {
     const { publicKey } = await generatePrivateKey(user.value.uid);
     encKey.value = publicKey;
@@ -63,9 +69,11 @@ export const useAuthStore = defineStore('auth', () => {
       id: user.value.uid,
       phone: user.value.phoneNumber
     });
+    await fetchUserProfile(user.value.uid);
   }
   async function handleExistingUser() {
     encKey.value = await getPublicKey(user.value.uid);
+    await fetchUserProfile(user.value.uid);
   }
   async function signIn(type, options) {
     setStatus('signingIn');
@@ -111,6 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null;
       name.value = null;
       encKey.value = null;
+      profile.value = null;
     } catch (error) {
       console.log(error);
       notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
@@ -122,11 +131,13 @@ export const useAuthStore = defineStore('auth', () => {
     name,
     status,
     encKey,
+    profile,
     setUser,
     setStatus,
     registerAuthListener,
     deRegisterAuthListener,
     signIn,
-    signOut
+    signOut,
+    fetchUserProfile
   };
 });
