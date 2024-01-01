@@ -1,6 +1,10 @@
 <script setup>
 import Button from '@/components/Common/Button/Button.vue';
 
+defineProps({
+  url: String
+});
+
 const emit = defineEmits(['open']);
 </script>
 
@@ -9,7 +13,7 @@ const emit = defineEmits(['open']);
     @click="() => emit('open')"
     :size="2.5"
     class="avatar"
-    icon="guest"
+    :icon="`src#${url}`"
     :complementary="false"
     circular
     flat
@@ -19,5 +23,8 @@ const emit = defineEmits(['open']);
 <style scoped>
 .avatar {
   box-shadow: none !important;
+}
+.avatar:deep(img) {
+  border-radius: 50%;
 }
 </style>

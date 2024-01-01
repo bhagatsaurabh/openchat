@@ -47,14 +47,23 @@ const theme = computed(() => preferences.theme);
 
 const extn = props.animated ? 'gif' : 'png';
 const metaUrl = import.meta.url;
-const lightSource = ref(new URL(`/assets/icons/${props.name}.${extn}`, metaUrl).href);
+const lightSource = ref(null);
+if (props.name.startsWith('src#')) {
+  lightSource.value = props.name.substring(4);
+} else {
+  lightSource.value = new URL(`/assets/icons/${props.name}.${extn}`, metaUrl).href;
+}
 const darkSource = ref(null);
 if (!props.adaptive && !props.singular) {
   darkSource.value = new URL(`/assets/icons/${props.name}-dark.${extn}`, metaUrl).href;
 }
 
 onUpdated(() => {
-  lightSource.value = new URL(`/assets/icons/${props.name}.${extn}`, metaUrl).href;
+  if (props.name.startsWith('src#')) {
+    lightSource.value = props.name.substring(4);
+  } else {
+    lightSource.value = new URL(`/assets/icons/${props.name}.${extn}`, metaUrl).href;
+  }
   if (!props.adaptive && !props.singular) {
     darkSource.value = new URL(`/assets/icons/${props.name}-dark.${extn}`, metaUrl).href;
   }

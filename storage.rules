@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn(request) {
+      return request.auth != null;
+    }
+    function signedInUser(request, userId) {
+      return signedIn(request) && request.auth.uid == userId;
+    }
+    function isAMember(request, chatId) {
+      return request.auth.uid in firestore.get(/databases/(default)/documents/groups/$(chatId)).data.members;
+    }
+
+    match /users/{userId}/profile.png {
+      allow read: if signedIn(request);
+      allow write: if signedInUser(request, userId) &&
+                   request.resource.size < 2 * 1024 * 1024 &&
+                   request.resource.contentType == 'image/png';
+    }
+    
+    match /groups/{chatId}/{userId}/{fileName} {
+      allow read: if signedIn(request) && isAMember(request, chatId);
+      allow write: if signedInUser(request, userId) && isAMember(request, chatId) &&
+                   request.resource.size < 30 * 1024 * 1024;
+    }
+  }
+}

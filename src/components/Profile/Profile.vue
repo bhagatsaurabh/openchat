@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { trapBetween, trapFocus } from '@/utils/utils';
 import { useRemoteDBStore } from '@/stores/database';
 import { useAuthStore } from '@/stores/auth';
+import { useStorageStore } from '@/stores/storage';
 import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import AvatarSelector from '@/components/AvatarSelector/AvatarSelector.vue';
@@ -14,6 +15,7 @@ const emit = defineEmits(['back']);
 const router = useRouter();
 const auth = useAuthStore();
 const db = useRemoteDBStore();
+const storage = useStorageStore();
 const el = ref(null);
 const bound = ref(null);
 const show = ref(false);
@@ -40,10 +42,16 @@ const validateName = (val) => {
   }
   return null;
 };
-const handleUpdate = async (field) => {
+const handleUpdate = async (field, args) => {
   if (field === 'name') {
     if (nameEl.value.validate(name.value)) return false;
     return await db.updateProfile({ name: name.value });
+  } else if (field === 'avatar') {
+    const { blob } = args;
+    await storage.uploadFile(blob, `users/${auth.user.uid}/profile.png`, { contentType: 'image/png' });
+    const url = await storage.getUrl(`users/${auth.user.uid}/profile.png`);
+    await db.updateProfile({ avatarUrl: url });
+    auth.profile.avatarUrl = url;
   }
   return false;
 };
@@ -90,7 +98,10 @@ onBeforeUnmount(unregisterGuard);
         <Button @click="handleDismiss" :size="1.2" icon="back" :complementary="false" circular flat />
         <h2 class="ml-1">Profile</h2>
       </header>
-      <AvatarSelector />
+      <AvatarSelector
+        :url="auth.profile.avatarUrl"
+        :updater="async (blob) => handleUpdate('avatar', { blob })"
+      />
       <section class="info">
         <InputText
           ref="nameEl"

@@ -12,7 +12,7 @@ const isVerified = computed(() => !!props.meta.phone);
 
 <template>
   <div class="user-item" tabindex="0" @click="emit('select', meta)">
-    <span class="avatar" :class="{ verified: isVerified }">
+    <span class="avatar" :class="{ verified: isVerified, default: avatarUrl === '/assets/icons/user.png' }">
       <img :src="avatarUrl" />
     </span>
     <div class="details">
@@ -37,12 +37,15 @@ const isVerified = computed(() => !!props.meta.phone);
   border-bottom: 1px solid var(--c-border-0);
 }
 .avatar {
-  padding: 0.5rem;
   margin-right: 1rem;
-  margin-top: 2px;
   border-radius: 5rem;
   font-size: 0;
   border: 1px solid var(--c-border-0);
+  width: 3rem;
+}
+.avatar.default {
+  padding: 0.5rem;
+  margin-top: 2px;
 }
 .avatar.verified {
   border: 1px solid var(--c-accent);
@@ -60,6 +63,11 @@ const isVerified = computed(() => !!props.meta.phone);
   background-size: 100%;
 }
 .avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+.avatar.default img {
   opacity: 0.3;
 }
 .details {

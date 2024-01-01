@@ -96,3 +96,5 @@ export const resizeImage = async (image, width, height) => {
 export const distance = (a, b) => Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
 export const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 export const clamp = (val, [a, b]) => Math.max(Math.min(val, Math.max(a, b)), Math.min(a, b));
+export const normalize = (val, min, max) => (val - min) / (max - min);
+export const denormalize = (val, min, max) => val * (max - min) + min;
