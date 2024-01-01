@@ -79,9 +79,9 @@ export const resizeImage = async (image, width, height) => {
     resizeHeight: height
   });
 
-  return bitmap;
+  // return bitmap;
 
-  /* const canvas = document.createElement('canvas');
+  const canvas = document.createElement('canvas');
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
   const ctx = canvas.getContext('bitmaprenderer');
@@ -90,5 +90,9 @@ export const resizeImage = async (image, width, height) => {
   const resizedImage = new Image();
   resizedImage.src = URL.createObjectURL(blob);
   await resizedImage.decode();
-  return resizedImage; */
+  return resizedImage;
 };
+
+export const distance = (a, b) => Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+export const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+export const clamp = (val, [a, b]) => Math.max(Math.min(val, Math.max(a, b)), Math.min(a, b));

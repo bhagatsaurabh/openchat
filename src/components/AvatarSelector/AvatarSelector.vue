@@ -1,7 +1,7 @@
 <script setup>
-import { onBeforeMount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeMount, onMounted, ref } from 'vue';
 
-import { throttle, getImageDimensions, resizeImage } from '@/utils/utils';
+import { throttle, getImageDimensions, resizeImage, distance, clamp } from '@/utils/utils';
 import { useNotificationStore } from '@/stores/notification';
 import Button from '@/components/Common/Button/Button.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
@@ -15,13 +15,18 @@ defineProps({
 
 const notify = useNotificationStore();
 const size = ref(0);
+const pos = ref({ x: 0, y: 0 });
 const el = ref(null);
 const isEditing = ref(false);
 const updating = ref(false);
 const inputEl = ref(null);
 const canvasEl = ref(null);
+const previewEl = ref(null);
+const image = ref(null);
 
 const handleResize = (entries) => {
+  const rect = entries[0].target.getBoundingClientRect();
+  pos.value = { x: rect.x, y: rect.y };
   const { width } = entries[0].contentRect;
   if (width === size.value) return;
 
@@ -34,10 +39,10 @@ const handleSelect = async (e) => {
 
   let message = null;
   if (!e.target.files[0]?.type.startsWith('image/')) message = 'File is not an image';
-  let dims, image;
+  let dims;
   if (!message) {
     const { img, width, height } = await getImageDimensions(e.target.files[0]);
-    image = img;
+    image.value = img;
     dims = { width, height };
     if (width < 128 || height < 128) message = 'Selected image is too small (less than 128px)';
   }
@@ -47,15 +52,8 @@ const handleSelect = async (e) => {
     return;
   } else {
     if (dims.width > 500 || dims.height > 500) {
-      const resizedBitmap = await resizeImage(e.target.files[0], 500, 500 * (dims.height / dims.width));
-      console.log(
-        resizedBitmap.width,
-        resizedBitmap.height,
-        size.value,
-        (500 - resizedBitmap.width) / 2,
-        (size.value - resizedBitmap.height) / 2
-      );
-      canvasEl.value
+      image.value = await resizeImage(e.target.files[0], 500, 500 * (dims.height / dims.width));
+      /* canvasEl.value
         .getContext('2d')
         .drawImage(
           resizedBitmap,
@@ -63,16 +61,102 @@ const handleSelect = async (e) => {
           (size.value * (1 - dims.height / dims.width)) / 2,
           size.value,
           size.value * (dims.height / dims.width)
-        );
-    } else {
+        ); */
+    } /* else {
       canvasEl.value
         .getContext('2d')
         .drawImage(image, 0, 0, size.value, size.value * (dims.height / dims.width));
-    }
+    } */
+
     isEditing.value = true;
     e.target.value = '';
+    await nextTick(() => {
+      computeLimits();
+    });
   }
 };
+
+const pointers = [];
+let prevPinchDist = -1;
+let currScale = 1;
+let delta = { x: 0, y: 0 };
+let maxScale = 2;
+let reference = null;
+let limits = { x: 0, y: 0 };
+const handlePointerDown = (e) => {
+  if (!isEditing.value) return;
+  pointers.push({ id: e.pointerId, x: e.pageX - pos.value.x, y: e.pageY - pos.value.y });
+
+  if (pointers.length === 1)
+    reference = {
+      x: pointers[0].x - delta.x,
+      y: pointers[0].y - delta.y
+    };
+  else if (pointers.length > 1) reference = null;
+};
+const handlePointerUp = (e) => {
+  if (!isEditing.value) return;
+  pointers.splice(
+    pointers.findIndex((pntr) => pntr.id === e.pointerId),
+    1
+  );
+
+  if (pointers.length < 2) prevPinchDist = -1;
+};
+const handlePointerMove = (e) => {
+  e.preventDefault();
+  if (!isEditing.value) return;
+  const pntr = pointers.find((pntr) => pntr.id === e.pointerId);
+  pntr.x = e.pageX - pos.value.x;
+  pntr.y = e.pageY - pos.value.y;
+
+  if (pointers.length === 2) {
+    let currPinchDist = distance(pointers[0], pointers[1]);
+    if (prevPinchDist > 0) {
+      if (currPinchDist !== prevPinchDist) {
+        handleZoom(currPinchDist > prevPinchDist, 1.02);
+      }
+    }
+    prevPinchDist = currPinchDist;
+  } else if (pointers.length === 1) {
+    delta = {
+      x: Math.floor(clamp(pointers[0].x - reference.x, limits.x)),
+      y: clamp(pointers[0].y - reference.y, limits.y)
+    };
+    updateTransform();
+  }
+};
+const handlePointerOut = (e) => {
+  if (!isEditing.value) return;
+  pointers.splice(
+    pointers.findIndex((pntr) => pntr.id === e.pointerId),
+    1
+  );
+
+  if (pointers.length < 2) prevPinchDist = -1;
+  if (pointers.length === 0) reference = null;
+};
+const handleZoom = (zoomIn, delta) => {
+  if (!isEditing.value) return;
+  const newScale = currScale * (zoomIn ? delta : 1 / delta);
+  if ((newScale >= maxScale && zoomIn) || (newScale <= 1 && !zoomIn)) return;
+  currScale = newScale;
+
+  updateTransform();
+};
+const updateTransform = () => {
+  computeLimits();
+  previewEl.value.style.transform = `translateY(-50%) translate(${delta.x}px, ${delta.y}px) scale(${currScale})`;
+};
+const computeLimits = () => {
+  const xAmount = Math.floor((size.value - previewEl.value.clientWidth * currScale) / 2);
+  const yAmount = Math.floor((size.value - previewEl.value.clientHeight * currScale) / 2);
+  limits = {
+    x: [-xAmount, xAmount],
+    y: [-yAmount, yAmount]
+  };
+};
+
 const handleCancel = () => (isEditing.value = false);
 const handleUpdate = () => {};
 
@@ -86,8 +170,18 @@ onBeforeMount(() => observer?.disconnect());
 
 <template>
   <section class="avatar-selector">
-    <div ref="el" :style="{ height: `${size}px` }" class="container">
+    <div
+      ref="el"
+      :style="{ height: `${size}px` }"
+      class="container"
+      @pointerdown="handlePointerDown"
+      @pointerup="handlePointerUp"
+      @pointermove="handlePointerMove"
+      @pointerout="handlePointerOut"
+      @wheel="(e) => handleZoom(e.deltaY < 0, 1.05)"
+    >
       <img v-if="!isEditing" class="avatar" :src="url ?? '/assets/images/avatar.png'" />
+      <img v-if="isEditing" ref="previewEl" class="preview" :src="image.src" />
       <canvas ref="canvasEl" v-show="isEditing" :width="size" :height="size"></canvas>
       <div v-if="isEditing" class="mask"></div>
       <div @click="inputEl.click()" v-if="!isEditing" class="change-control" tabindex="0">
@@ -120,7 +214,9 @@ onBeforeMount(() => observer?.disconnect());
   margin: 2rem 0 1rem 0;
 }
 .avatar-selector .container {
+  touch-action: none;
   width: 70%;
+  overflow: hidden;
 }
 .avatar-selector .container .change-control {
   display: flex;
@@ -162,6 +258,13 @@ onBeforeMount(() => observer?.disconnect());
   user-select: none;
   background-color: #888a;
   mask-image: url(/assets/images/avatar-mask.svg);
+}
+
+.avatar-selector .container .preview {
+  width: 100%;
+  transform-origin: center;
+  transform: translateY(-50%);
+  top: 50%;
 }
 
 .avatar-selector .controls {
