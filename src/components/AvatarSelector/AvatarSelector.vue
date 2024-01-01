@@ -1,15 +1,27 @@
 <script setup>
 import { nextTick, onBeforeMount, onMounted, ref } from 'vue';
 
-import { throttle, getImageDimensions, resizeImage, distance, clamp } from '@/utils/utils';
+import {
+  throttle,
+  getImageDimensions,
+  resizeImage,
+  distance,
+  clamp,
+  normalize,
+  denormalize
+} from '@/utils/utils';
 import { useNotificationStore } from '@/stores/notification';
 import Button from '@/components/Common/Button/Button.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
 
-defineProps({
+const props = defineProps({
   url: {
     type: String,
     default: null
+  },
+  updater: {
+    type: Function,
+    default: () => {}
   }
 });
 
@@ -20,7 +32,6 @@ const el = ref(null);
 const isEditing = ref(false);
 const updating = ref(false);
 const inputEl = ref(null);
-const canvasEl = ref(null);
 const previewEl = ref(null);
 const image = ref(null);
 
@@ -53,20 +64,7 @@ const handleSelect = async (e) => {
   } else {
     if (dims.width > 500 || dims.height > 500) {
       image.value = await resizeImage(e.target.files[0], 500, 500 * (dims.height / dims.width));
-      /* canvasEl.value
-        .getContext('2d')
-        .drawImage(
-          resizedBitmap,
-          (500 - resizedBitmap.width) / 2,
-          (size.value * (1 - dims.height / dims.width)) / 2,
-          size.value,
-          size.value * (dims.height / dims.width)
-        ); */
-    } /* else {
-      canvasEl.value
-        .getContext('2d')
-        .drawImage(image, 0, 0, size.value, size.value * (dims.height / dims.width));
-    } */
+    }
 
     isEditing.value = true;
     e.target.value = '';
@@ -158,7 +156,27 @@ const computeLimits = () => {
 };
 
 const handleCancel = () => (isEditing.value = false);
-const handleUpdate = () => {};
+const handleUpdate = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = image.value.width;
+  canvas.height = image.value.width;
+  const ctx = canvas.getContext('2d');
+  ctx.transform(
+    currScale,
+    0,
+    0,
+    currScale,
+    denormalize(normalize(delta.x, 0, size.value), 0, canvas.width) - (canvas.width / 2) * (currScale - 1),
+    denormalize(normalize(delta.y, 0, size.value), 0, canvas.height) - (canvas.width / 2) * (currScale - 1)
+  );
+  ctx.drawImage(image.value, 0, (canvas.height - image.value.height) / 2, canvas.width, image.value.height);
+  canvas.toBlob(async (blob) => {
+    updating.value = true;
+    await props.updater(blob);
+    updating.value = false;
+    isEditing.value = false;
+  });
+};
 
 let observer;
 onMounted(() => {
@@ -180,9 +198,13 @@ onBeforeMount(() => observer?.disconnect());
       @pointerout="handlePointerOut"
       @wheel="(e) => handleZoom(e.deltaY < 0, 1.05)"
     >
-      <img v-if="!isEditing" class="avatar" :src="url ?? '/assets/images/avatar.png'" />
+      <img
+        v-if="!isEditing"
+        class="avatar"
+        :class="{ default: !url }"
+        :src="url ? url : '/assets/images/avatar.png'"
+      />
       <img v-if="isEditing" ref="previewEl" class="preview" :src="image.src" />
-      <canvas ref="canvasEl" v-show="isEditing" :width="size" :height="size"></canvas>
       <div v-if="isEditing" class="mask"></div>
       <div @click="inputEl.click()" v-if="!isEditing" class="change-control" tabindex="0">
         <Icon name="camera" :size="1.5" alt="camera-icon" adaptive invert />
@@ -245,9 +267,11 @@ onBeforeMount(() => observer?.disconnect());
   position: absolute;
   top: 0;
   left: 0;
-  padding: 2rem;
   border: 1px solid var(--c-border-1);
   border-radius: 50%;
+}
+.avatar-selector .container .avatar.default {
+  padding: 2rem;
 }
 .avatar-selector .container .mask {
   width: 100%;
@@ -261,6 +285,7 @@ onBeforeMount(() => observer?.disconnect());
 }
 
 .avatar-selector .container .preview {
+  position: absolute;
   width: 100%;
   transform-origin: center;
   transform: translateY(-50%);

@@ -45,7 +45,7 @@ watch(query, () => {
 <template>
   <Header border>
     <template #left>
-      <Avatar class="ml-0p5" @open="showProfile = true" />
+      <Avatar class="ml-0p5" @open="showProfile = true" :url="authStore.profile.avatarUrl" />
     </template>
     <template #right>
       <Button
