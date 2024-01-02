@@ -13,7 +13,7 @@ const emit = defineEmits(['open']);
     @click="() => emit('open')"
     :size="2.5"
     class="avatar"
-    :icon="`src#${url}`"
+    :icon="!!url ? `src#${url}` : 'guest'"
     :complementary="false"
     circular
     flat

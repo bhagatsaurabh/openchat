@@ -8,6 +8,7 @@ import {
   getAdditionalUserInfo
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 
 import { app, remoteDB } from '@/config/firebase';
 import { useNotificationStore } from './notification';
@@ -65,7 +66,7 @@ export const useAuthStore = defineStore('auth', () => {
     await db.storePublicKey(publicKey);
     await db.storeUserInfo({
       name: name.value,
-      avatarUrl: null,
+      avatarUrl: '',
       id: user.value.uid,
       phone: user.value.phoneNumber
     });
@@ -125,6 +126,40 @@ export const useAuthStore = defineStore('auth', () => {
       notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
     }
   }
+  async function verifyGuestUser(type, options) {
+    if (type === 'phone') {
+      const { countryCode, phone } = options;
+      const provider = new PhoneAuthProvider(auth);
+      try {
+        const verificationId = await provider.verifyPhoneNumber(`+${countryCode}${phone}`, window.verifier);
+        return verificationId;
+      } catch (error) {
+        window.grecaptcha.reset(captcha.widgetId);
+        throw error;
+      }
+    } else if (type === 'code') {
+      const { verificationId, code } = options;
+      const credential = PhoneAuthProvider.credential(verificationId, code);
+      const { user } = await linkWithCredential(auth.currentUser, credential);
+      setUser(user);
+      await db.updateProfile({ phone: user.phoneNumber });
+      profile.value.phone = user.phoneNumber;
+    }
+  }
+  async function linkGuestUser(cred) {
+    try {
+      await linkWithCredential(auth.currentUser, cred);
+      return 'ok';
+    } catch (error) {
+      if (error.code === 'auth/phone-number-exists') {
+        notify.push({ type: 'snackbar', status: 'warn', message: 'Phone number already exists.' });
+        return 'fatal';
+      } else {
+        notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
+      }
+    }
+    return 'failed';
+  }
 
   return {
     user,
@@ -138,6 +173,8 @@ export const useAuthStore = defineStore('auth', () => {
     deRegisterAuthListener,
     signIn,
     signOut,
-    fetchUserProfile
+    fetchUserProfile,
+    verifyGuestUser,
+    linkGuestUser
   };
 });

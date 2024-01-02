@@ -7,7 +7,7 @@ import Dropdown from '@/components/Common/Dropdown/Dropdown.vue';
 import Icon from '../Common/Icon/Icon.vue';
 import CountryItem from './CountryItem/CountryItem.vue';
 
-const emit = defineEmits(['select']);
+const emit = defineEmits(['select', 'load']);
 const isCntrsOpen = ref(false);
 const selected = ref(countries.find((item) => item[1] === navigator.language.split('-')[1].toLowerCase()));
 
@@ -15,7 +15,10 @@ const getItemAttrs = (item) => ({ name: item[0], isocode: item[1], code: item[2]
 
 watch(selected, () => emit('select', selected.value));
 
-onMounted(() => emit('select', selected.value));
+onMounted(() => {
+  emit('load');
+  emit('select', selected.value);
+});
 
 defineExpose({ countries });
 </script>

@@ -51,7 +51,6 @@ watch(query, () => throttledEmit());
   z-index: 1;
   display: flex;
   align-items: center;
-  /* box-shadow: 0 0 10px 0px grey; */
 }
 .search-input {
   padding: 0.25rem 5.5rem 0.4rem 3rem;

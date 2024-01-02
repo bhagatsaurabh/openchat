@@ -9,6 +9,7 @@ import { useStorageStore } from '@/stores/storage';
 import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import AvatarSelector from '@/components/AvatarSelector/AvatarSelector.vue';
+import ProfilePhone from '@/components/ProfilePhone/ProfilePhone.vue';
 
 const emit = defineEmits(['back']);
 
@@ -20,10 +21,7 @@ const el = ref(null);
 const bound = ref(null);
 const show = ref(false);
 const nameEl = ref(null);
-const phoneEl = ref(null);
 const name = ref(null);
-const phone = ref(null);
-const naLabel = ref('Not Available');
 
 const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
@@ -86,7 +84,6 @@ onMounted(() => {
   document.activeElement?.blur();
   show.value = true;
   name.value = auth.profile.name;
-  phone.value = auth.profile.phone;
 });
 onBeforeUnmount(unregisterGuard);
 </script>
@@ -98,32 +95,25 @@ onBeforeUnmount(unregisterGuard);
         <Button @click="handleDismiss" :size="1.2" icon="back" :complementary="false" circular flat />
         <h2 class="ml-1">Profile</h2>
       </header>
-      <AvatarSelector
-        :url="auth.profile.avatarUrl"
-        :updater="async (blob) => handleUpdate('avatar', { blob })"
-      />
-      <section class="info">
-        <InputText
-          ref="nameEl"
-          type="text"
-          placeholder="Name"
-          v-model="name"
-          :attrs="{ spellcheck: false, autocomplete: 'off' }"
-          :validator="validateName"
-          :action="async () => await handleUpdate('name')"
-          async
+      <main>
+        <AvatarSelector
+          :url="auth.profile.avatarUrl"
+          :updater="async (blob) => handleUpdate('avatar', { blob })"
         />
-        <InputText
-          v-if="phone"
-          ref="phoneEl"
-          type="text"
-          placeholder="Phone"
-          v-model="phone"
-          :attrs="{ spellcheck: false, autocomplete: 'off' }"
-          :validator="validatePhone"
-        />
-        <InputText v-else type="text" placeholder="Phone" v-model="naLabel" :attrs="{ disabled: true }" />
-      </section>
+        <section class="info">
+          <InputText
+            ref="nameEl"
+            type="text"
+            placeholder="Name"
+            v-model="name"
+            :attrs="{ spellcheck: false, autocomplete: 'off' }"
+            :validator="validateName"
+            :action="async () => await handleUpdate('name')"
+            async
+          />
+        </section>
+        <ProfilePhone />
+      </main>
     </aside>
   </Transition>
 </template>
@@ -138,6 +128,8 @@ onBeforeUnmount(unregisterGuard);
   top: 0;
   left: 0;
   box-shadow: 0 0 10px 0px var(--c-shadow-0);
+  display: flex;
+  flex-direction: column;
 }
 
 .profile section {
@@ -146,6 +138,8 @@ onBeforeUnmount(unregisterGuard);
 }
 
 .profile header {
+  position: sticky;
+  top: 0;
   display: flex;
   padding: 1rem;
   border-bottom: 1px solid var(--c-border-1);
@@ -153,6 +147,11 @@ onBeforeUnmount(unregisterGuard);
 }
 .profile header button {
   background-color: transparent;
+}
+
+.profile main {
+  padding: 1rem 0 1rem 0;
+  flex: 1;
 }
 
 .profile .info {

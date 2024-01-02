@@ -66,6 +66,8 @@ onMounted(async () => {
     const widgetId = await window.verifier.render();
     captchaStore.widgetId = widgetId;
     captchaStore.ready = true;
+  } else if (captchaStore.ready) {
+    render();
   }
 });
 onBeforeUnmount(() => {

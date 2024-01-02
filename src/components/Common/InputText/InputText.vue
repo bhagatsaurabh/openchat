@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import Button from '@/components/Common/Button/Button.vue';
 
@@ -33,13 +33,21 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  cancellable: {
+    type: Boolean,
+    default: false
+  },
   action: {
     type: Function,
     default: () => true
   },
+  focus: {
+    type: Boolean,
+    default: false
+  },
   modelValue: String
 });
-const emit = defineEmits(['update:modelValue', 'save']);
+const emit = defineEmits(['update:modelValue', 'cancel']);
 
 const native = ref(null);
 const org = ref(props.modelValue);
@@ -72,6 +80,8 @@ const handleAction = async () => {
   isBusy.value = false;
 };
 
+onMounted(() => props.focus && native.value.focus());
+
 defineExpose({ native, validate, invalidate });
 </script>
 
@@ -83,7 +93,8 @@ defineExpose({ native, validate, invalidate });
       'no-title': noTitle,
       invalid: !!errormsg,
       'mt-1p5': validation !== 'Off',
-      async
+      async,
+      cancellable
     }"
     :data-placeholder="placeholder"
   >
@@ -96,18 +107,29 @@ defineExpose({ native, validate, invalidate });
       :disabled="async ? (isBusy ? true : null) : null"
       v-bind="attrs"
     />
-    <Button
-      @click="handleAction"
-      class="control"
-      v-if="async && modelValue !== org"
-      icon="check"
-      :complementary="false"
-      :spinner-size="2"
-      :busy="isBusy"
-      async
-      circular
-      flat
-    />
+    <span class="controls" v-if="async || cancellable">
+      <Button
+        @click="handleAction"
+        class="action"
+        v-if="modelValue !== org"
+        icon="check"
+        :complementary="false"
+        :spinner-size="2"
+        :busy="isBusy"
+        async
+        circular
+        flat
+      />
+      <Button
+        @click="emit('cancel')"
+        class="cancel"
+        v-if="cancellable"
+        icon="close"
+        :complementary="false"
+        circular
+        flat
+      />
+    </span>
     <Transition name="slide">
       <span v-if="validation !== 'Off' && !!errormsg" class="errormsg">{{ errormsg }}</span>
     </Transition>
@@ -149,17 +171,24 @@ defineExpose({ native, validate, invalidate });
   font-size: 0.75rem;
 }
 
-.input .control {
+.controls {
   position: absolute;
   right: 0;
-  top: 0.1rem;
-  padding: 0.4rem;
+  display: inline-flex;
+  height: 100%;
 }
-.input .control:deep(img) {
+.controls button.cancel:deep(img) {
+  padding: 0.1rem;
+}
+.controls button:deep(img) {
   filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
 }
-.input.async input {
+.input.async input,
+.input.cancellable input {
   padding-right: 2.5rem;
+}
+.input.async.cancellable input {
+  padding-right: 4.5rem;
 }
 
 .input.blank::before {
