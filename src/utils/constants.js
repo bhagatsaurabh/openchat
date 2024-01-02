@@ -21,3 +21,5 @@ export const days = Object.freeze({
   5: 'Friday',
   6: 'Saturday'
 });
+
+export const msInADay = 1000 * 60 * 60 * 24;

@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onBeforeMount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import {
   throttle,
@@ -28,12 +28,12 @@ const props = defineProps({
 const notify = useNotificationStore();
 const size = ref(0);
 const pos = ref({ x: 0, y: 0 });
+const image = ref(null);
 const el = ref(null);
-const isEditing = ref(false);
-const updating = ref(false);
 const inputEl = ref(null);
 const previewEl = ref(null);
-const image = ref(null);
+const isEditing = ref(false);
+const updating = ref(false);
 
 const handleResize = (entries) => {
   const rect = entries[0].target.getBoundingClientRect();
@@ -68,9 +68,7 @@ const handleSelect = async (e) => {
 
     isEditing.value = true;
     e.target.value = '';
-    await nextTick(() => {
-      computeLimits();
-    });
+    await nextTick(() => computeLimits());
   }
 };
 
@@ -83,6 +81,7 @@ let reference = null;
 let limits = { x: 0, y: 0 };
 const handlePointerDown = (e) => {
   if (!isEditing.value) return;
+  e.preventDefault();
   pointers.push({ id: e.pointerId, x: e.pageX - pos.value.x, y: e.pageY - pos.value.y });
 
   if (pointers.length === 1)
@@ -100,10 +99,11 @@ const handlePointerUp = (e) => {
   );
 
   if (pointers.length < 2) prevPinchDist = -1;
+  if (pointers.length === 0) reference = null;
 };
 const handlePointerMove = (e) => {
-  e.preventDefault();
   if (!isEditing.value) return;
+  e.preventDefault();
   const pntr = pointers.find((pntr) => pntr.id === e.pointerId);
   pntr.x = e.pageX - pos.value.x;
   pntr.y = e.pageY - pos.value.y;
@@ -119,20 +119,10 @@ const handlePointerMove = (e) => {
   } else if (pointers.length === 1) {
     delta = {
       x: Math.floor(clamp(pointers[0].x - reference.x, limits.x)),
-      y: clamp(pointers[0].y - reference.y, limits.y)
+      y: Math.floor(clamp(pointers[0].y - reference.y, limits.y))
     };
     updateTransform();
   }
-};
-const handlePointerOut = (e) => {
-  if (!isEditing.value) return;
-  pointers.splice(
-    pointers.findIndex((pntr) => pntr.id === e.pointerId),
-    1
-  );
-
-  if (pointers.length < 2) prevPinchDist = -1;
-  if (pointers.length === 0) reference = null;
 };
 const handleZoom = (zoomIn, delta) => {
   if (!isEditing.value) return;
@@ -155,8 +145,18 @@ const computeLimits = () => {
   };
 };
 
-const handleCancel = () => (isEditing.value = false);
+const handleReset = () => {
+  image.value = null;
+  prevPinchDist = -1;
+  currScale = 1;
+  delta = { x: 0, y: 0 };
+  reference = null;
+  limits = { x: 0, y: 0 };
+  isEditing.value = false;
+};
 const handleUpdate = () => {
+  if (!isEditing.value) return;
+
   const canvas = document.createElement('canvas');
   canvas.width = image.value.width;
   canvas.height = image.value.width;
@@ -174,7 +174,7 @@ const handleUpdate = () => {
     updating.value = true;
     await props.updater(blob);
     updating.value = false;
-    isEditing.value = false;
+    handleReset();
   });
 };
 
@@ -183,7 +183,7 @@ onMounted(() => {
   observer = new ResizeObserver(throttledhandleResize);
   observer.observe(el.value);
 });
-onBeforeMount(() => observer?.disconnect());
+onBeforeUnmount(() => observer?.disconnect());
 </script>
 
 <template>
@@ -195,7 +195,7 @@ onBeforeMount(() => observer?.disconnect());
       @pointerdown="handlePointerDown"
       @pointerup="handlePointerUp"
       @pointermove="handlePointerMove"
-      @pointerout="handlePointerOut"
+      @pointerout="handlePointerUp"
       @wheel="(e) => handleZoom(e.deltaY < 0, 1.05)"
     >
       <img
@@ -215,7 +215,7 @@ onBeforeMount(() => observer?.disconnect());
       <Button @click="handleUpdate" :complementary="false" :busy="updating" async>Update Photo</Button>
       <Button
         v-if="isEditing"
-        @click="handleCancel"
+        @click="handleReset"
         :size="1"
         class="close-control"
         icon="close"
@@ -233,7 +233,7 @@ onBeforeMount(() => observer?.disconnect());
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 2rem 0 1rem 0;
+  margin: 1rem 0 1rem 0;
 }
 .avatar-selector .container {
   touch-action: none;

@@ -8,8 +8,7 @@ export const useStorageStore = defineStore('storage', () => {
     const storageRef = ref(storage, path, meta);
 
     try {
-      const snap = await uploadBytes(storageRef, blob);
-      console.log(snap);
+      await uploadBytes(storageRef, blob);
     } catch (error) {
       console.log(error);
     }
