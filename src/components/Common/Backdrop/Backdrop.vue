@@ -15,7 +15,9 @@ const emit = defineEmits(['dismiss']);
 
 <template>
   <Transition name="fade">
-    <div @pointerup="emit('dismiss')" v-if="show" class="backdrop" :class="{ clear }"></div>
+    <div @pointerup="emit('dismiss')" v-if="show" class="backdrop" :class="{ clear }">
+      <slot></slot>
+    </div>
   </Transition>
 </template>
 
@@ -29,6 +31,9 @@ const emit = defineEmits(['dismiss']);
   top: 0;
   left: 0;
   backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .backdrop.clear {
   backdrop-filter: unset;

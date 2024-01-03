@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
@@ -40,11 +40,32 @@ export const useRemoteDBStore = defineStore('database', () => {
       console.log(error);
     }
   }
+  async function getPublicKey(id) {
+    try {
+      const snap = await getDoc(doc(remoteDB, 'publicKeys', id));
+      return snap.data();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  async function createGroup({ type, members, admins }) {
+    const { id } = await addDoc(doc(remoteDB, 'groups'), {
+      members,
+      admins,
+      active: true,
+      type,
+      seen: { [authStore.user.uid]: serverTimestamp() },
+      timestamp: serverTimestamp()
+    });
+    return id;
+  }
 
   return {
     storePublicKey,
     storeUserInfo,
     searchUsers,
-    updateProfile
+    updateProfile,
+    getPublicKey,
+    createGroup
   };
 });
