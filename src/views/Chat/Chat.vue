@@ -28,12 +28,14 @@ const handleSignOut = async () => {
   await authStore.signOut();
   router.push('/auth');
 };
-const handleSettings = () => {};
+const handleSettings = () => {
+  // TODO
+};
 const handleSelectExisting = (data) => {
   console.log(data);
 };
 const handleSelectNew = (data) => {
-  console.log(data);
+  // TODO
 };
 
 watch(query, () => {

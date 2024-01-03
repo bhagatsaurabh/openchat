@@ -21,6 +21,7 @@ const search = ref('');
 const el = ref(null);
 const listEl = ref(null);
 const searchEl = ref(null);
+const direction = ref('br');
 const selected = ref(
   props.items?.find((item) => item[props.itemKey] === props.selected[props.itemKey])
     ? props.selected
@@ -34,7 +35,8 @@ const filteredItems = computed(() =>
 );
 
 const handleKey = (e) => {
-  if (props.open && ['ArrowUp', 'ArrowDown'].includes(e.code)) {
+  if (!props.open) return;
+  if (['ArrowUp', 'ArrowDown'].includes(e.code)) {
     let idx = selectedIdx.value;
     if (filteredItems.value.length === 0) return;
     if (!filteredItems.value.includes(toRaw(selected.value))) {
@@ -52,6 +54,8 @@ const handleKey = (e) => {
       ];
 
     handleSelect(item, false);
+  } else if (e.code === 'Enter') {
+    handleSelect(selected.value);
   }
 };
 const handleSelect = (item, dismiss = true) => {
@@ -66,6 +70,14 @@ const handleScroll = async () => {
     block: 'center'
   });
 };
+const computeOpeningDirection = () => {
+  const rect = el.value.getBoundingClientRect();
+  let xAxis = true;
+  let yAxis = true;
+  if (rect.x + rect.width > window.innerWidth) xAxis = false;
+  if (rect.y + Math.max(window.innerHeight * 0.39, 320) > window.innerHeight) yAxis = false;
+  direction.value = `${yAxis ? 'b' : 't'}${xAxis ? 'r' : 'l'}`;
+};
 
 watch(selected, () => {
   handleScroll();
@@ -75,6 +87,8 @@ watch(
   () => props.open,
   () => {
     if (props.open) {
+      computeOpeningDirection();
+
       search.value = '';
       handleScroll();
       searchEl.value?.native.focus();
@@ -85,14 +99,21 @@ watch(
 
 <template>
   <Backdrop :show="open" @dismiss="emit('dismiss')" clear />
-  <section v-bind="$attrs" tabindex="0" ref="el" @keydown="handleKey" class="dropdown" :class="{ open }">
+  <section
+    v-bind="$attrs"
+    :tabindex="open ? 0 : -1"
+    ref="el"
+    @keydown="handleKey"
+    class="dropdown"
+    :class="{ open, [direction]: true }"
+  >
     <InputText
       ref="searchEl"
       class="search-input"
       v-model="search"
       type="text"
       placeholder="Search"
-      :attrs="{ spellcheck: false }"
+      :attrs="{ spellcheck: false, disabled: !open }"
       no-title
       validation="Off"
     />
@@ -101,7 +122,7 @@ watch(
         <span>Found no match for&nbsp;</span><span class="query">{{ search }}</span>
       </li>
       <li
-        tabindex="0"
+        :tabindex="open ? 0 : -1"
         v-for="item in filteredItems"
         :key="item[itemKey]"
         :class="{ selected: item[itemKey] === selected[itemKey] }"
@@ -118,28 +139,47 @@ watch(
 .dropdown {
   position: absolute;
   z-index: 101;
-  top: 100%;
   background-color: var(--c-background-2);
   max-height: 0vh;
   overflow: hidden;
   transition:
     max-height var(--fx-transition-duration-2) ease,
     clip-path var(--fx-transition-duration-1) ease;
-  clip-path: polygon(0% 0%, 0% 0%, 0% 0%, 0% 0%);
-  box-shadow: 2px 2px 4px 0px var(--c-shadow-0);
   pointer-events: none;
-  width: calc(100vw - 2rem) !important;
+  width: 21.5rem !important;
+}
+/* bl, tl not handled */
+.dropdown.br,
+.dropdown.bl,
+.dropdown.tl {
+  box-shadow: 2px 2px 4px 0px var(--c-shadow-0);
+  clip-path: polygon(0% 0%, 0% 0%, 0% 0%, 0% 0%);
+  top: 100%;
+}
+.dropdown.tr {
+  box-shadow: 2px -2px 4px 0px var(--c-shadow-0);
+  clip-path: polygon(0% 100%, 0% 100%, 0% 100%, 0% 100%);
+  top: 0;
+  transform: translateY(-100%);
 }
 .dropdown.open {
-  max-height: 39vh;
-  clip-path: polygon(0% 0%, 105% 0%, 105% 105%, 0% 105%);
+  max-height: max(39vh, 20rem);
   pointer-events: all;
+}
+/* bl, tl not handled */
+.dropdown.br.open,
+.dropdown.bl.open,
+.dropdown.tl.open {
+  clip-path: polygon(0% 0%, 105% 0%, 105% 105%, 0% 105%);
+}
+.dropdown.tr.open {
+  clip-path: polygon(0% -5%, 105% -5%, 105% 100%, 0% 100%);
 }
 
 .dropdown ul {
   list-style: none;
   padding: 0.5rem;
-  max-height: calc(39vh - 2rem);
+  max-height: calc(max(39vh, 20rem) - 2rem);
   user-select: none;
   margin-top: 2rem;
 }
