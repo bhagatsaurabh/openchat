@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
+import { useRemoteDBStore } from '@/stores/database';
 import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
@@ -12,8 +13,12 @@ import ChatList from '@/components/ChatList/ChatList.vue';
 import ChatSearchList from '@/components/ChatSearchList/ChatSearchList.vue';
 import Tabs from '@/components/Common/Tabs/Tabs.vue';
 import Profile from '@/components/Profile/Profile.vue';
+import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
+import Spinner from '@/components/Common/Spinner/Spinner.vue';
+import { generateGroupKey } from '@/utils/crypto';
 
-const authStore = useAuthStore();
+const auth = useAuthStore();
+const db = useRemoteDBStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
 const showProfile = ref(false);
@@ -23,19 +28,32 @@ const tabs = ref([
   { name: 'My Chats', id: 'my-chats', icon: 'chats' },
   { name: 'Find', id: 'find', icon: 'globe' }
 ]);
+const isBusy = ref(false);
 
 const handleSignOut = async () => {
-  await authStore.signOut();
+  await auth.signOut();
   router.push('/auth');
 };
 const handleSettings = () => {
   // TODO
 };
 const handleSelectExisting = (data) => {
-  console.log(data);
-};
-const handleSelectNew = (data) => {
   // TODO
+};
+const handleSelectNew = async (data) => {
+  /*  TODO
+      4. Create Group (Local) with remote id
+      5. Create notification for other user
+      6. Open newly created Group
+  */
+  isBusy.value = true;
+  const publicKey = await db.getPublicKey(data.id);
+  const encryptedKey = (await generateGroupKey([publicKey]))[0];
+  const groupId = await db.createGroup({
+    type: 'private',
+    members: [auth.user.uid, data.id],
+    admins: [auth.user.uid, data.id]
+  });
 };
 
 watch(query, () => {
@@ -45,9 +63,15 @@ watch(query, () => {
 </script>
 
 <template>
+  <Backdrop :show="isBusy">
+    <div class="wait">
+      <Spinner :blob-count="4" />
+      <h2>Creating your new chat</h2>
+    </div>
+  </Backdrop>
   <Header border>
     <template #left>
-      <Avatar class="ml-0p5" @open="showProfile = true" :url="authStore.profile?.avatarUrl" />
+      <Avatar class="ml-0p5" @open="showProfile = true" :url="auth.profile?.avatarUrl" />
     </template>
     <template #right>
       <Button
@@ -100,5 +124,16 @@ watch(query, () => {
 }
 .chat-control:deep(img) {
   filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
+}
+
+.wait {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.wait h2 {
+  font-weight: lighter;
+  text-shadow: 0px 0px 4px var(--c-background-1);
 }
 </style>

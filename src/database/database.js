@@ -2,7 +2,7 @@ let db = null;
 
 const openDB = async () => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ocdb', 1);
+    const request = indexedDB.open('ocdb');
 
     request.addEventListener('upgradeneeded', (e) => {
       const database = e.target.result;
@@ -13,6 +13,11 @@ const openDB = async () => {
       if (!database.objectStoreNames.contains('keys')) {
         database.createObjectStore('keys');
       }
+      if (!database.objectStoreNames.contains('groups')) {
+        database.createObjectStore('groups');
+      } else {
+        //
+      }
 
       db = database;
       db.addEventListener('close', closeListener);
@@ -21,6 +26,7 @@ const openDB = async () => {
 
     request.addEventListener('success', (e) => {
       db = e.target.result;
+      console.log(db);
       db.addEventListener('close', closeListener);
       resolve(db);
     });

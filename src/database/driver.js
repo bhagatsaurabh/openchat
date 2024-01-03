@@ -11,3 +11,5 @@ export const registerPersistence = () => {
 export const getPreferences = async () => {
   return await getSingleton('preferences');
 };
+
+export const createGroup = async () => {};
