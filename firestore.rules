@@ -168,6 +168,33 @@ service cloud.firestore {
              input.timestamp is timestamp && input.text is string &&
              input.type is string && input.type in ['text', 'image', 'video', 'doc'];
     }
+    function validateNotifyTypeGA(input) {
+      let validKeys = ['id', 'encryptedKey'];
+      let isValid = input.payload.keys().hasAll(validKeys) && input.payload.keys().hasOnly(validKeys) &&
+                    input.payload.id is string &&
+                    input.payload.encryptedKey is string;
+      let group = isValid ? get(/databases/$(database)/documents/groups/$(input.payload.id)).data : {};
+      return isValid && request.auth.uid in group.members && input.by in group.members &&
+             input.by in group.admins;
+    }
+    function validateNotifyTypeGR(input) {
+      let validKeys = ['id'];
+      let isValid = input.payload.keys().hasAll(validKeys) && input.payload.keys().hasOnly(validKeys) &&
+                    input.payload.id is string;
+      let group = isValid ? get(/databases/$(database)/documents/groups/$(input.payload.id)).data : {};
+      return isValid && request.auth.uid in group.members && input.by in group.members &&
+             input.by in group.admins && group.type != 'private';
+    }
+    function validateNotifyCreation(request) {
+      let input = request.resource.data;
+      let validKeys = ['type', 'payload', 'by'];
+      return input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
+             input.type is string && input.type in ['group:add', 'group:remove'] &&
+             input.by is string && exists(/databases/$(database)/documents/users/$(input.by)) &&
+             input.payload is map &&
+             (input.type == 'group:add' ? validateNotifyTypeGA(input) : true) &&
+             (input.type == 'group:remove' ? validateNotifyTypeGR(input) : true);
+    }
 
     match /publicKeys/{userId} {
       // Anyone can read other user's publicKey
@@ -183,6 +210,16 @@ service cloud.firestore {
     	allow create: if signedInUser(request, userId) && validateUserCreation(request)
       allow read: if signedIn(request)
       allow update: if signedInUser(request, userId) && validateUserUpdation(request, resource)
+      allow delete: if signedInUser(request, userId)
+    }
+    
+    // A user can create notifications to any other user
+    // A user cannot read/delete other user's notifications
+    // Updating notifications is not allowed
+    match /users/{userId}/notify/{notification} {
+      allow create: if signedIn(request) && validateNotifyCreation(request)
+      allow read: if signedInUser(request, userId)
+      allow update: if false
       allow delete: if signedInUser(request, userId)
     }
 
