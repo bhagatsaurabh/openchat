@@ -1,24 +1,24 @@
 import { defineStore } from 'pinia';
-import { addDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
 import { fetchUsers } from '@/services/user-search';
 
 export const useRemoteDBStore = defineStore('database', () => {
-  const authStore = useAuthStore();
+  const auth = useAuthStore();
 
   async function storeUserInfo(userInfo) {
     if (!userInfo.phone) delete userInfo.phone;
     try {
-      await setDoc(doc(remoteDB, 'users', authStore.user.uid), userInfo);
+      await setDoc(doc(remoteDB, 'users', auth.user.uid), userInfo);
     } catch (e) {
       console.log(e);
     }
   }
   async function updateProfile(profile) {
     try {
-      await updateDoc(doc(remoteDB, 'users', authStore.user.uid), profile);
+      await updateDoc(doc(remoteDB, 'users', auth.user.uid), profile);
       return true;
     } catch (error) {
       console.log(error);
@@ -27,7 +27,7 @@ export const useRemoteDBStore = defineStore('database', () => {
   }
   async function storePublicKey(publicKey) {
     try {
-      await setDoc(doc(remoteDB, 'publicKeys', authStore.user.uid), publicKey);
+      await setDoc(doc(remoteDB, 'publicKeys', auth.user.uid), publicKey);
     } catch (e) {
       console.error(e);
     }
@@ -49,13 +49,24 @@ export const useRemoteDBStore = defineStore('database', () => {
     }
   }
   async function createGroup({ type, members, admins }) {
-    const { id } = await addDoc(doc(remoteDB, 'groups'), {
+    const { id } = await addDoc(collection(remoteDB, 'groups'), {
       members,
       admins,
       active: true,
       type,
-      seen: { [authStore.user.uid]: serverTimestamp() },
+      seen: { [auth.user.uid]: serverTimestamp() },
       timestamp: serverTimestamp()
+    });
+    return id;
+  }
+  async function notifyUserAdded({ uid, groupId, encryptedKey }) {
+    const { id } = await addDoc(collection(remoteDB, 'users', uid, 'notify'), {
+      type: 'group:add',
+      payload: {
+        id: groupId,
+        encryptedKey
+      },
+      by: auth.user.uid
     });
     return id;
   }
@@ -66,6 +77,7 @@ export const useRemoteDBStore = defineStore('database', () => {
     searchUsers,
     updateProfile,
     getPublicKey,
-    createGroup
+    createGroup,
+    notifyUserAdded
   };
 });

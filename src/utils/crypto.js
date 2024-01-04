@@ -23,7 +23,10 @@ export const generatePrivateKey = async (uid) => {
 };
 
 export const importPublicKey = async (data) => {
-  const key = await crypto.importKey('jwk', data, { name: 'RSA-OAEP', hash: 'SHA-512' }, true, []);
+  const key = await crypto.importKey('jwk', data, { name: 'RSA-OAEP', hash: 'SHA-512' }, true, [
+    'wrapKey',
+    'encrypt'
+  ]);
   return key;
 };
 

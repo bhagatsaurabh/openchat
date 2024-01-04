@@ -1,8 +1,8 @@
 let db = null;
 
-const openDB = async () => {
+const openDB = async (version, uid, newGroups = []) => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ocdb');
+    const request = indexedDB.open('ocdb', version);
 
     request.addEventListener('upgradeneeded', (e) => {
       const database = e.target.result;
@@ -13,10 +13,15 @@ const openDB = async () => {
       if (!database.objectStoreNames.contains('keys')) {
         database.createObjectStore('keys');
       }
-      if (!database.objectStoreNames.contains('groups')) {
-        database.createObjectStore('groups');
-      } else {
-        //
+
+      if (uid) {
+        newGroups.forEach((groupId) => {
+          const newGroupName = `group:${uid}:${groupId}`;
+          if (!database.objectStoreNames.contains(newGroupName)) {
+            database.createObjectStore(newGroupName);
+            database.createObjectStore(`messages:${groupId}`);
+          }
+        });
       }
 
       db = database;
@@ -26,7 +31,6 @@ const openDB = async () => {
 
     request.addEventListener('success', (e) => {
       db = e.target.result;
-      console.log(db);
       db.addEventListener('close', closeListener);
       resolve(db);
     });

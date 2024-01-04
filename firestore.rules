@@ -74,8 +74,8 @@ service cloud.firestore {
                     input.admins is list && input.type is string &&
                     input.type in ['broadcast', 'private'] &&
                     input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
-                    input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
-                    input.timestamp is timestamp;
+                    input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time &&
+                    input.timestamp is timestamp && input.timestamp == request.time;
     	return isValid && input.active == true &&
              (input.type == 'broadcast'
                ? validateBCGroupCreation(input, request)
@@ -124,13 +124,13 @@ service cloud.firestore {
       let input = request.resource.data;
       let validKeys = ['by', 'timestamp', 'expiry', 'text', 'type', 'unseenCount'];
       let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
-                    input.by is string && input.timestamp is timestamp &&
-                    input.expiry is timestamp && input.text is string &&
-                    input.unseenCount is int &&
+                    input.by is string && input.text is string &&
+                    input.timestamp is timestamp && input.timestamp == request.time &&
+                    input.expiry is timestamp && input.unseenCount is int &&
                     input.unseenCount == get(/databases/$(database)/documents/groups/$(chatId)).data.members.size();
       let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
       return isValid && input.by == request.auth.uid &&
-             delta > 1292400000 && delta < 1296000000
+             delta > 777600000 && delta < 950400000
     }
     function validateMessageUpdation(request, chatId) {
       let input = request.resource.data;
@@ -146,7 +146,7 @@ service cloud.firestore {
       let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
       let message = get(/databases/$(database)/documents/groups/$(chatId)/messages/$(request.resource.data.id)).data;
       return isValid && message.by == request.auth.uid &&
-             delta > 82800000 && delta < 86400000;
+             delta > 86400000 && delta < 259200000;
     }
     function validateMessage(request, chatId) {
       let input = request.resource.data;
