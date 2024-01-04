@@ -1,7 +1,7 @@
 <script setup>
 import { watch, ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
-import { useRemoteDBStore } from '@/stores/database';
+import { useRemoteDBStore } from '@/stores/remote';
 import ChatSearchListItem from '@/components/ChatSearchListItem/ChatSearchListItem.vue';
 import Button from '../Common/Button/Button.vue';
 
@@ -13,7 +13,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['select']);
 
-const db = useRemoteDBStore();
+const remote = useRemoteDBStore();
 const list = ref([]);
 const page = ref(0);
 const numPages = ref(0);
@@ -30,12 +30,12 @@ const fbType = computed(() => {
 const searchUsers = async () => {
   isBusy.value = true;
   if (!page.value) {
-    const { users, nbPages } = await db.searchUsers(props.query, page.value);
+    const { users, nbPages } = await remote.searchUsers(props.query, page.value);
     list.value = users;
     numPages.value = nbPages;
     if (numPages.value > 0) page.value += 1;
   } else {
-    const { users } = await db.searchUsers(props.query, page.value);
+    const { users } = await remote.searchUsers(props.query, page.value);
     list.value = [...list.value, ...users];
     page.value += 1;
   }
@@ -119,3 +119,4 @@ onBeforeUnmount(() => observer?.disconnect());
   margin-top: 1rem;
 }
 </style>
+@/stores/remote

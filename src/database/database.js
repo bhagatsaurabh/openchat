@@ -1,28 +1,13 @@
 let db = null;
 
-const openDB = async (version, uid, newGroups = []) => {
+const openDB = async (version, uid, newGroupId) => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('ocdb', version);
 
     request.addEventListener('upgradeneeded', (e) => {
       const database = e.target.result;
 
-      if (!database.objectStoreNames.contains('preferences')) {
-        database.createObjectStore('preferences');
-      }
-      if (!database.objectStoreNames.contains('keys')) {
-        database.createObjectStore('keys');
-      }
-
-      if (uid) {
-        newGroups.forEach((groupId) => {
-          const newGroupName = `group:${uid}:${groupId}`;
-          if (!database.objectStoreNames.contains(newGroupName)) {
-            database.createObjectStore(newGroupName);
-            database.createObjectStore(`messages:${groupId}`);
-          }
-        });
-      }
+      createSchema(database, uid, newGroupId);
 
       db = database;
       db.addEventListener('close', closeListener);
@@ -44,6 +29,28 @@ const openDB = async (version, uid, newGroups = []) => {
     });
   });
 };
+const createSchema = (database, uid, groupId) => {
+  if (!database.objectStoreNames.contains('preferences')) {
+    database.createObjectStore('preferences');
+  }
+
+  if (uid) {
+    const keyStoreName = `keys:${uid}`;
+    if (!database.objectStoreNames.contains(keyStoreName)) {
+      database.createObjectStore(keyStoreName);
+    }
+    const groupsStoreName = `groups:${uid}`;
+    if (!database.objectStoreNames.contains(groupsStoreName)) {
+      database.createObjectStore(groupsStoreName);
+    }
+  }
+  if (uid && groupId) {
+    const messagesStoreName = `messages:${groupId}`;
+    if (!database.objectStoreNames.contains(messagesStoreName)) {
+      database.createObjectStore(messagesStoreName);
+    }
+  }
+};
 const closeDB = () => {
   db?.removeEventListener('close', closeListener);
   db?.close();
@@ -54,6 +61,16 @@ const closeListener = (event) => {
     type: 'database/error',
     payload: errors.DB_CLOSED({ details: event.target?.error?.message ?? 'Not Available' })
   }); */
+};
+const schemaChange = async (uid, newGroupId) => {
+  if (uid && !newGroupId) {
+    const userSchemaExists =
+      db.objectStoreNames.contains(`keys:${uid}`) && db.objectStoreNames.contains(`groups:${uid}`);
+    if (userSchemaExists) return;
+  }
+
+  closeDB();
+  await openDB(db.version + 1, uid, newGroupId);
 };
 
 const getSingleton = async (name) => {
@@ -98,7 +115,7 @@ const getObject = async (objectStore, key) => {
     }
   });
 };
-const updateObject = async (objectStore, value, key) => {
+const updateObject = async (objectStore, key, value) => {
   return new Promise((resolve, reject) => {
     try {
       const request = db.transaction(objectStore, 'readwrite').objectStore(objectStore).put(value, key);
@@ -109,5 +126,20 @@ const updateObject = async (objectStore, value, key) => {
     }
   });
 };
+const getAll = async (objectStore) => {
+  return new Promise((resolve, reject) => {
+    if (!db) resolve(null);
+    else {
+      let request;
+      try {
+        request = db.transaction(objectStore).objectStore(objectStore).getAll();
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      } catch (error) {
+        reject(error);
+      }
+    }
+  });
+};
 
-export { db, openDB, closeDB, getSingleton, updateSingleton, getObject, updateObject };
+export { db, openDB, closeDB, schemaChange, getSingleton, updateSingleton, getObject, updateObject, getAll };

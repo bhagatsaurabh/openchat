@@ -3,7 +3,7 @@ import { watch, onBeforeUnmount, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { trapBetween, trapFocus } from '@/utils/utils';
-import { useRemoteDBStore } from '@/stores/database';
+import { useRemoteDBStore } from '@/stores/remote';
 import { useAuthStore } from '@/stores/auth';
 import { useStorageStore } from '@/stores/storage';
 import Button from '@/components/Common/Button/Button.vue';
@@ -15,7 +15,7 @@ const emit = defineEmits(['back']);
 
 const router = useRouter();
 const auth = useAuthStore();
-const db = useRemoteDBStore();
+const remote = useRemoteDBStore();
 const storage = useStorageStore();
 const el = ref(null);
 const bound = ref(null);
@@ -43,12 +43,12 @@ const validateName = (val) => {
 const handleUpdate = async (field, args) => {
   if (field === 'name') {
     if (nameEl.value.validate(name.value)) return false;
-    return await db.updateProfile({ name: name.value });
+    return await remote.updateProfile({ name: name.value });
   } else if (field === 'avatar') {
     const { blob } = args;
     await storage.uploadFile(blob, `users/${auth.user.uid}/profile.png`, { contentType: 'image/png' });
     const url = await storage.getUrl(`users/${auth.user.uid}/profile.png`);
-    await db.updateProfile({ avatarUrl: url });
+    await remote.updateProfile({ avatarUrl: url });
     auth.profile.avatarUrl = url;
   }
   return false;
@@ -159,3 +159,4 @@ onBeforeUnmount(unregisterGuard);
   flex-direction: column;
 }
 </style>
+@/stores/remote

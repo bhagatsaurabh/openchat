@@ -2,7 +2,7 @@ import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
 import { themeClasses, themes } from '../utils/constants';
-import { getPreferences } from '../database/driver';
+import * as local from '../database/driver';
 
 export const usePreferencesStore = defineStore('preferences', () => {
   const userTheme = ref(themes.SYSTEM);
@@ -31,7 +31,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
   }
   async function load() {
     try {
-      const storedPreferences = await getPreferences();
+      const storedPreferences = await local.getPreferences();
       sanitizePrefs(storedPreferences);
 
       setTheme(storedPreferences.theme);

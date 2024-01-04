@@ -14,3 +14,7 @@ export const noAuthGuard = async () => {
   const auth = useAuthStore();
   return auth.user;
 };
+
+export const chatGuard = async (_to, _from) => {
+  console.log(_to, _from);
+};

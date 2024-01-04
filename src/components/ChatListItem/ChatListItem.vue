@@ -27,7 +27,7 @@ const timestamp = computed(() => {
 </script>
 
 <template>
-  <div class="chat-item" tabindex="0" @click="emit('select', meta)">
+  <div class="chat-item" tabindex="0" @click="emit('select', meta.id)">
     <span class="avatar">
       <img :src="avatarUrl" />
     </span>

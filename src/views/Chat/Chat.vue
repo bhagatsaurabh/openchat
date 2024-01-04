@@ -3,10 +3,11 @@ import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
-import { useRemoteDBStore } from '@/stores/database';
+import { useRemoteDBStore } from '@/stores/remote';
+import { useGroupsStore } from '@/stores/groups';
 import { generateGroupKey, importPublicKey } from '@/utils/crypto';
 import { bufToBase64 } from '@/utils/utils';
-import { createGroup } from '@/database/driver';
+import * as local from '@/database/driver';
 import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
@@ -20,7 +21,8 @@ import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
 
 const auth = useAuthStore();
-const db = useRemoteDBStore();
+const remote = useRemoteDBStore();
+const groups = useGroupsStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
 const showProfile = ref(false);
@@ -37,25 +39,35 @@ const handleSignOut = async () => {
   router.push('/auth');
 };
 const handleSettings = () => {
-  // TODO
+  // TODO: Handle settings panel
 };
-const handleSelectExisting = (data) => {
-  // TODO: Open/Switch-to existing group
+const switchToGroup = (id) => {
+  groups.setActiveGroup(id);
+  router.push({ path: '/chat' });
 };
-const handleSelectNew = async (data) => {
-  // TODO: Check if present in existing
+const handleSelectNew = async (otherUser) => {
+  const existing = groups.getDMGroupByUID(otherUser.id);
+  if (existing) {
+    switchToGroup(existing.id);
+    return;
+  }
 
   isBusy.value = true;
-  const publicKey = await importPublicKey(await db.getPublicKey(data.id));
+  const publicKey = await importPublicKey(await remote.getPublicKey(otherUser.id));
   const encryptedKey = await bufToBase64((await generateGroupKey([publicKey]))[0]);
-  const groupId = await db.createGroup({
+  const groupId = await remote.createGroup({
     type: 'private',
-    members: [auth.user.uid, data.id],
-    admins: [auth.user.uid, data.id]
+    members: [auth.user.uid, otherUser.id],
+    admins: [auth.user.uid, otherUser.id],
+    avatarUrl: otherUser.avatarUrl
   });
-  await createGroup(groupId);
-  await db.notifyUserAdded({ uid: data.id, groupId, encryptedKey });
-  // TODO: Open/Switch-to newly created group
+  // Need to fetch newly created group to get resolved serverTimestamps
+  const group = await remote.getGroup(groupId);
+  group.id = groupId;
+  await local.createGroup(auth.user.uid, group);
+  groups.addGroup(group);
+  await remote.notifyUserAdded({ uid: otherUser.id, groupId, encryptedKey });
+  switchToGroup(groupId);
   isBusy.value = false;
 };
 
@@ -110,13 +122,14 @@ watch(query, () => {
     <ChatSearch @search="(val) => (query = val)" />
     <Tabs :tabs="tabs" :active="activeTab" :show-header="!!query" @change="(val) => (activeTab = val)">
       <template #my-chats>
-        <ChatList :query="query" @select="handleSelectExisting" />
+        <ChatList :query="query" @select="(group) => switchToGroup(group.id)" />
       </template>
       <template #find>
         <ChatSearchList :query="query" @select="handleSelectNew" />
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />
+    <RouterView />
   </main>
 </template>
 
@@ -140,3 +153,4 @@ watch(query, () => {
   text-shadow: 0px 0px 4px var(--c-background-1);
 }
 </style>
+@/stores/remote

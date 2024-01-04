@@ -60,19 +60,22 @@ service cloud.firestore {
     }
     function validateDMGroupCreation(input, request) {
       let isValid = input.members.toSet().size() == 2 && input.admins.toSet().size() == 2 &&
-                    input.members[0] == input.admins[0] && input.members[1] == input.admins[1];
-      let check1 = isValid && input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0]));
-      let checkF = check1 && input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1]));
+                    input.members[0] is string && input.members[1] is string &&
+                    input.members[0] == input.admins[0] && input.members[1] == input.admins[1] &&
+                    input.members[0] == request.auth.uid;
+      let otherUser = isValid ? get(/databases/$(database)/documents/users/$(input.members[1])).data : {};
       
-      return validateGroupMembership(request) && validateGroupAdminship(request) && checkF
+      return isValid && validateGroupMembership(request) && validateGroupAdminship(request) &&
+             input.avatarUrl == otherUser.avatarUrl;
     }
     function validateGroupCreation(request) {
       let input = request.resource.data;
-      let validKeys = ['members', 'admins', 'active', 'type', 'seen', 'timestamp'];
+      let validKeys = ['members', 'admins', 'active', 'type', 'seen', 'timestamp', 'avatarUrl'];
       let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
                     input.active is bool && input.members is list &&
                     input.admins is list && input.type is string &&
                     input.type in ['broadcast', 'private'] &&
+                    input.avatarUrl is string &&
                     input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
                     input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time &&
                     input.timestamp is timestamp && input.timestamp == request.time;
@@ -187,9 +190,10 @@ service cloud.firestore {
     }
     function validateNotifyCreation(request) {
       let input = request.resource.data;
-      let validKeys = ['type', 'payload', 'by'];
+      let validKeys = ['type', 'payload', 'by', 'timestamp'];
       return input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
              input.type is string && input.type in ['group:add', 'group:remove'] &&
+             input.timestamp is timestamp && input.timestamp == request.time &&
              input.by is string && exists(/databases/$(database)/documents/users/$(input.by)) &&
              input.payload is map &&
              (input.type == 'group:add' ? validateNotifyTypeGA(input) : true) &&
