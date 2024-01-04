@@ -4,6 +4,9 @@ import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
 import { useRemoteDBStore } from '@/stores/database';
+import { generateGroupKey, importPublicKey } from '@/utils/crypto';
+import { bufToBase64 } from '@/utils/utils';
+import { createGroup } from '@/database/driver';
 import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
@@ -15,7 +18,6 @@ import Tabs from '@/components/Common/Tabs/Tabs.vue';
 import Profile from '@/components/Profile/Profile.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
-import { generateGroupKey } from '@/utils/crypto';
 
 const auth = useAuthStore();
 const db = useRemoteDBStore();
@@ -38,22 +40,23 @@ const handleSettings = () => {
   // TODO
 };
 const handleSelectExisting = (data) => {
-  // TODO
+  // TODO: Open/Switch-to existing group
 };
 const handleSelectNew = async (data) => {
-  /*  TODO
-      4. Create Group (Local) with remote id
-      5. Create notification for other user
-      6. Open newly created Group
-  */
+  // TODO: Check if present in existing
+
   isBusy.value = true;
-  const publicKey = await db.getPublicKey(data.id);
-  const encryptedKey = (await generateGroupKey([publicKey]))[0];
+  const publicKey = await importPublicKey(await db.getPublicKey(data.id));
+  const encryptedKey = await bufToBase64((await generateGroupKey([publicKey]))[0]);
   const groupId = await db.createGroup({
     type: 'private',
     members: [auth.user.uid, data.id],
     admins: [auth.user.uid, data.id]
   });
+  await createGroup(groupId);
+  await db.notifyUserAdded({ uid: data.id, groupId, encryptedKey });
+  // TODO: Open/Switch-to newly created group
+  isBusy.value = false;
 };
 
 watch(query, () => {

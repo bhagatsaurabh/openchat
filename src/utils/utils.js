@@ -98,3 +98,15 @@ export const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 export const clamp = (val, [a, b]) => Math.max(Math.min(val, Math.max(a, b)), Math.min(a, b));
 export const normalize = (val, min, max) => (val - min) / (max - min);
 export const denormalize = (val, min, max) => val * (max - min) + min;
+
+export const bufToBase64 = async (buf, type = 'application/octet-stream') =>
+  await new Promise((resolve, reject) => {
+    const reader = Object.assign(new FileReader(), {
+      onload: () => resolve(reader.result.substring(37)),
+      onerror: () => reject(reader.error)
+    });
+    reader.readAsDataURL(new File([buf], '', { type }));
+  });
+
+export const base64ToBuf = async (base64) =>
+  await (await fetch('data:application/octet-stream;base64,' + base64)).arrayBuffer();

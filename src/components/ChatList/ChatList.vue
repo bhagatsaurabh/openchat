@@ -13,10 +13,6 @@ defineProps({
 });
 
 const emit = defineEmits(['select']);
-
-const handleSelect = (chat) => {
-  console.log(chat);
-};
 </script>
 
 <template>
