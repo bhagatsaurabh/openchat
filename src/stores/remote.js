@@ -5,7 +5,7 @@ import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
 import { fetchUsers } from '@/services/user-search';
 
-export const useRemoteDBStore = defineStore('database', () => {
+export const useRemoteDBStore = defineStore('remote', () => {
   const auth = useAuthStore();
 
   async function storeUserInfo(userInfo) {
@@ -48,16 +48,28 @@ export const useRemoteDBStore = defineStore('database', () => {
       console.log(error);
     }
   }
-  async function createGroup({ type, members, admins }) {
-    const { id } = await addDoc(collection(remoteDB, 'groups'), {
+  async function createGroup({ type, members, admins, avatarUrl }) {
+    const data = {
       members,
       admins,
       active: true,
       type,
       seen: { [auth.user.uid]: serverTimestamp() },
-      timestamp: serverTimestamp()
-    });
+      timestamp: serverTimestamp(),
+      avatarUrl
+    };
+    const { id } = await addDoc(collection(remoteDB, 'groups'), data);
     return id;
+  }
+  async function getGroup(id) {
+    try {
+      const snap = await getDoc(doc(remoteDB, 'groups', id));
+      const data = snap.data();
+      data.timestamp = data.timestamp.toDate();
+      return data;
+    } catch (error) {
+      console.log(error);
+    }
   }
   async function notifyUserAdded({ uid, groupId, encryptedKey }) {
     const { id } = await addDoc(collection(remoteDB, 'users', uid, 'notify'), {
@@ -78,6 +90,7 @@ export const useRemoteDBStore = defineStore('database', () => {
     updateProfile,
     getPublicKey,
     createGroup,
-    notifyUserAdded
+    notifyUserAdded,
+    getGroup
   };
 });

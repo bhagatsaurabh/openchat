@@ -13,8 +13,9 @@ import { PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { app, remoteDB } from '@/config/firebase';
 import { useNotificationStore } from './notification';
 import { useRecaptchaStore } from './recaptcha';
-import { useRemoteDBStore } from '@/stores/database';
-import { generatePrivateKey, getPublicKey } from '@/utils/crypto';
+import { useRemoteDBStore } from '@/stores/remote';
+import { generatePrivateKey } from '@/utils/crypto';
+import * as local from '@/database/driver';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
@@ -29,7 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const captcha = useRecaptchaStore();
   const notify = useNotificationStore();
-  const db = useRemoteDBStore();
+  const remote = useRemoteDBStore();
 
   function setUser(signedInUser) {
     user.value = signedInUser;
@@ -61,10 +62,11 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = snap.data();
   }
   async function handleNewUser() {
+    await local.createUser(user.value.uid);
     const { publicKey } = await generatePrivateKey(user.value.uid);
     encKey.value = publicKey;
-    await db.storePublicKey(publicKey);
-    await db.storeUserInfo({
+    await remote.storePublicKey(publicKey);
+    await remote.storeUserInfo({
       name: name.value,
       avatarUrl: '',
       id: user.value.uid,
@@ -73,7 +75,7 @@ export const useAuthStore = defineStore('auth', () => {
     await fetchUserProfile(user.value.uid);
   }
   async function handleExistingUser() {
-    encKey.value = await getPublicKey(user.value.uid);
+    encKey.value = await local.getPublicKey(user.value.uid);
     await fetchUserProfile(user.value.uid);
   }
   async function signIn(type, options) {
@@ -142,7 +144,7 @@ export const useAuthStore = defineStore('auth', () => {
       const credential = PhoneAuthProvider.credential(verificationId, code);
       const { user } = await linkWithCredential(auth.currentUser, credential);
       setUser(user);
-      await db.updateProfile({ phone: user.phoneNumber });
+      await remote.updateProfile({ phone: user.phoneNumber });
       profile.value.phone = user.phoneNumber;
     }
   }
