@@ -1,8 +1,10 @@
 <script setup>
 import ChatListItem from '../ChatListItem/ChatListItem.vue';
+import Icon from '../Common/Icon/Icon.vue';
+import Link from '../Common/Link/Link.vue';
 
 defineProps({
-  chatList: {
+  groups: {
     type: Array,
     default: () => []
   },
@@ -12,126 +14,39 @@ defineProps({
   }
 });
 
-const emit = defineEmits(['select']);
+const emit = defineEmits(['select', 'open-search', 'self-chat']);
 </script>
 
 <template>
   <section class="chat-list scroll-shadows-0 scroll-shadows">
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'private',
-        name: 'Test User 1',
-        lastMsg: {
-          data: 'Hello World ! Hello World ! Hello World ! Hello World ! Hello World !',
-          timestamp: '2023-12-15T10:00:00'
-        }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'private',
-        name: 'Test User 2',
-        lastMsg: {
-          data: 'Hello World !',
-          timestamp: '2023-12-10T10:00:00'
-        }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
-    <ChatListItem
-      :meta="{
-        type: 'group',
-        name: 'Test Group',
-        lastMsg: { data: 'Hello World !', timestamp: '2023-12-19T10:00:00' }
-      }"
-      @select="(e) => emit('select', e)"
-    />
+    <ChatListItem v-for="group in groups" :key="group.id" :group="group" @select="(e) => emit('select', e)" />
+    <div class="empty" v-if="groups.length === 0">
+      <h3 class="flex-center mb-1">
+        <Icon class="mr-0p5" :size="2" name="chats-accented" alt="no-chats icon" singular /> No chats
+      </h3>
+      <h3>
+        Use <Link @click="emit('open-search')">Search</Link> to find other users or
+        <Link @click="emit('self-chat')">Chat with yourself</Link>
+      </h3>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .chat-list {
   height: 100%;
+}
+.empty {
+  padding: 0 1rem 0 1rem;
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+}
+.empty span {
+  font-size: 0;
+}
+.empty h3 {
+  font-weight: lighter;
+  text-align: center;
 }
 </style>

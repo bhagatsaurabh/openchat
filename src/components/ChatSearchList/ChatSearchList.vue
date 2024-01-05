@@ -119,4 +119,3 @@ onBeforeUnmount(() => observer?.disconnect());
   margin-top: 1rem;
 }
 </style>
-@/stores/remote

@@ -48,8 +48,9 @@ export const useRemoteDBStore = defineStore('remote', () => {
       console.log(error);
     }
   }
-  async function createGroup({ type, members, admins, avatarUrl }) {
+  async function createGroup({ name, type, members, admins, avatarUrl }) {
     const data = {
+      name,
       members,
       admins,
       active: true,

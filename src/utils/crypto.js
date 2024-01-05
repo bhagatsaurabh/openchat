@@ -29,7 +29,7 @@ export const importPublicKey = async (data) => {
   return key;
 };
 
-export const generateGroupKey = async (publicKeys) => {
+export const generateGroupKey = async (publicKeys = []) => {
   let groupKey = await crypto.generateKey(
     {
       name: 'AES-GCM',
@@ -41,21 +41,20 @@ export const generateGroupKey = async (publicKeys) => {
 
   // publicKeys are RSA public keys of every member of the group
 
-  const wrappedGroupKeys = [];
-  for (const publicKey of publicKeys) {
-    wrappedGroupKeys.push(await crypto.wrapKey('jwk', groupKey, publicKey, { name: 'RSA-OAEP' }));
-  }
+  const wrappedGroupKeys = await Promise.all(
+    publicKeys.map((publicKey) => crypto.wrapKey('jwk', groupKey, publicKey, { name: 'RSA-OAEP' }))
+  );
 
   groupKey = undefined;
 
   return wrappedGroupKeys;
 };
 
-export const getGroupKey = async (wrappedKey, privateKey) => {
+export const getGroupKey = async (uid, wrappedKey) => {
   return await crypto.unwrapKey(
     'jwk',
     wrappedKey,
-    privateKey,
+    await local.getPrivateKey(uid),
     { name: 'RSA-OAEP' },
     { name: 'AES-GCM' },
     false,

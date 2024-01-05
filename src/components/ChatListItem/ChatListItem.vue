@@ -4,16 +4,16 @@ import { computed } from 'vue';
 import { days } from '@/utils/constants';
 
 const props = defineProps({
-  meta: Object
+  group: Object
 });
 const emit = defineEmits(['select']);
 
 const msInADay = 1000 * 60 * 60 * 24;
 const avatarUrl = computed(
-  () => props.meta.avatarUrl ?? `/assets/icons/avatar${props.meta.type === 'group' ? '-group' : ''}.png`
+  () => props.group.avatarUrl ?? `/assets/icons/avatar${props.group.type === 'broadcast' ? '-group' : ''}.png`
 );
 const timestamp = computed(() => {
-  const date = new Date(props.meta.lastMsg.timestamp);
+  const date = props.group.lastMsg.timestamp ?? props.group.timestamp;
   const today = new Date();
   const delta = (today - date) / msInADay;
   if (delta < 1) {
@@ -27,20 +27,20 @@ const timestamp = computed(() => {
 </script>
 
 <template>
-  <div class="chat-item" tabindex="0" @click="emit('select', meta.id)">
+  <div class="chat-item" tabindex="0" @click="emit('select', group.id)">
     <span class="avatar">
       <img :src="avatarUrl" />
     </span>
     <div class="details">
       <div class="title">
         <span class="name">
-          {{ meta.name }}
+          {{ group.name }}
         </span>
         <span class="time">
           {{ timestamp }}
         </span>
       </div>
-      <div class="msg">{{ meta.lastMsg.data }}</div>
+      <div class="msg">{{ group.lastMsg.text }}</div>
     </div>
   </div>
 </template>

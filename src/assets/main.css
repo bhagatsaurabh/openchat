@@ -76,6 +76,14 @@
 .d-inline {
   display: inline;
 }
+.d-inline-flex {
+  display: inline-flex !important;
+}
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .fade-enter-active,
 .fade-leave-active {
