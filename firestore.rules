@@ -66,13 +66,15 @@ service cloud.firestore {
       let otherUser = isValid ? get(/databases/$(database)/documents/users/$(input.members[1])).data : {};
       
       return isValid && validateGroupMembership(request) && validateGroupAdminship(request) &&
-             input.avatarUrl == otherUser.avatarUrl;
+             input.avatarUrl == otherUser.avatarUrl &&
+             input.name == otherUser.name;
     }
     function validateGroupCreation(request) {
       let input = request.resource.data;
-      let validKeys = ['members', 'admins', 'active', 'type', 'seen', 'timestamp', 'avatarUrl'];
+      let validKeys = ['name', 'members', 'admins', 'active', 'type', 'seen', 'timestamp', 'avatarUrl'];
       let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
                     input.active is bool && input.members is list &&
+                    input.name is string && input.name.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$') &&
                     input.admins is list && input.type is string &&
                     input.type in ['broadcast', 'private'] &&
                     input.avatarUrl is string &&

@@ -19,15 +19,17 @@ import Tabs from '@/components/Common/Tabs/Tabs.vue';
 import Profile from '@/components/Profile/Profile.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
+import ChatListener from '@/components/ChatListener/ChatListener.vue';
 
 const auth = useAuthStore();
 const remote = useRemoteDBStore();
-const groups = useGroupsStore();
+const groupsStore = useGroupsStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
 const showProfile = ref(false);
 const activeTab = ref(0);
 const query = ref('');
+const forceHeader = ref(false);
 const tabs = ref([
   { name: 'My Chats', id: 'my-chats', icon: 'chats' },
   { name: 'Find', id: 'find', icon: 'globe' }
@@ -42,36 +44,87 @@ const handleSettings = () => {
   // TODO: Handle settings panel
 };
 const switchToGroup = (id) => {
-  groups.setActiveGroup(id);
+  groupsStore.setActiveGroup(id);
   router.push({ path: '/chat' });
 };
-const handleSelectNew = async (otherUser) => {
-  const existing = groups.getDMGroupByUID(otherUser.id);
+const handleCreateGroup = async (name, type, members = [], avatarUrl = '') => {
+  // TODO: Validation
+  if (type === 'private') {
+    const existing = groupsStore.getDMGroupByUID(members[1].id);
+    if (existing) {
+      switchToGroup(existing.id);
+      return;
+    }
+  }
+
+  isBusy.value = true;
+
+  const groupId = await remote.createGroup({
+    name: name,
+    type,
+    members: [...members],
+    admins: type === 'private' ? [...members] : [auth.user.uid],
+    avatarUrl: type === 'private' ? members[1].avatarUrl : avatarUrl
+  });
+  // Need to fetch newly created group to get resolved serverTimestamps
+  const group = await remote.getGroup(groupId);
+  group.id = groupId;
+
+  members.shift();
+  const rawPublicKeys = await Promise.all(members.map((id) => remote.getPublicKey(id)));
+  const publicKeys = await Promise.all(rawPublicKeys.map((rawPublicKey) => importPublicKey(rawPublicKey)));
+  publicKeys.unshift(auth.encKey);
+
+  const encryptedKeys = await generateGroupKey(publicKeys);
+  await local.createGroupKey(auth.user.uid, groupId, encryptedKeys.shift());
+  await local.createGroup(auth.user.uid, group);
+  const encryptedKeyCiphers = await Promise.all(
+    encryptedKeys.map((encryptedKey) => bufToBase64(encryptedKey))
+  );
+  await Promise.all(
+    encryptedKeyCiphers.map((encryptedKeyCipher, idx) =>
+      remote.notifyUserAdded({ uid: members[idx], groupId, encryptedKey: encryptedKeyCipher })
+    )
+  );
+
+  groupsStore.addGroup(group);
+  switchToGroup(groupId);
+  isBusy.value = false;
+};
+const handleForceSearch = () => {
+  activeTab.value = 1;
+  forceHeader.value = true;
+};
+const handleSelfChat = async () => {
+  const existing = groupsStore.getGroupByID('self');
   if (existing) {
     switchToGroup(existing.id);
     return;
   }
 
   isBusy.value = true;
-  const publicKey = await importPublicKey(await remote.getPublicKey(otherUser.id));
-  const encryptedKey = await bufToBase64((await generateGroupKey([publicKey]))[0]);
-  const groupId = await remote.createGroup({
+
+  const group = {
+    name: 'Me',
     type: 'private',
-    members: [auth.user.uid, otherUser.id],
-    admins: [auth.user.uid, otherUser.id],
-    avatarUrl: otherUser.avatarUrl
-  });
-  // Need to fetch newly created group to get resolved serverTimestamps
-  const group = await remote.getGroup(groupId);
-  group.id = groupId;
+    members: [auth.user.uid],
+    admins: [auth.user.uid],
+    avatarUrl: auth.profile.avatarUrl,
+    timestamp: new Date(),
+    id: 'self'
+  };
+
+  const encryptedKey = (await generateGroupKey([auth.encKey]))[0];
+  await local.createGroupKey(auth.user.uid, 'self', encryptedKey);
   await local.createGroup(auth.user.uid, group);
-  groups.addGroup(group);
-  await remote.notifyUserAdded({ uid: otherUser.id, groupId, encryptedKey });
-  switchToGroup(groupId);
+
+  groupsStore.addGroup(group);
+  switchToGroup('self');
   isBusy.value = false;
 };
 
 watch(query, () => {
+  forceHeader.value = false;
   if (!query.value) activeTab.value = 0;
   else activeTab.value = 1;
 });
@@ -120,15 +173,30 @@ watch(query, () => {
       Are you sure ?
     </Modal>
     <ChatSearch @search="(val) => (query = val)" />
-    <Tabs :tabs="tabs" :active="activeTab" :show-header="!!query" @change="(val) => (activeTab = val)">
+    <Tabs
+      :tabs="tabs"
+      :active="activeTab"
+      :show-header="!!query || forceHeader"
+      @change="(val) => (activeTab = val)"
+    >
       <template #my-chats>
-        <ChatList :query="query" @select="(group) => switchToGroup(group.id)" />
+        <ChatList
+          :groups="groupsStore.groups"
+          :query="query"
+          @select="(group) => switchToGroup(group.id)"
+          @open-search="handleForceSearch"
+          @self-chat="handleSelfChat"
+        />
       </template>
       <template #find>
-        <ChatSearchList :query="query" @select="handleSelectNew" />
+        <ChatSearchList
+          :query="query"
+          @select="(otherUser) => handleCreateGroup(otherUser.name, 'private', [auth.profile, otherUser])"
+        />
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />
+    <ChatListener />
     <RouterView />
   </main>
 </template>
@@ -153,4 +221,3 @@ watch(query, () => {
   text-shadow: 0px 0px 4px var(--c-background-1);
 }
 </style>
-@/stores/remote

@@ -20,6 +20,9 @@ export const useGroupsStore = defineStore('groups', () => {
       .filter((group) => group.type === 'private')
       .find((group) => group.members.includes(otherUserId));
   }
+  function getGroupByID(id) {
+    return groups.value.find((group) => group.id === id);
+  }
   function setActiveGroup(id) {
     const group = groups.value.find((grp) => grp.id === id);
     if (group) activeGroup.value = group;
@@ -31,6 +34,7 @@ export const useGroupsStore = defineStore('groups', () => {
     load,
     getDMGroupByUID,
     addGroup,
-    setActiveGroup
+    setActiveGroup,
+    getGroupByID
   };
 });

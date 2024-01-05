@@ -24,3 +24,5 @@ onBeforeUnmount(() => {
   mediaLight.removeEventListener('change', mediaChangeHandler);
 });
 </script>
+
+<template><slot></slot></template>
