@@ -1,35 +1,24 @@
 <script setup>
-import { collection, query, onSnapshot } from 'firebase/firestore';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 
-import { remoteDB } from '@/config/firebase';
-import { useAuthStore } from '@/stores/auth';
+import { useEventsStore } from '@/stores/events';
+import { useUsersStore } from '@/stores/users';
+import { useGroupsStore } from '@/stores/groups';
 
-const auth = useAuthStore();
-const unsubscribe = ref(() => {});
+const events = useEventsStore();
+const users = useUsersStore();
+const groups = useGroupsStore();
 
-const handleSetup = () => {
-  const q = query(collection(remoteDB, 'users', auth.user.uid, 'notify'));
-  unsubscribe.value = onSnapshot(
-    q,
-    (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
-          console.log('Notification Added', change.doc.data());
-        }
-        if (change.type === 'removed') {
-          console.log('Notification Removed', change.doc.data());
-        }
-      });
-    },
-    (error) => {
-      console.log({ ...error });
-    }
-  );
-};
-
-onMounted(() => handleSetup());
-onBeforeUnmount(() => unsubscribe.value());
+onMounted(() => {
+  events.listen();
+  users.listen();
+  groups.listen();
+});
+onBeforeUnmount(() => {
+  events.stop();
+  users.stop();
+  groups.stop();
+});
 </script>
 
 <template><slot></slot></template>

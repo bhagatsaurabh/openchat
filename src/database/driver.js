@@ -1,5 +1,14 @@
 import { usePreferencesStore } from '@/stores/preferences';
-import { getSingleton, updateSingleton, schemaChange, getAll, updateObject, getObject } from './database';
+import {
+  getSingleton,
+  updateSingleton,
+  schemaChange,
+  getAll,
+  updateObject,
+  getObject,
+  deleteObject,
+  getAllKeys
+} from './database';
 import { getGroupKey } from '@/utils/crypto';
 
 export const getPreferences = async () => {
@@ -29,14 +38,37 @@ export const getPrivateKey = async (uid) => {
 export const createGroup = async (uid, group) => {
   // Remove non-relevant data
   delete group.seen;
-  delete group.active;
   await updateObject(`groups:${uid}`, group.id, group);
   await schemaChange(uid, group.id);
+};
+export const updateGroup = async (uid, groupId, group) => {
+  let existingGroup = await getGroup(uid, groupId);
+  existingGroup = { ...existingGroup, ...group };
+  await updateObject(`groups:${uid}`, groupId, existingGroup);
 };
 export const createGroupKey = async (uid, groupId, encryptedKey) => {
   const key = await getGroupKey(uid, encryptedKey);
   await updateObject(`keys:${uid}`, groupId, key);
 };
+export const deleteGroupKey = async (uid, groupId) => {
+  await deleteObject(`keys:${uid}`, groupId);
+};
+export const getGroup = async (uid, groupId) => {
+  return await getObject(`groups:${uid}`, groupId);
+};
 export const getAllGroups = async (uid) => {
   return await getAll(`groups:${uid}`);
+};
+export const getAllGroupIds = async (uid) => {
+  return await getAllKeys(`groups:${uid}`);
+};
+
+export const updateProfile = async (profile) => {
+  await updateObject('profiles', profile.id, profile);
+};
+export const getProfile = async (id) => {
+  return await getObject('profiles', id);
+};
+export const getAllProfiles = async () => {
+  return await getAll('profiles');
 };

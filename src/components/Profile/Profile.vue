@@ -49,7 +49,6 @@ const handleUpdate = async (field, args) => {
     await storage.uploadFile(blob, `users/${auth.user.uid}/profile.png`, { contentType: 'image/png' });
     const url = await storage.getUrl(`users/${auth.user.uid}/profile.png`);
     await remote.updateProfile({ avatarUrl: url });
-    auth.profile.avatarUrl = url;
   }
   return false;
 };

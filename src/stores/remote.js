@@ -1,9 +1,19 @@
 import { defineStore } from 'pinia';
-import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc
+} from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import { useAuthStore } from './auth';
 import { fetchUsers } from '@/services/user-search';
+import * as local from '@/database/driver';
 
 export const useRemoteDBStore = defineStore('remote', () => {
   const auth = useAuthStore();
@@ -12,6 +22,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     if (!userInfo.phone) delete userInfo.phone;
     try {
       await setDoc(doc(remoteDB, 'users', auth.user.uid), userInfo);
+      await local.updateProfile(userInfo);
     } catch (e) {
       console.log(e);
     }
@@ -19,6 +30,8 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function updateProfile(profile) {
     try {
       await updateDoc(doc(remoteDB, 'users', auth.user.uid), profile);
+      auth.profile = { ...auth.profile, ...profile };
+      await local.updateProfile(auth.profile);
       return true;
     } catch (error) {
       console.log(error);
@@ -83,6 +96,9 @@ export const useRemoteDBStore = defineStore('remote', () => {
     });
     return id;
   }
+  async function deleteNotification(id) {
+    await deleteDoc(doc(remoteDB, 'users', auth.user.uid, 'notify', id));
+  }
 
   return {
     storePublicKey,
@@ -92,6 +108,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     getPublicKey,
     createGroup,
     notifyUserAdded,
-    getGroup
+    getGroup,
+    deleteNotification
   };
 });

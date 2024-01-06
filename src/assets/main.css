@@ -4,6 +4,7 @@
 #app {
   font-weight: normal;
   min-height: 100vh;
+  overflow: hidden;
 }
 
 .scroll-shadows-0 {
@@ -130,6 +131,23 @@
 }
 .fade-slide-rtl-enter-to,
 .fade-slide-rtl-leave-from {
+  opacity: 1;
+  transform: translateX(0%);
+}
+
+.fade-slide-rtr-enter-active,
+.fade-slide-rtr-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+.fade-slide-rtr-enter-from,
+.fade-slide-rtr-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+.fade-slide-rtr-enter-to,
+.fade-slide-rtr-leave-from {
   opacity: 1;
   transform: translateX(0%);
 }
