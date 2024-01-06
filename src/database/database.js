@@ -33,6 +33,9 @@ const createSchema = (database, uid, groupId) => {
   if (!database.objectStoreNames.contains('preferences')) {
     database.createObjectStore('preferences');
   }
+  if (!database.objectStoreNames.contains('profiles')) {
+    database.createObjectStore('profiles');
+  }
 
   if (uid) {
     const keyStoreName = `keys:${uid}`;
@@ -126,6 +129,17 @@ const updateObject = async (objectStore, key, value) => {
     }
   });
 };
+const deleteObject = async (objectStore, key) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const request = db.transaction(objectStore, 'readwrite').objectStore(objectStore).delete(key);
+      request.onsuccess = () => resolve();
+      request.onerror = (event) => reject(event.target.error);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 const getAll = async (objectStore) => {
   return new Promise((resolve, reject) => {
     if (!db) resolve(null);
@@ -141,5 +155,32 @@ const getAll = async (objectStore) => {
     }
   });
 };
+const getAllKeys = (objectStore) => {
+  return new Promise((resolve, reject) => {
+    if (!db) resolve(null);
+    else {
+      let request;
+      try {
+        request = db.transaction(objectStore).objectStore(objectStore).getAllKeys();
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      } catch (error) {
+        reject(error);
+      }
+    }
+  });
+};
 
-export { db, openDB, closeDB, schemaChange, getSingleton, updateSingleton, getObject, updateObject, getAll };
+export {
+  db,
+  openDB,
+  closeDB,
+  schemaChange,
+  getSingleton,
+  updateSingleton,
+  getObject,
+  updateObject,
+  deleteObject,
+  getAll,
+  getAllKeys
+};

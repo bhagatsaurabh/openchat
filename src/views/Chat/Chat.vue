@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
@@ -34,7 +34,7 @@ const tabs = ref([
   { name: 'My Chats', id: 'my-chats', icon: 'chats' },
   { name: 'Find', id: 'find', icon: 'globe' }
 ]);
-const isBusy = ref(false);
+const isBusy = ref(null);
 
 const handleSignOut = async () => {
   await auth.signOut();
@@ -47,80 +47,17 @@ const switchToGroup = (id) => {
   groupsStore.setActiveGroup(id);
   router.push({ path: '/chat' });
 };
-const handleCreateGroup = async (name, type, members = [], avatarUrl = '') => {
-  // TODO: Validation
-  if (type === 'private') {
-    const existing = groupsStore.getDMGroupByUID(members[1].id);
-    if (existing) {
-      switchToGroup(existing.id);
-      return;
-    }
-  }
-
-  isBusy.value = true;
-
-  const groupId = await remote.createGroup({
-    name: name,
-    type,
-    members: [...members],
-    admins: type === 'private' ? [...members] : [auth.user.uid],
-    avatarUrl: type === 'private' ? members[1].avatarUrl : avatarUrl
-  });
-  // Need to fetch newly created group to get resolved serverTimestamps
-  const group = await remote.getGroup(groupId);
-  group.id = groupId;
-
-  members.shift();
-  const rawPublicKeys = await Promise.all(members.map((id) => remote.getPublicKey(id)));
-  const publicKeys = await Promise.all(rawPublicKeys.map((rawPublicKey) => importPublicKey(rawPublicKey)));
-  publicKeys.unshift(auth.encKey);
-
-  const encryptedKeys = await generateGroupKey(publicKeys);
-  await local.createGroupKey(auth.user.uid, groupId, encryptedKeys.shift());
-  await local.createGroup(auth.user.uid, group);
-  const encryptedKeyCiphers = await Promise.all(
-    encryptedKeys.map((encryptedKey) => bufToBase64(encryptedKey))
-  );
-  await Promise.all(
-    encryptedKeyCiphers.map((encryptedKeyCipher, idx) =>
-      remote.notifyUserAdded({ uid: members[idx], groupId, encryptedKey: encryptedKeyCipher })
-    )
-  );
-
-  groupsStore.addGroup(group);
-  switchToGroup(groupId);
-  isBusy.value = false;
+const handleCreateGroup = async (name, type, members, avatarUrl) => {
+  const id = await groupsStore.createGroup({ name, type, members, avatarUrl });
+  switchToGroup(id);
 };
 const handleForceSearch = () => {
   activeTab.value = 1;
   forceHeader.value = true;
 };
 const handleSelfChat = async () => {
-  const existing = groupsStore.getGroupByID('self');
-  if (existing) {
-    switchToGroup(existing.id);
-    return;
-  }
-
-  isBusy.value = true;
-
-  const group = {
-    name: 'Me',
-    type: 'private',
-    members: [auth.user.uid],
-    admins: [auth.user.uid],
-    avatarUrl: auth.profile.avatarUrl,
-    timestamp: new Date(),
-    id: 'self'
-  };
-
-  const encryptedKey = (await generateGroupKey([auth.encKey]))[0];
-  await local.createGroupKey(auth.user.uid, 'self', encryptedKey);
-  await local.createGroup(auth.user.uid, group);
-
-  groupsStore.addGroup(group);
-  switchToGroup('self');
-  isBusy.value = false;
+  const id = await groupsStore.createSelfGroup();
+  switchToGroup(id);
 };
 
 watch(query, () => {
@@ -128,13 +65,24 @@ watch(query, () => {
   if (!query.value) activeTab.value = 0;
   else activeTab.value = 1;
 });
+
+let unregisterGuard = () => {};
+onMounted(() => {
+  unregisterGuard = router.beforeEach((to, from, next) => {
+    if (from.path === '/chat' && to.path === '/') {
+      groupsStore.activeGroup = null;
+    }
+    next();
+  });
+});
+onBeforeUnmount(unregisterGuard);
 </script>
 
 <template>
-  <Backdrop :show="isBusy">
+  <Backdrop :show="!!isBusy">
     <div class="wait">
       <Spinner :blob-count="4" />
-      <h2>Creating your new chat</h2>
+      <h2>{{ isBusy }}</h2>
     </div>
   </Backdrop>
   <Header border>
@@ -183,7 +131,7 @@ watch(query, () => {
         <ChatList
           :groups="groupsStore.groups"
           :query="query"
-          @select="(group) => switchToGroup(group.id)"
+          @select="(id) => switchToGroup(id)"
           @open-search="handleForceSearch"
           @self-chat="handleSelfChat"
         />
@@ -196,9 +144,13 @@ watch(query, () => {
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />
-    <ChatListener />
-    <RouterView />
+    <ChatListener @init-status="(msg) => (isBusy = msg)" />
   </main>
+  <RouterView v-slot="{ Component }">
+    <Transition name="fade-slide-rtr">
+      <component :is="Component" />
+    </Transition>
+  </RouterView>
 </template>
 
 <style scoped>

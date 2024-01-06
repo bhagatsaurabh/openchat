@@ -2,18 +2,23 @@
 import { computed } from 'vue';
 
 import { days } from '@/utils/constants';
+import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({
   group: Object
 });
+
+const auth = useAuthStore();
 const emit = defineEmits(['select']);
 
 const msInADay = 1000 * 60 * 60 * 24;
-const avatarUrl = computed(
-  () => props.group.avatarUrl ?? `/assets/icons/avatar${props.group.type === 'broadcast' ? '-group' : ''}.png`
-);
+const avatarUrl = computed(() => {
+  let url = props.group.avatarUrl;
+  if (props.group.id === 'self') url = auth.profile.avatarUrl;
+  return url || `/assets/icons/avatar${props.group.type === 'broadcast' ? '-group' : ''}.png`;
+});
 const timestamp = computed(() => {
-  const date = props.group.lastMsg.timestamp ?? props.group.timestamp;
+  const date = props.group.lastMsg?.timestamp ?? props.group.timestamp;
   const today = new Date();
   const delta = (today - date) / msInADay;
   if (delta < 1) {
@@ -40,7 +45,14 @@ const timestamp = computed(() => {
           {{ timestamp }}
         </span>
       </div>
-      <div class="msg">{{ group.lastMsg.text }}</div>
+      <div class="msg">
+        <span class="text">
+          {{ group.lastMsg?.text ?? 'You were added' }}
+        </span>
+        <span v-if="group.unseenCount > 0" class="count">
+          {{ group.unseenCount }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -79,8 +91,21 @@ const timestamp = computed(() => {
   color: var(--c-text-2);
 }
 .msg {
+  display: flex;
+  align-items: center;
+}
+.msg .text {
+  flex: 1;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.msg .count {
+  padding: 0.2rem 0.35rem 0.2rem 0.35rem;
+  border-radius: 1rem;
+  line-height: 1;
+  background-color: var(--c-accent);
+  color: var(--c-background-0);
+  font-weight: bold;
 }
 </style>

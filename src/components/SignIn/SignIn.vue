@@ -50,8 +50,10 @@ onBeforeUnmount(() => unregisterGuard());
 
 watch(
   () => auth.status,
-  () => {
-    if (auth.status === 'signedin') router.push('/');
+  async () => {
+    if (auth.status === 'signedin') {
+      router.push('/');
+    }
   }
 );
 </script>

@@ -19,7 +19,12 @@ const emit = defineEmits(['select', 'open-search', 'self-chat']);
 
 <template>
   <section class="chat-list scroll-shadows-0 scroll-shadows">
-    <ChatListItem v-for="group in groups" :key="group.id" :group="group" @select="(e) => emit('select', e)" />
+    <ChatListItem
+      v-for="group in groups"
+      :key="group.id"
+      :group="group"
+      @select="(id) => emit('select', id)"
+    />
     <div class="empty" v-if="groups.length === 0">
       <h3 class="flex-center mb-1">
         <Icon class="mr-0p5" :size="2" name="chats-accented" alt="no-chats icon" singular /> No chats
