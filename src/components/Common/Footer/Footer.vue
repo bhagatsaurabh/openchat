@@ -16,7 +16,7 @@ defineProps({
     <div class="left">
       <slot name="left"></slot>
     </div>
-    <div class="right">
+    <div v-if="$slots.right" class="right">
       <slot name="right"></slot>
     </div>
   </footer>

@@ -9,10 +9,10 @@ const events = useEventsStore();
 const users = useUsersStore();
 const groups = useGroupsStore();
 
-onMounted(() => {
+onMounted(async () => {
   events.listen();
-  users.listen();
-  groups.listen();
+  await users.listen();
+  await groups.listen();
 });
 onBeforeUnmount(() => {
   events.stop();
