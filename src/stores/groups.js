@@ -46,10 +46,14 @@ export const useGroupsStore = defineStore('groups', () => {
   };
   const handleError = (error) => console.log({ ...error });
 
-  function listen() {
-    const localGroups = local.getAllGroups();
+  async function listen() {
+    const localGroups = await local.getAllGroups(auth.user.uid);
+    const self = localGroups.find((grp) => grp.id === 'self');
+    if (self) {
+      addGroup(self);
+    }
     localGroups
-      .filter((group) => group.active)
+      .filter((group) => group.active && group.id !== 'self')
       .forEach((group) => {
         const unsubscribe = onSnapshot(doc(remoteDB, 'groups', group.id), listener, handleError);
         unsubFns.value.push(unsubscribe);
@@ -105,6 +109,9 @@ export const useGroupsStore = defineStore('groups', () => {
     group.unseenCount = 0;
 
     await users.saveProfiles(members);
+    if (type === 'private') {
+      users.attachListener(members[1]);
+    }
 
     members.shift();
     const rawPublicKeys = await Promise.all(members.map((id) => remote.getPublicKey(id)));
@@ -140,7 +147,8 @@ export const useGroupsStore = defineStore('groups', () => {
       avatarUrl: auth.profile.avatarUrl,
       timestamp: new Date(),
       id: 'self',
-      unseenCount: 0
+      unseenCount: 0,
+      active: true
     };
 
     const encryptedKey = (await generateGroupKey([auth.encKey]))[0];

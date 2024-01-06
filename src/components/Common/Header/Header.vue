@@ -16,7 +16,7 @@ defineProps({
     <div class="left">
       <slot name="left"></slot>
     </div>
-    <div class="right">
+    <div v-if="$slots.right" class="right">
       <slot name="right"></slot>
     </div>
   </header>
@@ -48,6 +48,7 @@ header.header .right {
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
+  overflow: hidden;
 }
 header.header .left {
   justify-content: start;

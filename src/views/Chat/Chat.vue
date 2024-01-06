@@ -124,7 +124,7 @@ onBeforeUnmount(unregisterGuard);
     >
       <template #my-chats>
         <ChatList
-          :groups="groupsStore.groups"
+          :groups="Object.values(groupsStore.groups)"
           :query="query"
           @select="(id) => switchToGroup(id)"
           @open-search="handleForceSearch"
@@ -139,7 +139,7 @@ onBeforeUnmount(unregisterGuard);
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />
-    <ChatListener @init-status="(msg) => (isBusy = msg)" />
+    <ChatListener />
   </main>
   <RouterView v-slot="{ Component }">
     <Transition name="fade-slide-rtr">

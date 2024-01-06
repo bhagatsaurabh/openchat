@@ -17,13 +17,19 @@ export class Queue {
     this.#list.pushTail(value);
   }
   pop() {
-    this.#list.popHead()?.value;
+    const node = this.#list.popHead();
+    if (node !== null) return node.value;
+    return null;
   }
   seek() {
-    return this.#list.head?.value;
+    const node = this.#list.head;
+    if (node !== null) return node.value;
+    return null;
   }
   seekLast() {
-    return this.#list.tail?.value;
+    const node = this.#list.tail;
+    if (node !== null) return node.value;
+    return null;
   }
   clear() {
     this.#list.clear();

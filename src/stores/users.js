@@ -4,11 +4,11 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 import { remoteDB } from '@/config/firebase';
 import * as local from '@/database/driver';
-import { useGroupsStore } from './groups';
 import { Queue } from '@/utils/queue';
+import { useAuthStore } from './auth';
 
 export const useUsersStore = defineStore('users', () => {
-  const groupsStore = useGroupsStore();
+  const auth = useAuthStore();
   const users = ref({});
   const unsubFns = ref([]);
   const busy = ref(false);
@@ -37,9 +37,10 @@ export const useUsersStore = defineStore('users', () => {
   };
   const handleError = (error) => console.log({ ...error });
 
-  function listen() {
-    const userIds = groupsStore.groups
-      .filter((group) => group.type === 'private')
+  async function listen() {
+    const localGroups = await local.getAllGroups(auth.user.uid);
+    const userIds = localGroups
+      .filter((group) => group.type === 'private' && group.id !== 'self')
       .map((group) => group.members[1]);
 
     userIds.forEach((id) => {
@@ -49,6 +50,10 @@ export const useUsersStore = defineStore('users', () => {
   }
   function stop() {
     unsubFns.value.forEach((unsubscribe) => unsubscribe());
+  }
+  function attachListener(uid) {
+    const unsubscribe = onSnapshot(doc(remoteDB, 'users', uid), listener, handleError);
+    unsubFns.value.push(unsubscribe);
   }
 
   async function saveProfiles(uids = []) {
@@ -66,6 +71,7 @@ export const useUsersStore = defineStore('users', () => {
     saveProfiles,
     getNamesFromUIDs,
     listen,
-    stop
+    stop,
+    attachListener
   };
 });
