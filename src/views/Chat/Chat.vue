@@ -3,11 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
-import { useRemoteDBStore } from '@/stores/remote';
 import { useGroupsStore } from '@/stores/groups';
-import { generateGroupKey, importPublicKey } from '@/utils/crypto';
-import { bufToBase64 } from '@/utils/utils';
-import * as local from '@/database/driver';
 import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
@@ -22,7 +18,6 @@ import Spinner from '@/components/Common/Spinner/Spinner.vue';
 import ChatListener from '@/components/ChatListener/ChatListener.vue';
 
 const auth = useAuthStore();
-const remote = useRemoteDBStore();
 const groupsStore = useGroupsStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
