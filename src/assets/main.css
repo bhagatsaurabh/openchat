@@ -195,19 +195,18 @@
 @media (hover: hover) {
   * {
     scrollbar-track-color: transparent;
-    scrollbar-color: var(--c-text-2);
+    scrollbar-color: var(--c-scrollbar);
     scrollbar-width: 0.5rem;
   }
   *::-webkit-scrollbar {
     background-color: transparent;
-    width: 0.5rem;
-    height: 0.5rem;
+    width: 0.375rem;
+    height: 0.375rem;
   }
   *::-webkit-scrollbar-track {
     background-color: transparent;
   }
   *::-webkit-scrollbar-thumb {
-    background-color: var(--c-text-2);
-    border-radius: 1rem;
+    background-color: var(--c-scrollbar);
   }
 }
