@@ -18,7 +18,7 @@ const emit = defineEmits(['select']);
     class="option"
     :class="{ active }"
   >
-    <Icon v-if="data.icon" :name="data.icon" :alt="data.icon" singular />
+    <Icon class="icon" v-if="data.icon" :name="data.icon" :alt="data.icon" singular />
     <span class="text">{{ data.text }}</span>
   </div>
 </template>
@@ -27,9 +27,18 @@ const emit = defineEmits(['select']);
 .option {
   padding: 0.75rem;
   transition: background-color var(--fx-transition-duration-0) linear;
+  display: flex;
+  align-items: center;
 }
 .option.active {
   background-color: var(--c-background-3);
+}
+.option .icon {
+  font-size: 0;
+  margin-right: 0.5rem;
+}
+.option .icon:deep(img) {
+  filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
 }
 .option .text {
 }

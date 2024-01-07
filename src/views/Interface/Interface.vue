@@ -47,7 +47,7 @@ watch(() => groups.activeGroup, handleLoad);
         </div>
         <Options
           :options="[
-            { text: 'Profile', icon: 'avatar' },
+            { text: 'Profile', icon: 'user' },
             { text: 'Leave', icon: 'leave' }
           ]"
           @select="handleGroupOption"
@@ -76,6 +76,15 @@ watch(() => groups.activeGroup, handleLoad);
 <style scoped>
 .header {
   border-bottom: 1px solid var(--c-border-0);
+}
+.footer {
+  border-top: 1px solid var(--c-border-0);
+  height: unset;
+}
+.footer:deep(.left) {
+  padding-bottom: 0.65rem !important;
+  padding-top: 0.65rem !important;
+  align-items: flex-end !important;
 }
 .window {
   position: absolute;
@@ -109,6 +118,7 @@ watch(() => groups.activeGroup, handleLoad);
 
 .input {
   flex: 1;
-  height: 80%;
+  margin-bottom: 0.25rem;
+  margin-top: 0.25rem;
 }
 </style>

@@ -86,11 +86,10 @@ service cloud.firestore {
                ? validateBCGroupCreation(input, request)
                : validateDMGroupCreation(input, request));
     }
-    function validateDMGroupUpdation(input, existing) {
+    function validateDMGroupUpdation(input) {
       return 'seen' in input
                ? (input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
-                 input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
-                 input.seen[request.auth.uid] > existing.timestamp)
+                 input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : false;
     }
     function validateBCGroupUpdation(input, existing) {
@@ -111,28 +110,26 @@ service cloud.firestore {
                : true) &&
              ('seen' in input
                ? (input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
-                 input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] < request.time &&
-                 input.seen[request.auth.uid] > existing.timestamp)
+                 input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : true);
     }
     function validateGroupUpdation(request, resource) {
       let input = request.resource.data;
       let existing = resource.data;
     	return existing.type == 'private'
-               ? validateDMGroupUpdation(input, existing)
+               ? validateDMGroupUpdation(input)
                : validateBCGroupUpdation(input, existing);
     }
     function isGroupActive(resource) {
       return resource.data.active
     }
-    function validateMessageCreation(request, chatId) {
+    function validateMessageCreation(request) {
       let input = request.resource.data;
-      let validKeys = ['by', 'timestamp', 'expiry', 'text', 'type', 'unseenCount'];
+      let validKeys = ['by', 'timestamp', 'expiry', 'text', 'type'];
       let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
                     input.by is string && input.text is string &&
                     input.timestamp is timestamp && input.timestamp == request.time &&
-                    input.expiry is timestamp && input.unseenCount is int &&
-                    input.unseenCount == get(/databases/$(database)/documents/groups/$(chatId)).data.members.size();
+                    input.expiry is timestamp;
       let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
       return isValid && input.by == request.auth.uid &&
              delta > 777600000 && delta < 950400000
@@ -157,7 +154,7 @@ service cloud.firestore {
       let input = request.resource.data;
       return 'type' in input && input.type is string &&
              (input.type in ['text', 'image', 'video', 'doc']
-               ? validateMessageCreation(request, chatId)
+               ? validateMessageCreation(request)
                : (input.type in ['meta:edit', 'meta:delete']
                  ? validateMessageUpdation(request, chatId)
                  : false));
@@ -241,19 +238,16 @@ service cloud.firestore {
 
     // Any user can create a message according to rules
     // No updation allowed (editing messages is achieved through creating a meta message)
-    // A user can only delete their own messages
+    // A user can delete their own messages
+    // Any user can delete other user's messages if it has been delivered to every member
     match /groups/{chatId}/messages/{messageId} {
       allow create: if signedIn(request) && validateMessage(request, chatId)
-      allow update: if signedIn(request) &&
-                    request.resource.data.hasAll(['unseenCount']) && request.resource.data.hasOnly(['unseenCount']) &&
-                    request.resource.data.unseenCount is int &&
-                    request.resource.data.unseenCount == resource.data.unseenCount - 1
-      allow delete: if signedIn(request) &&
-                    (validateMessageDeletion(request, resource) || resource.data.unseenCount == 0)
+      allow update: if false
+      allow delete: if signedIn(request) && validateMessageDeletion(request, resource)
     }
 
     match /groups/{chatId}/recentMsg/{docName} {
-      allow create: if docName == 'default' && signedIn(request) && validateMessageCreation(request, chatId)
+      allow create: if docName == 'default' && signedIn(request) && validateMessageCreation(request)
       allow update: if docName == 'default' && signedIn(request) && validateRecentMessageUpdation(request)
       allow delete: if docName == 'default' && signedIn(request) && validateMessageDeletion(request, resource)
     }

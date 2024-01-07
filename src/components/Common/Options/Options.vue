@@ -41,7 +41,11 @@ const handleBlur = () => {
 };
 const handleKey = (e) => {
   if (!open.value) return;
-  if (['Tab'].includes(e.code)) e.preventDefault();
+  if ('Tab' === e.code) e.preventDefault();
+  if ('Escape' === e.code) {
+    forceBlur();
+    return;
+  }
   if (['ArrowUp', 'ArrowDown'].includes(e.code)) {
     let idx = active.value;
     if (e.code === 'ArrowUp') {
@@ -57,7 +61,6 @@ const handleKey = (e) => {
 };
 const handleSelect = (option) => {
   emit('select', option);
-  handleBlur();
   forceBlur();
 };
 const computeOpeningDirection = () => {
@@ -94,7 +97,7 @@ onMounted(() => computeOpeningDirection());
     class="options"
   >
     <Button
-      :size="1.2"
+      :size="1.5"
       :class="{ active: open }"
       tabindex="-1"
       class="control"

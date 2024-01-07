@@ -51,6 +51,9 @@
   --c-accent-light-1: #d7b6e8;
   --c-accent-light-2: #e3c9ef;
   --c-accent-light-3: #eddaf6;
+
+  --c-scrollbar-light: rgba(0, 0, 0, 0.2);
+  --c-scrollbar-dark: rgba(255, 255, 255, 0.1);
 }
 
 :root,
@@ -72,6 +75,8 @@
 
   --c-shadow-0: var(--c-shadow-light-0);
   --c-shadow-1: var(--c-shadow-light-1);
+
+  --c-scrollbar: var(--c-scrollbar-light);
 }
 
 .dark {
@@ -92,6 +97,8 @@
 
   --c-shadow-0: var(--c-shadow-dark-0);
   --c-shadow-1: var(--c-shadow-dark-1);
+
+  --c-scrollbar: var(--c-scrollbar-dark);
 }
 
 .high-contrast {
@@ -112,6 +119,8 @@
 
   --c-shadow-0: var(--c-shadow-dark-0);
   --c-shadow-1: var(--c-shadow-dark-1);
+
+  --c-scrollbar: var(--c-scrollbar-dark);
 }
 
 /* For system default */
@@ -134,6 +143,8 @@
 
     --c-shadow-0: var(--c-shadow-dark-0);
     --c-shadow-1: var(--c-shadow-dark-1);
+
+    --c-scrollbar: var(--c-scrollbar-dark);
   }
 }
 @media (prefers-contrast: more) {
@@ -155,6 +166,8 @@
 
     --c-shadow-0: var(--c-shadow-dark-0);
     --c-shadow-1: var(--c-shadow-dark-1);
+
+    --c-scrollbar: var(--c-scrollbar-dark);
   }
 }
 
