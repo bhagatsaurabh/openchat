@@ -134,41 +134,29 @@ service cloud.firestore {
       return isValid && input.by == request.auth.uid &&
              delta > 777600000 && delta < 950400000
     }
-    function validateMessageUpdation(request, chatId) {
+    function validateMessageUpdation(request) {
       let input = request.resource.data;
-      let validUpdationKeys = ['type', 'modified', 'text', 'id', 'expiry'];
-      let validDeletionKeys = ['type', 'id', 'expiry'];
+      let validUpdationKeys = ['by', 'timestamp', 'expiry', 'text', 'type', 'id'];
+      let validDeletionKeys = ['by', 'timestamp', 'expiry', 'type', 'id'];
       let isValid = 'type' in request.resource.data && request.resource.data.type is string &&
                     (input.type == 'meta:edit'
-                      ? (input.keys().hasAll(validUpdationKeys) && input.keys().hasOnly(validUpdationKeys) &&
-                        input.modified is timestamp && input.text is string &&
-                        input.id is string && input.expiry is timestamp)
-                      : (input.keys().hasAll(validDeletionKeys) && input.keys().hasOnly(validDeletionKeys) &&
-                        input.id is string && input.expiry is timestamp));
+                      ? (input.keys().hasAll(validUpdationKeys) && input.keys().hasOnly(validUpdationKeys))
+                      : (input.keys().hasAll(validDeletionKeys) && input.keys().hasOnly(validDeletionKeys))) &&
+                    input.by is string && input.by == request.auth.uid &&
+                    input.timestamp is timestamp && input.timestamp == request.time &&
+                    input.expiry is timestamp && input.id is string &&
+                    (input.type == 'meta:edit' ? input.text is string : true);
       let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
-      let message = get(/databases/$(database)/documents/groups/$(chatId)/messages/$(request.resource.data.id)).data;
-      return isValid && message.by == request.auth.uid &&
-             delta > 86400000 && delta < 259200000;
+      return isValid && delta > 777600000 && delta < 950400000;
     }
-    function validateMessage(request, chatId) {
+    function validateMessage(request) {
       let input = request.resource.data;
       return 'type' in input && input.type is string &&
              (input.type in ['text', 'image', 'video', 'doc']
                ? validateMessageCreation(request)
                : (input.type in ['meta:edit', 'meta:delete']
-                 ? validateMessageUpdation(request, chatId)
+                 ? validateMessageUpdation(request)
                  : false));
-    }
-    function validateMessageDeletion(request, resource) {
-      return request.auth.uid == resource.data.by;
-    }
-    function validateRecentMessageUpdation(request) {
-      let input = request.resource.data;
-      let validKeys = ['by', 'timestamp', 'text', 'type'];
-      return input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
-             input.by is string && input.by == request.auth.uid &&
-             input.timestamp is timestamp && input.text is string &&
-             input.type is string && input.type in ['text', 'image', 'video', 'doc'];
     }
     function validateNotifyTypeGA(input) {
       let validKeys = ['id', 'encryptedKey'];
@@ -237,19 +225,11 @@ service cloud.firestore {
     }
 
     // Any user can create a message according to rules
-    // No updation allowed (editing messages is achieved through creating a meta message)
-    // A user can delete their own messages
-    // Any user can delete other user's messages if it has been delivered to every member
+    // No direct updation/deletion allowed (achieved indirectly through creating a meta message)
     match /groups/{chatId}/messages/{messageId} {
-      allow create: if signedIn(request) && validateMessage(request, chatId)
+      allow create: if signedIn(request) && validateMessage(request)
       allow update: if false
-      allow delete: if signedIn(request) && validateMessageDeletion(request, resource)
-    }
-
-    match /groups/{chatId}/recentMsg/{docName} {
-      allow create: if docName == 'default' && signedIn(request) && validateMessageCreation(request)
-      allow update: if docName == 'default' && signedIn(request) && validateRecentMessageUpdation(request)
-      allow delete: if docName == 'default' && signedIn(request) && validateMessageDeletion(request, resource)
+      allow delete: if false
     }
   }
 }
