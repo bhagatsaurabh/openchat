@@ -136,15 +136,15 @@ service cloud.firestore {
     }
     function validateMessageUpdation(request) {
       let input = request.resource.data;
-      let validUpdationKeys = ['by', 'timestamp', 'expiry', 'text', 'type', 'id'];
-      let validDeletionKeys = ['by', 'timestamp', 'expiry', 'type', 'id'];
+      let validUpdationKeys = ['by', 'timestamp', 'expiry', 'text', 'type', 'ref'];
+      let validDeletionKeys = ['by', 'timestamp', 'expiry', 'type', 'ref'];
       let isValid = 'type' in request.resource.data && request.resource.data.type is string &&
                     (input.type == 'meta:edit'
                       ? (input.keys().hasAll(validUpdationKeys) && input.keys().hasOnly(validUpdationKeys))
                       : (input.keys().hasAll(validDeletionKeys) && input.keys().hasOnly(validDeletionKeys))) &&
                     input.by is string && input.by == request.auth.uid &&
                     input.timestamp is timestamp && input.timestamp == request.time &&
-                    input.expiry is timestamp && input.id is string &&
+                    input.expiry is timestamp && input.ref is string &&
                     (input.type == 'meta:edit' ? input.text is string : true);
       let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
       return isValid && delta > 777600000 && delta < 950400000;

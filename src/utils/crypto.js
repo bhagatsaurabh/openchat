@@ -16,7 +16,7 @@ export const generatePrivateKey = async (uid) => {
 
   const publicKey = await crypto.exportKey('jwk', key.publicKey);
 
-  await local.createKey(uid, key);
+  await local.storeKey(uid, key);
 
   return { key, publicKey };
 };
