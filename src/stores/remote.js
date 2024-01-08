@@ -80,6 +80,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
       const snap = await getDoc(doc(remoteDB, 'groups', id));
       const data = snap.data();
       data.timestamp = data.timestamp.toDate();
+      data.seen = data.seen?.map((seenTimestamp) => seenTimestamp.toDate());
       return data;
     } catch (error) {
       console.log(error);

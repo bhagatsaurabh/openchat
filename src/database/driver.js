@@ -11,20 +11,20 @@ import {
 } from './database';
 import { getGroupKey } from '@/utils/crypto';
 
-export const getPreferences = async () => {
-  return await getSingleton('preferences');
-};
-export const registerPersistence = () => {
+export const registerPreferencesPersistence = () => {
   const preferencesStore = usePreferencesStore();
-  preferencesStore.$subscribe(() => {
+  return preferencesStore.$subscribe(() => {
     updateSingleton('preferences', preferencesStore.serializableState);
   });
 };
+export const getPreferences = async () => {
+  return await getSingleton('preferences');
+};
 
-export const createUser = async (uid) => {
+export const storeUser = async (uid) => {
   await schemaChange(uid);
 };
-export const createKey = async (uid, key) => {
+export const storeKey = async (uid, key) => {
   await updateObject(`keys:${uid}`, 'private', key.privateKey);
   await updateObject(`keys:${uid}`, 'public', key.publicKey);
 };
@@ -35,18 +35,15 @@ export const getPrivateKey = async (uid) => {
   return await getObject(`keys:${uid}`, 'private');
 };
 
-export const createGroup = async (uid, group) => {
-  // Remove non-relevant data
-  delete group.seen;
-  await updateObject(`groups:${uid}`, group.id, group);
-  await schemaChange(uid, group.id);
-};
 export const updateGroup = async (uid, groupId, group) => {
+  let newGroup = group;
   let existingGroup = await getGroup(uid, groupId);
-  existingGroup = { ...existingGroup, ...group };
-  await updateObject(`groups:${uid}`, groupId, existingGroup);
+  if (existingGroup) {
+    newGroup = { ...existingGroup, ...group };
+  }
+  await updateObject(`groups:${uid}`, groupId, newGroup);
 };
-export const createGroupKey = async (uid, groupId, encryptedKey) => {
+export const storeGroupKey = async (uid, groupId, encryptedKey) => {
   const key = await getGroupKey(uid, encryptedKey);
   await updateObject(`keys:${uid}`, groupId, key);
 };
@@ -71,4 +68,11 @@ export const getProfile = async (id) => {
 };
 export const getAllProfiles = async () => {
   return await getAll('profiles');
+};
+
+export const storeMessage = async (message, groupId) => {
+  await updateObject(`messages:${groupId}`, message.id, message);
+};
+export const getMessage = async (messageId, groupId) => {
+  return await getObject(`messages:${groupId}`, messageId);
 };

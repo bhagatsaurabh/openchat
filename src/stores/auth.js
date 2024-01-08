@@ -62,7 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = snap.data();
   }
   async function handleNewUser() {
-    await local.createUser(user.value.uid);
+    await local.storeUser(user.value.uid);
     const { publicKey } = await generatePrivateKey(user.value.uid);
     encKey.value = publicKey;
     await remote.storePublicKey(publicKey);

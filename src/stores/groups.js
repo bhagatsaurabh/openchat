@@ -10,6 +10,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { remoteDB } from '@/config/firebase';
 import { generateGroupKey, importPublicKey } from '@/utils/crypto';
 import { useUsersStore } from './users';
+import { schemaChange } from '@/database/database';
 
 export const useGroupsStore = defineStore('groups', () => {
   const auth = useAuthStore();
@@ -41,6 +42,9 @@ export const useGroupsStore = defineStore('groups', () => {
     }
   };
   const handleGroup = async (group) => {
+    group.timestamp = group.timestamp.toDate();
+    group.seen = group.seen?.map((seenTimestamp) => seenTimestamp.toDate());
+
     await local.updateGroup(auth.user.uid, group.id, group);
     addGroup(group);
   };
@@ -68,14 +72,9 @@ export const useGroupsStore = defineStore('groups', () => {
   async function userAdded(data) {
     const { id, encryptedKey } = data.payload;
 
-    const group = await remote.getGroup(id);
-    group.id = id;
-    group.unseenCount = 1;
-
-    await local.createGroupKey(auth.user.uid, id, await base64ToBuf(encryptedKey));
-    await local.createGroup(auth.user.uid, group);
+    await local.storeGroupKey(auth.user.uid, id, await base64ToBuf(encryptedKey));
+    attachListener(id);
     await remote.deleteNotification(data.id);
-    addGroup(group);
   }
   async function userRemoved(data) {
     const { id } = data.payload;
@@ -103,15 +102,11 @@ export const useGroupsStore = defineStore('groups', () => {
       admins: type === 'private' ? [...members] : [auth.user.uid],
       avatarUrl: type === 'private' ? members[1].avatarUrl : avatarUrl
     });
-    // Need to fetch newly created group to get resolved serverTimestamps
-    const group = await remote.getGroup(groupId);
-    group.id = groupId;
-    group.unseenCount = 0;
+    attachListener(groupId);
+    await schemaChange(auth.user.uid, groupId);
 
     await users.saveProfiles(members);
-    if (type === 'private') {
-      users.attachListener(members[1]);
-    }
+    if (type === 'private') users.attachListener(members[1]);
 
     members.shift();
     const rawPublicKeys = await Promise.all(members.map((id) => remote.getPublicKey(id)));
@@ -119,8 +114,7 @@ export const useGroupsStore = defineStore('groups', () => {
     publicKeys.unshift(auth.encKey);
 
     const encryptedKeys = await generateGroupKey(publicKeys);
-    await local.createGroupKey(auth.user.uid, groupId, encryptedKeys.shift());
-    await local.createGroup(auth.user.uid, group);
+    await local.storeGroupKey(auth.user.uid, groupId, encryptedKeys.shift());
     const encryptedKeyCiphers = await Promise.all(
       encryptedKeys.map((encryptedKey) => bufToBase64(encryptedKey))
     );
@@ -130,7 +124,6 @@ export const useGroupsStore = defineStore('groups', () => {
       )
     );
 
-    addGroup(group);
     return groupId;
   }
   async function createSelfGroup() {
@@ -152,11 +145,16 @@ export const useGroupsStore = defineStore('groups', () => {
     };
 
     const encryptedKey = (await generateGroupKey([auth.encKey]))[0];
-    await local.createGroupKey(auth.user.uid, 'self', encryptedKey);
-    await local.createGroup(auth.user.uid, group);
+    await local.storeGroupKey(auth.user.uid, 'self', encryptedKey);
+    await local.updateGroup(auth.user.uid, group.id, group);
+    await schemaChange(auth.user.uid, group.id);
 
     addGroup(group);
     return 'self';
+  }
+  function attachListener(groupId) {
+    const unsubscribe = onSnapshot(doc(remoteDB, 'groups', groupId), listener, handleError);
+    unsubFns.value.push(unsubscribe);
   }
 
   function getDMGroupByUID(otherUserId) {
@@ -180,6 +178,7 @@ export const useGroupsStore = defineStore('groups', () => {
     listen,
     stop,
     createGroup,
-    createSelfGroup
+    createSelfGroup,
+    attachListener
   };
 });

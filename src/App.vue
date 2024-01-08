@@ -12,17 +12,18 @@ import Notification from '@/components/Common/Notification/Notification.vue';
 const preferences = usePreferencesStore();
 const auth = useAuthStore();
 
+let deregPrefFn = () => {};
 onBeforeMount(async () => {
   try {
     await openDB();
     await preferences.load();
-    local.registerPersistence();
+    deregPrefFn = local.registerPreferencesPersistence();
   } catch (error) {
     // TODO: error-handling
   }
 });
-
 onBeforeUnmount(() => {
+  deregPrefFn();
   auth.deRegisterAuthListener();
 });
 </script>
