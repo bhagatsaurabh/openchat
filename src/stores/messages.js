@@ -8,13 +8,14 @@ import { Queue } from '@/utils/queue';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { remoteDB } from '@/config/firebase';
 import { useUsersStore } from './users';
+import { LinkedList } from '@/utils/linked-list';
 
 export const useMessagesStore = defineStore('messages', () => {
   const auth = useAuthStore();
   const remote = useRemoteDBStore();
   const users = useUsersStore();
-  const messages = ref([]);
-  const messageIdxs = ref({});
+  const messages = ref({});
+  const messageIdx = ref({});
   const unsubFns = ref([]);
   const busy = ref(false);
   const queue = new Queue();
@@ -24,7 +25,10 @@ export const useMessagesStore = defineStore('messages', () => {
     changes.forEach((change) => {
       const data = change.doc.data();
       data.id = change.doc.id;
-      data.groupId = change.doc.ref.path.substring(change.doc.ref.path.indexOf('messages'));
+      data.groupId = change.doc.ref.path.substring(
+        change.doc.ref.path.indexOf('/') + 1,
+        change.doc.ref.path.indexOf('/messages')
+      );
       queue.push(data);
       process();
     });
@@ -46,9 +50,9 @@ export const useMessagesStore = defineStore('messages', () => {
     } else if (message.type === 'meta:delete') {
       // Delete Message
     } else {
-      local.storeMessage(message, message.groupId);
-      // Store in memory
-      // Update seen timestamp in remote group document
+      await local.storeMessage(message, message.groupId);
+      await remote.updateSeenTimestamp(auth.user.uid, message.groupId);
+      addMessage(message);
     }
   };
   const handleError = (error) => console.log({ ...error });
@@ -68,6 +72,19 @@ export const useMessagesStore = defineStore('messages', () => {
   }
   function stop() {
     unsubFns.value.forEach((unsubscribe) => unsubscribe());
+  }
+  function addMessage(message) {
+    const list = messages.value[message.groupId];
+    const index = messageIdx.value[message.groupId];
+    if (list && index) {
+      const node = messages.value[message.groupId].pushTail(message);
+      messageIdx.value[message.groupId][message.id] = node;
+    } else {
+      messages.value[message.groupId] = new LinkedList();
+      messageIdx.value[message.groupId] = {};
+      const node = messages.value[message.groupId].pushTail(message);
+      messageIdx.value[message.groupId][message.id] = node;
+    }
   }
 
   return {
