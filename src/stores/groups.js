@@ -11,10 +11,12 @@ import { remoteDB } from '@/config/firebase';
 import { generateGroupKey, importPublicKey } from '@/utils/crypto';
 import { useUsersStore } from './users';
 import { schemaChange } from '@/database/database';
+import { useMessagesStore } from './messages';
 
 export const useGroupsStore = defineStore('groups', () => {
   const auth = useAuthStore();
   const remote = useRemoteDBStore();
+  const messages = useMessagesStore();
   const users = useUsersStore();
   const groups = ref({});
   const activeGroup = ref(null);
@@ -44,9 +46,12 @@ export const useGroupsStore = defineStore('groups', () => {
   const handleGroup = async (group) => {
     group.timestamp = group.timestamp.toDate();
     group.seen = group.seen?.map((seenTimestamp) => seenTimestamp.toDate());
+    group.sync = group.sync?.map((syncTimestamp) => syncTimestamp.toDate());
 
     await local.updateGroup(auth.user.uid, group.id, group);
     addGroup(group);
+
+    messages.attachListener(group.id);
   };
   const handleError = (error) => console.log({ ...error });
 

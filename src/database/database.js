@@ -51,6 +51,7 @@ const createSchema = (database, uid, groupId) => {
     const messagesStoreName = `messages:${groupId}`;
     if (!database.objectStoreNames.contains(messagesStoreName)) {
       database.createObjectStore(messagesStoreName);
+      database.createIndex('timestamp', 'timestamp', { unique: false });
     }
   }
 };
@@ -170,6 +171,59 @@ const getAllKeys = (objectStore) => {
     }
   });
 };
+
+/* function iterateCursor(objectStore, batchSize = 10, cursorPosition = null) {
+  return new Promise((resolve, reject) => {
+    let results = [];
+    let cursorRequest;
+
+    if (cursorPosition !== null) {
+      cursorRequest = objectStore.openCursor(cursorPosition);
+    } else {
+      cursorRequest = objectStore.openCursor();
+    }
+
+    cursorRequest.onsuccess = function(event) {
+      let cursor = event.target.result;
+
+      if (cursor && results.length < batchSize) {
+        results.push(cursor.value);
+        cursor.continue();
+      } else {
+        resolve({ results, cursorPosition: cursor ? cursor.key : null });
+      }
+    };
+
+    cursorRequest.onerror = function(event) {
+      reject(event.target.error);
+    };
+  });
+}
+// Usage with generator
+async function* cursorGenerator(objectStore, batchSize = 10) {
+  let cursorPosition = null;
+  let results;
+
+  do {
+    ({ results, cursorPosition } = await iterateCursor(objectStore, batchSize, cursorPosition));
+
+    for (const value of results) {
+      yield value;
+    }
+
+  } while (results.length === batchSize);
+}
+// Usage example
+(async () => {
+  let transaction = db.transaction(['yourObjectStore'], 'readonly');
+  let objectStore = transaction.objectStore('yourObjectStore');
+
+  let cursorIterator = cursorGenerator(objectStore);
+
+  for await (const value of cursorIterator) {
+    console.log('Value:', value);
+  }
+})(); */
 
 export {
   db,

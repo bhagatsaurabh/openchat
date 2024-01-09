@@ -76,3 +76,10 @@ export const storeMessage = async (message, groupId) => {
 export const getMessage = async (messageId, groupId) => {
   return await getObject(`messages:${groupId}`, messageId);
 };
+export const deleteMessage = async (messageId, groupId) => {
+  await deleteObject(`messages:${groupId}`, messageId);
+};
+/* export const openMessageCursor = async (groupId) => {
+  await openCursor(groupId);
+};
+export const closeMessageCursor = async (cursor) => {}; */

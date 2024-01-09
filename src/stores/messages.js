@@ -6,18 +6,20 @@ import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
 import { Queue } from '@/utils/queue';
 import { collection, onSnapshot, query } from 'firebase/firestore';
-import { remoteDB } from '@/config/firebase';
-import { useUsersStore } from './users';
+import { deleteMessageFunction, remoteDB } from '@/config/firebase';
 import { LinkedList } from '@/utils/linked-list';
+import { msInAnHour } from '@/utils/constants';
+import { useGroupsStore } from './groups';
 
 export const useMessagesStore = defineStore('messages', () => {
   const auth = useAuthStore();
   const remote = useRemoteDBStore();
-  const users = useUsersStore();
+  const groups = useGroupsStore();
   const messages = ref({});
   const messageIdx = ref({});
-  const unsubFns = ref([]);
+  const unsubFns = ref({});
   const busy = ref(false);
+  const cursor = ref(null);
   const queue = new Queue();
 
   const listener = (snapshot) => {
@@ -45,33 +47,41 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   };
   const handleMessage = async (message) => {
+    message.timestamp = message.timestamp?.toDate();
     if (message.type === 'meta:edit') {
-      // Edit Message
+      const existingMsg = await local.getMessage(message.ref, message.groupId);
+      if (existingMsg && (message.timestamp - existingMsg.timestamp) / msInAnHour <= 24) {
+        await local.storeMessage(message, message.groupId);
+        updateMessage(message);
+      }
     } else if (message.type === 'meta:delete') {
-      // Delete Message
+      const existingMsg = await local.getMessage(message.ref, message.groupId);
+      if (existingMsg && (message.timestamp - existingMsg.timestamp) / msInAnHour <= 24) {
+        await local.deleteMessage(message.ref, message.groupId);
+        removeMessage(message);
+      }
     } else {
       await local.storeMessage(message, message.groupId);
-      await remote.updateSeenTimestamp(auth.user.uid, message.groupId);
       addMessage(message);
+    }
+    await remote.updateSyncTimestamp(auth.user.uid, message.groupId);
+    if (isSynced(message)) {
+      await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
     }
   };
   const handleError = (error) => console.log({ ...error });
-
-  async function listen() {
-    const localGroups = await local.getAllGroups(auth.user.uid);
-    localGroups
-      .filter((group) => group.active && group.id !== 'self')
-      .forEach((group) => {
-        const unsubscribe = onSnapshot(
-          query(collection(remoteDB, 'groups', group.id, 'messages')),
-          listener,
-          handleError
-        );
-        unsubFns.value.push(unsubscribe);
-      });
-  }
   function stop() {
-    unsubFns.value.forEach((unsubscribe) => unsubscribe());
+    Object.values(unsubFns.value).forEach((unsubscribe) => unsubscribe());
+  }
+  function attachListener(groupId) {
+    if (!unsubFns.value[groupId]) {
+      const unsubscribe = onSnapshot(
+        query(collection(remoteDB, 'groups', groupId, 'messages')),
+        listener,
+        handleError
+      );
+      unsubFns.value[groupId] = unsubscribe;
+    }
   }
   function addMessage(message) {
     const list = messages.value[message.groupId];
@@ -86,9 +96,48 @@ export const useMessagesStore = defineStore('messages', () => {
       messageIdx.value[message.groupId][message.id] = node;
     }
   }
+  function updateMessage(message) {
+    const list = messages.value[message.groupId];
+    const existingMsgNode = messageIdx.value[message.groupId]?.[message.id];
+    if (list && existingMsgNode) {
+      existingMsgNode.value = message;
+    }
+  }
+  function removeMessage(message) {
+    const list = messages.value[message.groupId];
+    const existingMsgNode = messageIdx.value[message.groupId]?.[message.id];
+    if (list && existingMsgNode) {
+      list.delete(existingMsgNode);
+    }
+  }
+  function isSynced(message) {
+    const group = groups.getGroupByID(message.groupId);
+    let numMembers = group.members.length - 1;
+    group.members.forEach((memberId) => {
+      if (memberId !== auth.user.uid && group.sync[memberId] >= message.timestamp) {
+        numMembers -= 1;
+      }
+    });
+    return numMembers <= 0;
+  }
+  function startLoad(groupId) {
+    if (cursor.value) stopLoad();
+    // TODO
+  }
+  function loadNext() {
+    if (!cursor.value) return;
+    // TODO
+  }
+  function stopLoad() {
+    if (!cursor.value) return;
+    // TODO
+  }
 
   return {
-    listen,
-    stop
+    stop,
+    attachListener,
+    startLoad,
+    stopLoad,
+    loadNext
   };
 });

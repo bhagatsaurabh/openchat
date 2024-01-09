@@ -23,3 +23,4 @@ export const days = Object.freeze({
 });
 
 export const msInADay = 1000 * 60 * 60 * 24;
+export const msInAnHour = 1000 * 60 * 60;
