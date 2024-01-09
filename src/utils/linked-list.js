@@ -29,6 +29,7 @@ export class LinkedList {
       this.head = newNode;
     }
     this.#length += 1;
+    return newNode;
   }
   pushTail(value) {
     const newNode = new LinkedListNode(value);
@@ -41,6 +42,7 @@ export class LinkedList {
       this.tail = newNode;
     }
     this.#length += 1;
+    return newNode;
   }
   popHead() {
     if (this.#length === 0) return null;

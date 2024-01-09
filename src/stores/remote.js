@@ -100,6 +100,15 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function deleteNotification(id) {
     await deleteDoc(doc(remoteDB, 'users', auth.user.uid, 'notify', id));
   }
+  async function updateSeenTimestamp(uid, groupId) {
+    try {
+      await updateDoc(doc(remoteDB, 'groups', groupId), {
+        [`seen.${uid}`]: serverTimestamp()
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   return {
     storePublicKey,
@@ -110,6 +119,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     createGroup,
     notifyUserAdded,
     getGroup,
-    deleteNotification
+    deleteNotification,
+    updateSeenTimestamp
   };
 });

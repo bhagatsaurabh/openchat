@@ -44,11 +44,17 @@ service cloud.firestore {
     function isAnAdmin(request, resource) {
     	return isAMember(request, resource) && request.auth.uid in resource.data.admins;
     }
-    function validateGroupMembership(request) {
+    function validateNewMembership(request) {
     	return request.auth.uid in request.resource.data.members;
     }
-    function validateGroupAdminship(request) {
+    function validateExistingMembership(userId, existing) {
+    	return userId in existing.members;
+    }
+    function validateNewAdminship(request) {
     	return request.auth.uid in request.resource.data.admins;
+    }
+    function validateExistingAdminship(userId, existing) {
+    	return userId in existing.admins;
     }
     function validateBCGroupCreation(input, request) {
       let isValid = input.members.toSet().size() > 2 && input.admins.toSet().size() > 0;
@@ -56,7 +62,7 @@ service cloud.firestore {
       let check2 = check1 && input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1]));
       let checkF = check2 && input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2]));
 
-      return checkF && validateGroupMembership(request) && validateGroupAdminship(request);
+      return checkF && validateNewMembership(request) && validateNewAdminship(request);
     }
     function validateDMGroupCreation(input, request) {
       let isValid = input.members.toSet().size() == 2 && input.admins.toSet().size() == 2 &&
@@ -65,7 +71,7 @@ service cloud.firestore {
                     input.members[0] == request.auth.uid;
       let otherUser = isValid ? get(/databases/$(database)/documents/users/$(input.members[1])).data : {};
       
-      return isValid && validateGroupMembership(request) && validateGroupAdminship(request) &&
+      return isValid && validateNewMembership(request) && validateNewAdminship(request) &&
              input.avatarUrl == otherUser.avatarUrl &&
              input.name == otherUser.name;
     }
@@ -86,38 +92,52 @@ service cloud.firestore {
                ? validateBCGroupCreation(input, request)
                : validateDMGroupCreation(input, request));
     }
-    function validateDMGroupUpdation(input) {
+    function validateDMGroupUpdation(input, existing) {
       return 'seen' in input
-               ? (input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
+               ? (input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly(request.auth.uid) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : false;
     }
     function validateBCGroupUpdation(input, existing) {
-      let validKeys = ['members', 'admins', 'active'];
+      let validKeys = ['seen', 'name', 'members', 'admins', 'active', 'avatarUrl'];
 
       return input.keys().hasOnly(validKeys) &&
-             ('active' in input ? input.active is bool && input.active != existing.active : true) &&
+             ('active' in input
+               ? (validateExistingAdminship(request.auth.uid, existing) &&
+                 input.active is bool && input.active != existing.active)
+               : true) &&
              ('members' in input
-               ? (input.members is list && validateGroupMembership(request) &&
+               ? (validateExistingAdminship(request.auth.uid, existing) &&
+                 input.members is list && validateNewMembership(request) &&
                  input.members.toSet().size() > 2 &&
                  input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0])) &&
                  input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1])) &&
                  input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2])))
                : true) &&
              ('admins' in input
-               ? (input.admins is list && validateGroupAdminship(request) &&
+               ? (validateExistingAdminship(request.auth.uid, existing) &&
+                 input.admins is list && validateNewAdminship(request) &&
                  input.admins.toSet().size() > 0)
                : true) &&
              ('seen' in input
-               ? (input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
+               ? (validateExistingMembership(request.auth.uid, existing) &&
+                 input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly(request.auth.uid) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
+               : true) &&
+             ('name' in input
+               ? (validateExistingAdminship(request.auth.uid, existing) &&
+                 input.name is string && input.name.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$'))
+               : true) &&
+             ('avatarUrl' in input
+               ? (validateExistingAdminship(request.auth.uid, existing) &&
+                 input.avatarUrl is string)
                : true);
     }
     function validateGroupUpdation(request, resource) {
       let input = request.resource.data;
       let existing = resource.data;
     	return existing.type == 'private'
-               ? validateDMGroupUpdation(input)
+               ? validateDMGroupUpdation(input, existing)
                : validateBCGroupUpdation(input, existing);
     }
     function isGroupActive(resource) {
