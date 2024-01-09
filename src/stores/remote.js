@@ -69,22 +69,12 @@ export const useRemoteDBStore = defineStore('remote', () => {
       active: true,
       type,
       seen: { [auth.user.uid]: serverTimestamp() },
+      sync: { [auth.user.uid]: serverTimestamp() },
       timestamp: serverTimestamp(),
       avatarUrl
     };
     const { id } = await addDoc(collection(remoteDB, 'groups'), data);
     return id;
-  }
-  async function getGroup(id) {
-    try {
-      const snap = await getDoc(doc(remoteDB, 'groups', id));
-      const data = snap.data();
-      data.timestamp = data.timestamp.toDate();
-      data.seen = data.seen?.map((seenTimestamp) => seenTimestamp.toDate());
-      return data;
-    } catch (error) {
-      console.log(error);
-    }
   }
   async function notifyUserAdded({ uid, groupId, encryptedKey }) {
     const { id } = await addDoc(collection(remoteDB, 'users', uid, 'notify'), {
@@ -109,6 +99,15 @@ export const useRemoteDBStore = defineStore('remote', () => {
       console.log(error);
     }
   }
+  async function updateSyncTimestamp(uid, groupId) {
+    try {
+      await updateDoc(doc(remoteDB, 'groups', groupId), {
+        [`sync.${uid}`]: serverTimestamp()
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   return {
     storePublicKey,
@@ -118,8 +117,8 @@ export const useRemoteDBStore = defineStore('remote', () => {
     getPublicKey,
     createGroup,
     notifyUserAdded,
-    getGroup,
     deleteNotification,
-    updateSeenTimestamp
+    updateSeenTimestamp,
+    updateSyncTimestamp
   };
 });

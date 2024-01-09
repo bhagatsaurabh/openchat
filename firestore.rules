@@ -24,7 +24,8 @@ service cloud.firestore {
     function validateUserUpdation(request, resource) {
       let existing = resource.data;
     	let input = request.resource.data;
-      let isValid = input.keys().hasOnly(['name', 'avatarUrl', 'id', 'phone']) &&
+      let validKeys = ['name', 'avatarUrl', 'id', 'phone'];
+      let isValid = input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
                     input.name is string && input.avatarUrl is string &&
                     input.id is string && ('phone' in input ? input.phone is string : true);
     	return isValid &&
@@ -77,7 +78,7 @@ service cloud.firestore {
     }
     function validateGroupCreation(request) {
       let input = request.resource.data;
-      let validKeys = ['name', 'members', 'admins', 'active', 'type', 'seen', 'timestamp', 'avatarUrl'];
+      let validKeys = ['name', 'members', 'admins', 'active', 'type', 'seen', 'sync', 'timestamp', 'avatarUrl'];
       let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
                     input.active is bool && input.members is list &&
                     input.name is string && input.name.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$') &&
@@ -86,6 +87,8 @@ service cloud.firestore {
                     input.avatarUrl is string &&
                     input.seen is map && request.auth.uid in input.seen && input.seen.keys().size() == 1 &&
                     input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time &&
+                    input.sync is map && request.auth.uid in input.sync && input.sync.keys().size() == 1 &&
+                    input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time &&
                     input.timestamp is timestamp && input.timestamp == request.time;
     	return isValid && input.active == true &&
              (input.type == 'broadcast'
@@ -93,15 +96,21 @@ service cloud.firestore {
                : validateDMGroupCreation(input, request));
     }
     function validateDMGroupUpdation(input, existing) {
-      return 'seen' in input
+      let validKeys = ['seen', 'sync'];
+      return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
+             ('seen' in input
                ? (input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly(request.auth.uid) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
-               : false;
+               : true) &&
+             ('sync' in input
+               ? (input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly(request.auth.uid) &&
+                 input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
+               : true);
     }
     function validateBCGroupUpdation(input, existing) {
       let validKeys = ['seen', 'name', 'members', 'admins', 'active', 'avatarUrl'];
 
-      return input.keys().hasOnly(validKeys) &&
+      return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
              ('active' in input
                ? (validateExistingAdminship(request.auth.uid, existing) &&
                  input.active is bool && input.active != existing.active)
@@ -123,6 +132,11 @@ service cloud.firestore {
                ? (validateExistingMembership(request.auth.uid, existing) &&
                  input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly(request.auth.uid) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
+               : true) &&
+             ('sync' in input
+               ? (validateExistingMembership(request.auth.uid, existing) &&
+                 input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly(request.auth.uid) &&
+                 input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
                : true) &&
              ('name' in input
                ? (validateExistingAdminship(request.auth.uid, existing) &&
