@@ -37,7 +37,6 @@ export const useEventsStore = defineStore('events', () => {
   const handleNotification = async (notification) => {
     if (notification.type === 'group:add') {
       await groups.userAdded(notification);
-      // Handle users listener
     } else if (notification.type === 'group:remove') {
       await groups.userRemoved(notification);
     }
