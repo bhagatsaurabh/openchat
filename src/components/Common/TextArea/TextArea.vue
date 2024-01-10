@@ -13,7 +13,7 @@ const props = defineProps({
   },
   modelValue: String
 });
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'enter']);
 
 const native = ref(null);
 const lines = ref(1);
@@ -22,6 +22,12 @@ const handleInput = (e) => {
   emit('update:modelValue', e.target.value);
   lines.value = clamp(Math.round(e.target.scrollHeight / 18 - 1), [1, 5]);
   if (!e.target.value) lines.value = 1;
+};
+const handleEnter = (e) => {
+  if (!e.shiftKey) {
+    e.preventDefault();
+    emit('enter');
+  }
 };
 
 onMounted(() => {
@@ -39,6 +45,7 @@ defineExpose({ native });
     :value="modelValue"
     @input="handleInput"
     v-bind="attrs"
+    @keydown.enter="handleEnter"
   ></textarea>
 </template>
 

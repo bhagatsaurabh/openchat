@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 
 import { useGroupsStore } from '@/stores/groups';
 import { useUsersStore } from '@/stores/users';
+import { useMessagesStore } from '@/stores/messages';
 import Avatar from '@/components/Common/Avatar/Avatar.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Footer from '@/components/Common/Footer/Footer.vue';
@@ -12,6 +13,7 @@ import TextArea from '@/components/Common/TextArea/TextArea.vue';
 
 const groups = useGroupsStore();
 const users = useUsersStore();
+const messagesStore = useMessagesStore();
 const group = ref(groups.activeGroup);
 const message = ref(null);
 const names = computed(() =>
@@ -23,7 +25,6 @@ const handleLoad = () => {
 
   if (group.value.id !== groups.activeGroup.id) {
     group.value = groups.activeGroup;
-    console.log(groups.activeGroup);
   }
 };
 const handleGroupOption = (option) => {
@@ -31,6 +32,13 @@ const handleGroupOption = (option) => {
 };
 const handleAttachOption = (option) => {
   console.log(option);
+};
+const handleSend = () => {
+  if (!message.value) return;
+
+  // Encrypt message with groupEncryptionKey
+  // Create new message in remote with message cipher
+  message.value = null;
 };
 
 watch(() => groups.activeGroup, handleLoad);
@@ -54,7 +62,11 @@ watch(() => groups.activeGroup, handleLoad);
         />
       </template>
     </Header>
-    <section class="messages"></section>
+    <section class="messages">
+      <div v-for="msg in messagesStore.messages[group.id] ?? []" :key="msg.id">
+        {{ msg.text }}
+      </div>
+    </section>
     <Footer>
       <template #left>
         <Options
@@ -66,8 +78,13 @@ watch(() => groups.activeGroup, handleLoad);
           icon="attach"
           @select="handleAttachOption"
         />
-        <TextArea class="input mr-0p5" :attrs="{ placeholder: 'Write a message' }" v-model="message" />
-        <Button :size="1.5" icon="send" :complementary="false" circular flat />
+        <TextArea
+          @enter="handleSend"
+          class="input mr-0p5"
+          :attrs="{ placeholder: 'Write a message' }"
+          v-model="message"
+        />
+        <Button @click="handleSend" :size="1.5" icon="send" :complementary="false" circular flat />
       </template>
     </Footer>
   </section>

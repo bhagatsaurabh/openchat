@@ -88,4 +88,20 @@ export class LinkedList {
     node.prev = null;
     return node;
   }
+
+  *#traverse() {
+    let curr = this.head;
+    while (curr) {
+      yield curr;
+      curr = curr.next;
+    }
+  }
+  [Symbol.iterator]() {
+    return this.#traverse();
+  }
+  forEach(cb) {
+    for (const value of this) {
+      cb(value);
+    }
+  }
 }

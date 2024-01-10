@@ -151,6 +151,8 @@ export const useMessagesStore = defineStore('messages', () => {
   }
 
   return {
+    messages,
+    messageIdx,
     stop,
     attachListener,
     openStream
