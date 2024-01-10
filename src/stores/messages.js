@@ -10,6 +10,7 @@ import { deleteMessageFunction, remoteDB } from '@/config/firebase';
 import { LinkedList } from '@/utils/linked-list';
 import { msInAnHour } from '@/utils/constants';
 import { useGroupsStore } from './groups';
+import { stream } from '@/database/database';
 
 export const useMessagesStore = defineStore('messages', () => {
   const auth = useAuthStore();
@@ -19,7 +20,7 @@ export const useMessagesStore = defineStore('messages', () => {
   const messageIdx = ref({});
   const unsubFns = ref({});
   const busy = ref(false);
-  const cursor = ref(null);
+  const streams = ref({});
   const queue = new Queue();
 
   const listener = (snapshot) => {
@@ -96,6 +97,19 @@ export const useMessagesStore = defineStore('messages', () => {
       messageIdx.value[message.groupId][message.id] = node;
     }
   }
+  function loadOldMessage(message) {
+    const list = messages.value[message.groupId];
+    const index = messageIdx.value[message.groupId];
+    if (list && index) {
+      const node = messages.value[message.groupId].pushHead(message);
+      messageIdx.value[message.groupId][message.id] = node;
+    } else {
+      messages.value[message.groupId] = new LinkedList();
+      messageIdx.value[message.groupId] = {};
+      const node = messages.value[message.groupId].pushHead(message);
+      messageIdx.value[message.groupId][message.id] = node;
+    }
+  }
   function updateMessage(message) {
     const list = messages.value[message.groupId];
     const existingMsgNode = messageIdx.value[message.groupId]?.[message.id];
@@ -120,24 +134,25 @@ export const useMessagesStore = defineStore('messages', () => {
     });
     return numMembers <= 0;
   }
-  function startLoad(groupId) {
-    if (cursor.value) stopLoad();
-    // TODO
+  async function openStream(groupId) {
+    const iterator = stream(`messages:${groupId}`, 'timestamp');
+    streams.value[groupId] = iterator;
+    await loadChunk();
   }
-  function loadNext() {
-    if (!cursor.value) return;
-    // TODO
-  }
-  function stopLoad() {
-    if (!cursor.value) return;
-    // TODO
+  async function loadChunk(groupId) {
+    if (!streams.value[groupId]) return;
+
+    const chunk = await streams.value[groupId].next();
+    if (!chunk.done) {
+      chunk.value.forEach((message) => loadOldMessage(message));
+    } else {
+      streams.value[groupId] = null;
+    }
   }
 
   return {
     stop,
     attachListener,
-    startLoad,
-    stopLoad,
-    loadNext
+    openStream
   };
 });

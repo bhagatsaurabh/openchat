@@ -51,6 +51,9 @@ export const useGroupsStore = defineStore('groups', () => {
     await local.updateGroup(auth.user.uid, group.id, group);
     addGroup(group);
 
+    if (group.type === 'private') users.attachListener(group.members[1]);
+    else await users.saveProfiles(group.members);
+
     messages.attachListener(group.id);
   };
   const handleError = (error) => console.log({ ...error });
@@ -78,6 +81,7 @@ export const useGroupsStore = defineStore('groups', () => {
     const { id, encryptedKey } = data.payload;
 
     await local.storeGroupKey(auth.user.uid, id, await base64ToBuf(encryptedKey));
+    await schemaChange(auth.user.uid, id);
     attachListener(id);
     await remote.deleteNotification(data.id);
   }
@@ -92,7 +96,6 @@ export const useGroupsStore = defineStore('groups', () => {
     groups.value[group.id] = group;
   }
   async function createGroup({ name, type, members = [], avatarUrl = '' }) {
-    // Check if DM Group already exists
     if (type === 'private') {
       const existing = getDMGroupByUID(members[1].id);
       if (existing) {
@@ -107,11 +110,11 @@ export const useGroupsStore = defineStore('groups', () => {
       admins: type === 'private' ? [...members] : [auth.user.uid],
       avatarUrl: type === 'private' ? members[1].avatarUrl : avatarUrl
     });
-    attachListener(groupId);
     await schemaChange(auth.user.uid, groupId);
+    attachListener(groupId);
 
-    await users.saveProfiles(members);
     if (type === 'private') users.attachListener(members[1]);
+    else await users.saveProfiles(members);
 
     members.shift();
     const rawPublicKeys = await Promise.all(members.map((id) => remote.getPublicKey(id)));

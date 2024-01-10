@@ -63,8 +63,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
   async function handleNewUser() {
     await local.storeUser(user.value.uid);
-    const { publicKey } = await generatePrivateKey(user.value.uid);
-    encKey.value = publicKey;
+    const { key, publicKey } = await generatePrivateKey(user.value.uid);
+    encKey.value = key.publicKey;
     await remote.storePublicKey(publicKey);
     await remote.storeUserInfo({
       name: name.value,

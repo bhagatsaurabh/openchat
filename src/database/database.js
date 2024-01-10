@@ -50,8 +50,8 @@ const createSchema = (database, uid, groupId) => {
   if (uid && groupId) {
     const messagesStoreName = `messages:${groupId}`;
     if (!database.objectStoreNames.contains(messagesStoreName)) {
-      database.createObjectStore(messagesStoreName);
-      database.createIndex('timestamp', 'timestamp', { unique: false });
+      const mOS = database.createObjectStore(messagesStoreName);
+      mOS.createIndex('timestamp', 'timestamp', { unique: false });
     }
   }
 };
@@ -59,7 +59,7 @@ const closeDB = () => {
   db?.removeEventListener('close', closeListener);
   db?.close();
 };
-const closeListener = (event) => {
+const closeListener = () => {
   /* dispatch({ type: 'database/status', payload: null });
   dispatch({
     type: 'database/error',
@@ -172,19 +172,22 @@ const getAllKeys = (objectStore) => {
   });
 };
 
-/* function iterateCursor(objectStore, batchSize = 10, cursorPosition = null) {
+const iterateCursor = (objectStoreName, indexName, batchSize = 20, position) => {
   return new Promise((resolve, reject) => {
     let results = [];
     let cursorRequest;
+    let store = db.transaction(objectStoreName).objectStore(objectStoreName);
+    let advanceBy = position;
 
-    if (cursorPosition !== null) {
-      cursorRequest = objectStore.openCursor(cursorPosition);
-    } else {
-      cursorRequest = objectStore.openCursor();
-    }
+    cursorRequest = store.index(indexName).openCursor(null, 'prev');
 
-    cursorRequest.onsuccess = function(event) {
+    cursorRequest.onsuccess = function (event) {
       let cursor = event.target.result;
+      if (advanceBy) {
+        advanceBy = null;
+        cursor?.advance(position);
+        return;
+      }
 
       if (cursor && results.length < batchSize) {
         results.push(cursor.value);
@@ -194,36 +197,42 @@ const getAllKeys = (objectStore) => {
       }
     };
 
-    cursorRequest.onerror = function(event) {
-      reject(event.target.error);
-    };
+    cursorRequest.onerror = (event) => reject(event.target.error);
   });
-}
-// Usage with generator
-async function* cursorGenerator(objectStore, batchSize = 10) {
-  let cursorPosition = null;
+};
+async function* cursorGenerator(objectStoreName, indexName, batchSize = 20) {
   let results;
+  const maxCount = await getCount(objectStoreName);
+  let count = 0;
 
   do {
-    ({ results, cursorPosition } = await iterateCursor(objectStore, batchSize, cursorPosition));
-
-    for (const value of results) {
-      yield value;
-    }
-
-  } while (results.length === batchSize);
+    ({ results } = await iterateCursor(objectStoreName, indexName, batchSize, count));
+    count += results.length;
+    yield results;
+  } while (count < maxCount);
 }
-// Usage example
-(async () => {
-  let transaction = db.transaction(['yourObjectStore'], 'readonly');
-  let objectStore = transaction.objectStore('yourObjectStore');
-
-  let cursorIterator = cursorGenerator(objectStore);
+async function* stream(objectStoreName, indexName) {
+  let cursorIterator = cursorGenerator(objectStoreName, indexName);
 
   for await (const value of cursorIterator) {
-    console.log('Value:', value);
+    yield value;
   }
-})(); */
+}
+const getCount = async (objectStore) => {
+  return new Promise((resolve, reject) => {
+    if (!db) resolve(null);
+    else {
+      let request;
+      try {
+        request = db.transaction(objectStore).objectStore(objectStore).count();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+      } catch (error) {
+        reject(error);
+      }
+    }
+  });
+};
 
 export {
   db,
@@ -236,5 +245,7 @@ export {
   updateObject,
   deleteObject,
   getAll,
-  getAllKeys
+  getAllKeys,
+  getCount,
+  stream
 };

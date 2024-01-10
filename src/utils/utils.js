@@ -79,8 +79,6 @@ export const resizeImage = async (image, width, height) => {
     resizeHeight: height
   });
 
-  // return bitmap;
-
   const canvas = document.createElement('canvas');
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
