@@ -5,12 +5,13 @@ import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
 import { Queue } from '@/utils/queue';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { Timestamp, collection, onSnapshot, query, serverTimestamp } from 'firebase/firestore';
 import { deleteMessageFunction, remoteDB } from '@/config/firebase';
 import { LinkedList } from '@/utils/linked-list';
 import { msInAnHour } from '@/utils/constants';
 import { useGroupsStore } from './groups';
 import { stream } from '@/database/database';
+import { decryptText, encryptText } from '@/utils/crypto';
 
 export const useMessagesStore = defineStore('messages', () => {
   const auth = useAuthStore();
@@ -21,6 +22,7 @@ export const useMessagesStore = defineStore('messages', () => {
   const unsubFns = ref({});
   const busy = ref(false);
   const streams = ref({});
+  const outQueue = ref({});
   const queue = new Queue();
 
   const listener = (snapshot) => {
@@ -149,12 +151,37 @@ export const useMessagesStore = defineStore('messages', () => {
       streams.value[groupId] = null;
     }
   }
+  async function encrypt(type, value) {
+    if (type === 'text') {
+      return await encryptText(value, groups.activeGroupKey);
+    }
+  }
+  async function decrypt(type, cipher) {
+    if (type === 'text') {
+      return await decryptText(cipher, groups.activeGroupKey);
+    }
+  }
+  async function send(queueId, type, value) {
+    const cipher = await encrypt(type, value);
+    /* outQueue.value[] = remote.addNewMessage(
+      {
+        by: auth.user.uid,
+        timestamp: serverTimestamp(),
+        expiry: Timestamp.fromDate(new Date(Date.now() + 864000000)),
+        text: cipher,
+        type
+      },
+      groups.activeGroup.id
+    ); */
+  }
 
   return {
     messages,
     messageIdx,
     stop,
     attachListener,
-    openStream
+    openStream,
+    encrypt,
+    decrypt
   };
 });

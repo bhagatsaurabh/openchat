@@ -38,13 +38,13 @@ const handleSignOut = async () => {
 const handleSettings = () => {
   // TODO: Handle settings panel
 };
-const switchToGroup = (id) => {
-  groupsStore.setActiveGroup(id);
+const switchToGroup = async (id) => {
+  await groupsStore.setActiveGroup(id);
   router.push({ path: '/chat' });
 };
 const handleCreateGroup = async (name, type, members, avatarUrl) => {
   const id = await groupsStore.createGroup({ name, type, members, avatarUrl });
-  switchToGroup(id);
+  await switchToGroup(id);
 };
 const handleForceSearch = () => {
   activeTab.value = 1;
@@ -65,7 +65,7 @@ let unregisterGuard = () => {};
 onMounted(() => {
   unregisterGuard = router.beforeEach((to, from, next) => {
     if (from.path === '/chat' && to.path === '/') {
-      groupsStore.activeGroup = null;
+      groupsStore.unsetActiveGroup();
     }
     next();
   });

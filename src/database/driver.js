@@ -9,7 +9,7 @@ import {
   deleteObject,
   getAllKeys
 } from './database';
-import { getGroupKey } from '@/utils/crypto';
+import { importGroupKey } from '@/utils/crypto';
 
 export const registerPreferencesPersistence = () => {
   const preferencesStore = usePreferencesStore();
@@ -44,11 +44,14 @@ export const updateGroup = async (uid, groupId, group) => {
   await updateObject(`groups:${uid}`, groupId, newGroup);
 };
 export const storeGroupKey = async (uid, groupId, encryptedKey) => {
-  const key = await getGroupKey(uid, encryptedKey);
+  const key = await importGroupKey(uid, encryptedKey);
   await updateObject(`keys:${uid}`, groupId, key);
 };
 export const deleteGroupKey = async (uid, groupId) => {
   await deleteObject(`keys:${uid}`, groupId);
+};
+export const getGroupKey = async (uid, groupId) => {
+  await getObject(`keys:${uid}`, groupId);
 };
 export const getGroup = async (uid, groupId) => {
   return await getObject(`groups:${uid}`, groupId);
@@ -79,7 +82,3 @@ export const getMessage = async (messageId, groupId) => {
 export const deleteMessage = async (messageId, groupId) => {
   await deleteObject(`messages:${groupId}`, messageId);
 };
-/* export const openMessageCursor = async (groupId) => {
-  await openCursor(groupId);
-};
-export const closeMessageCursor = async (cursor) => {}; */
