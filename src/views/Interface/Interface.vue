@@ -10,6 +10,7 @@ import Footer from '@/components/Common/Footer/Footer.vue';
 import Options from '@/components/Common/Options/Options.vue';
 import Button from '@/components/Common/Button/Button.vue';
 import TextArea from '@/components/Common/TextArea/TextArea.vue';
+import Message from '@/components/Message/Message.vue';
 
 const groups = useGroupsStore();
 const users = useUsersStore();
@@ -35,9 +36,7 @@ const handleAttachOption = (option) => {
 };
 const handleSend = () => {
   if (!message.value) return;
-
-  // Encrypt message with groupEncryptionKey
-  // Create new message in remote with message cipher
+  // TODO
   message.value = null;
 };
 
@@ -63,9 +62,7 @@ watch(() => groups.activeGroup, handleLoad);
       </template>
     </Header>
     <section class="messages">
-      <div v-for="msg in messagesStore.messages[group.id] ?? []" :key="msg.id">
-        {{ msg.text }}
-      </div>
+      <Message v-for="msg in messagesStore.messages[group.id] ?? []" :key="msg.id" :message="msg" />
     </section>
     <Footer>
       <template #left>

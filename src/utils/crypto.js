@@ -1,4 +1,5 @@
 import * as local from '@/database/driver';
+import { base64ToBuf, bufToBase64 } from './utils';
 
 const crypto = window.crypto.subtle;
 
@@ -50,7 +51,7 @@ export const generateGroupKey = async (publicKeys = []) => {
   return wrappedGroupKeys;
 };
 
-export const getGroupKey = async (uid, wrappedKey) => {
+export const importGroupKey = async (uid, wrappedKey) => {
   return await crypto.unwrapKey(
     'jwk',
     wrappedKey,
@@ -60,4 +61,24 @@ export const getGroupKey = async (uid, wrappedKey) => {
     false,
     ['encrypt', 'decrypt']
   );
+};
+
+// string to (plain:ArrayBuffer to cipher:ArrayBuffer) to base64
+export const encryptText = async (text, key) => {
+  const encoded = new TextEncoder().encode(text);
+  let iv = window.crypto.getRandomValues(new Uint8Array(12));
+  let cipher = await crypto.encrypt({ name: 'AES-GCM', iv: iv }, key, encoded);
+  iv = iv.buffer;
+  [cipher, iv] = await Promise.all([cipher, iv].map((input) => bufToBase64(input)));
+
+  return `${iv}#${cipher}`;
+};
+// base64 to (cipher:ArrayBuffer to plain:ArrayBuffer) to string
+export const decryptText = async (encryptedText, key) => {
+  let cipher = encryptedText.substring(0, encryptedText.indexOf('#'));
+  let iv = encryptedText.substring(encryptedText.indexOf('#') + 1);
+  [cipher, iv] = await Promise.all([cipher, iv].map((input) => base64ToBuf(input)));
+  let text = await crypto.decrypt({ name: 'AES-GCM', iv: new Uint8Array(iv) }, key, new Uint8Array(cipher));
+
+  return new TextDecoder().decode(text);
 };

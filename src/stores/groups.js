@@ -20,6 +20,7 @@ export const useGroupsStore = defineStore('groups', () => {
   const users = useUsersStore();
   const groups = ref({});
   const activeGroup = ref(null);
+  const activeGroupKey = ref(null);
   const unsubFns = ref([]);
   const busy = ref(false);
   const queue = new Queue();
@@ -74,8 +75,18 @@ export const useGroupsStore = defineStore('groups', () => {
   function stop() {
     unsubFns.value.forEach((unsubscribe) => unsubscribe());
   }
-  function setActiveGroup(id) {
-    activeGroup.value = groups.value[id] ?? null;
+  async function setActiveGroup(id) {
+    if (id && groups.value[id]) {
+      activeGroup.value = groups.value[id];
+      activeGroupKey.value = await local.getGroupKey(auth.user.uid, id);
+    } else {
+      activeGroup.value = null;
+      activeGroupKey.value = null;
+    }
+  }
+  function unsetActiveGroup() {
+    activeGroup.value = null;
+    activeGroupKey.value = null;
   }
   async function userAdded(data) {
     const { id, encryptedKey } = data.payload;
@@ -177,9 +188,11 @@ export const useGroupsStore = defineStore('groups', () => {
   return {
     groups,
     activeGroup,
+    activeGroupKey,
     getDMGroupByUID,
     addGroup,
     setActiveGroup,
+    unsetActiveGroup,
     getGroupByID,
     userAdded,
     userRemoved,
