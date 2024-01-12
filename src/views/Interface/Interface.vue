@@ -17,6 +17,7 @@ const users = useUsersStore();
 const messagesStore = useMessagesStore();
 const group = ref(groups.activeGroup);
 const message = ref(null);
+const busy = ref(false);
 const names = computed(() =>
   group.value.id === 'self' ? group.value.name : users.getNamesFromUIDs(group.value.members).join(', ')
 );
@@ -29,15 +30,17 @@ const handleLoad = () => {
   }
 };
 const handleGroupOption = (option) => {
-  console.log(option);
+  // TODO
 };
 const handleAttachOption = (option) => {
-  console.log(option);
-};
-const handleSend = () => {
-  if (!message.value) return;
   // TODO
+};
+const handleSend = async () => {
+  busy.value = true;
+  if (!message.value || !message.value.trim()) return;
+  await messagesStore.send('text', message.value);
   message.value = null;
+  busy.value = false;
 };
 
 watch(() => groups.activeGroup, handleLoad);
@@ -81,7 +84,15 @@ watch(() => groups.activeGroup, handleLoad);
           :attrs="{ placeholder: 'Write a message' }"
           v-model="message"
         />
-        <Button @click="handleSend" :size="1.5" icon="send" :complementary="false" circular flat />
+        <Button
+          @click="handleSend"
+          :size="1.5"
+          icon="send"
+          :complementary="false"
+          :disabled="busy"
+          circular
+          flat
+        />
       </template>
     </Footer>
   </section>

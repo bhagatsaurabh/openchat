@@ -1,41 +1,41 @@
 import { LinkedList } from './linked-list';
 
 export class Queue {
-  #list = new LinkedList();
+  list = new LinkedList();
   get length() {
-    return this.#list.length;
+    return this.list.length;
   }
 
   constructor(items) {
-    this.#list = new LinkedList();
+    this.list = new LinkedList();
     if (Array.isArray(items)) {
       items.forEach((item) => this.push(item));
     }
   }
 
   push(value) {
-    this.#list.pushTail(value);
+    this.list.pushTail(value);
   }
   pop() {
-    const node = this.#list.popHead();
+    const node = this.list.popHead();
     if (node !== null) return node.value;
     return null;
   }
   seek() {
-    const node = this.#list.head;
+    const node = this.list.head;
     if (node !== null) return node.value;
     return null;
   }
   seekLast() {
-    const node = this.#list.tail;
+    const node = this.list.tail;
     if (node !== null) return node.value;
     return null;
   }
   clear() {
-    this.#list.clear();
+    this.list.clear();
   }
   *#traverse() {
-    let curr = this.#list.head;
+    let curr = this.list.head;
     while (curr) {
       yield curr.value;
       curr = curr.next;

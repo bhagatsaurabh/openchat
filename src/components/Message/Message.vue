@@ -20,7 +20,8 @@ const time = computed(() => props.message.timestamp.toTimeString().substring(0, 
 const name = computed(() => usersStore.users[props.message.by].name);
 
 onMounted(async () => {
-  content.value = await messagesStore.decrypt(props.message.type, props.message.text);
+  if (props.message.local) content.value = props.message.text;
+  else content.value = await messagesStore.decrypt(props.message.type, props.message.text);
 });
 </script>
 

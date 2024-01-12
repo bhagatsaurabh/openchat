@@ -5,7 +5,7 @@ import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
 import { Queue } from '@/utils/queue';
-import { Timestamp, collection, onSnapshot, query, serverTimestamp } from 'firebase/firestore';
+import { Timestamp, collection, doc, onSnapshot, query, serverTimestamp } from 'firebase/firestore';
 import { deleteMessageFunction, remoteDB } from '@/config/firebase';
 import { LinkedList } from '@/utils/linked-list';
 import { msInAnHour } from '@/utils/constants';
@@ -21,8 +21,10 @@ export const useMessagesStore = defineStore('messages', () => {
   const messageIdx = ref({});
   const unsubFns = ref({});
   const busy = ref(false);
+  const outBusy = ref(false);
   const streams = ref({});
-  const outQueue = ref({});
+  const outQueueIdx = ref({});
+  const outQueue = new Queue();
   const queue = new Queue();
 
   const listener = (snapshot) => {
@@ -49,7 +51,42 @@ export const useMessagesStore = defineStore('messages', () => {
       busy.value = false;
     }
   };
+  const processOutQueue = async () => {
+    if (outBusy.value) return;
+    else {
+      outBusy.value = true;
+      let message;
+      while ((message = queue.pop()) !== null) {
+        await handleOutMessage(message);
+      }
+      outBusy.value = false;
+    }
+  };
+  const handleOutMessage = async (message) => {
+    message.text = await encrypt(message.type, message.text);
+    const msg = {
+      by: message.by,
+      timestamp: message.groupId === 'self' ? new Date() : serverTimestamp(),
+      text: message.text,
+      type: message.type
+    };
+    if (message.groupId !== 'self') {
+      msg.expiry = Timestamp.fromDate(new Date(Date.now() + 864000000));
+      await remote.addNewMessage(message.docRef, msg);
+    } else {
+      msg.id = message.id;
+      await local.storeMessage(msg, groups.activeGroup.id);
+    }
+  };
   const handleMessage = async (message) => {
+    if (outQueueIdx.value[message.id]) {
+      if (!message.type.startsWith('meta')) {
+        messageIdx.value[message.groupId][message.id].local = null;
+        await local.storeMessage(message);
+      }
+      outQueueIdx.value[message.id] = undefined;
+      return;
+    }
     message.timestamp = message.timestamp?.toDate();
     if (message.type === 'meta:edit') {
       const existingMsg = await local.getMessage(message.ref, message.groupId);
@@ -161,18 +198,24 @@ export const useMessagesStore = defineStore('messages', () => {
       return await decryptText(cipher, groups.activeGroupKey);
     }
   }
-  async function send(queueId, type, value) {
-    const cipher = await encrypt(type, value);
-    /* outQueue.value[] = remote.addNewMessage(
-      {
-        by: auth.user.uid,
-        timestamp: serverTimestamp(),
-        expiry: Timestamp.fromDate(new Date(Date.now() + 864000000)),
-        text: cipher,
-        type
-      },
-      groups.activeGroup.id
-    ); */
+  async function send(type, value) {
+    const docRef = doc(collection(remoteDB, 'groups', groups.activeGroup.id, 'messages'));
+    const message = {
+      id: docRef.id,
+      groupId: groups.activeGroup.id,
+      by: auth.user.uid,
+      timestamp: new Date(),
+      type,
+      text: value,
+      local: { status: 'pending', docRef }
+    };
+    if (type === 'text') {
+      addMessage(message);
+      await local.storeMessage(message, groups.activeGroup.id);
+      outQueue.push(message);
+      outQueueIdx.value[docRef.id] = message;
+      processOutQueue();
+    }
   }
 
   return {
@@ -182,6 +225,7 @@ export const useMessagesStore = defineStore('messages', () => {
     attachListener,
     openStream,
     encrypt,
-    decrypt
+    decrypt,
+    send
   };
 });

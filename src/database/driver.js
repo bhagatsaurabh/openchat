@@ -74,6 +74,10 @@ export const getAllProfiles = async () => {
 };
 
 export const storeMessage = async (message, groupId) => {
+  if (message.local?.docRef) {
+    message = { ...message };
+    message.local.docRef = null;
+  }
   await updateObject(`messages:${groupId}`, message.id, message);
 };
 export const getMessage = async (messageId, groupId) => {
