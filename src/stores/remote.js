@@ -108,9 +108,9 @@ export const useRemoteDBStore = defineStore('remote', () => {
       console.log(error);
     }
   }
-  async function addNewMessage(message, groupId) {
+  async function addNewMessage(docRef, message) {
     try {
-      await addDoc(collection(remoteDB, 'groups', groupId, 'messages'), message);
+      await setDoc(docRef, message);
     } catch (error) {
       console.log(error);
     }

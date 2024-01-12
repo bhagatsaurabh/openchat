@@ -16,6 +16,7 @@ import { useRecaptchaStore } from './recaptcha';
 import { useRemoteDBStore } from '@/stores/remote';
 import { generatePrivateKey } from '@/utils/crypto';
 import * as local from '@/database/driver';
+import { useUsersStore } from './users';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
@@ -31,6 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
   const captcha = useRecaptchaStore();
   const notify = useNotificationStore();
   const remote = useRemoteDBStore();
+  const users = useUsersStore();
 
   function setUser(signedInUser) {
     user.value = signedInUser;
@@ -73,10 +75,12 @@ export const useAuthStore = defineStore('auth', () => {
       phone: user.value.phoneNumber
     });
     await fetchUserProfile(user.value.uid);
+    users.attachListener(user.value.uid);
   }
   async function handleExistingUser() {
     encKey.value = await local.getPublicKey(user.value.uid);
     await fetchUserProfile(user.value.uid);
+    users.attachListener(user.value.uid);
   }
   async function signIn(type, options) {
     setStatus('signingIn');
@@ -175,7 +179,6 @@ export const useAuthStore = defineStore('auth', () => {
     deRegisterAuthListener,
     signIn,
     signOut,
-    fetchUserProfile,
     verifyGuestUser,
     linkGuestUser
   };
