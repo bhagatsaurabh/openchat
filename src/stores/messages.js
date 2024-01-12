@@ -56,7 +56,7 @@ export const useMessagesStore = defineStore('messages', () => {
     else {
       outBusy.value = true;
       let message;
-      while ((message = queue.pop()) !== null) {
+      while ((message = outQueue.pop()) !== null) {
         await handleOutMessage(message);
       }
       outBusy.value = false;
@@ -75,7 +75,9 @@ export const useMessagesStore = defineStore('messages', () => {
       await remote.addNewMessage(message.docRef, msg);
     } else {
       msg.id = message.id;
+      msg.groupId = groups.activeGroup.id;
       await local.storeMessage(msg, groups.activeGroup.id);
+      loadOldMessage(msg);
     }
   };
   const handleMessage = async (message) => {
@@ -126,27 +128,25 @@ export const useMessagesStore = defineStore('messages', () => {
   function addMessage(message) {
     const list = messages.value[message.groupId];
     const index = messageIdx.value[message.groupId];
-    if (list && index) {
-      const node = messages.value[message.groupId].pushTail(message);
-      messageIdx.value[message.groupId][message.id] = node;
-    } else {
+    if (!list || !index) {
       messages.value[message.groupId] = new LinkedList();
       messageIdx.value[message.groupId] = {};
-      const node = messages.value[message.groupId].pushTail(message);
-      messageIdx.value[message.groupId][message.id] = node;
     }
+    const node = messages.value[message.groupId].pushTail(message);
+    messageIdx.value[message.groupId][message.id] = node;
   }
   function loadOldMessage(message) {
     const list = messages.value[message.groupId];
     const index = messageIdx.value[message.groupId];
-    if (list && index) {
+    if (!list || !index) {
+      messages.value[message.groupId] = new LinkedList();
+      messageIdx.value[message.groupId] = {};
+    }
+    if (!messageIdx.value[message.groupId][message.id]) {
       const node = messages.value[message.groupId].pushHead(message);
       messageIdx.value[message.groupId][message.id] = node;
     } else {
-      messages.value[message.groupId] = new LinkedList();
-      messageIdx.value[message.groupId] = {};
-      const node = messages.value[message.groupId].pushHead(message);
-      messageIdx.value[message.groupId][message.id] = node;
+      messageIdx.value[message.groupId][message.id].value = message;
     }
   }
   function updateMessage(message) {
@@ -176,7 +176,7 @@ export const useMessagesStore = defineStore('messages', () => {
   async function openStream(groupId) {
     const iterator = stream(`messages:${groupId}`, 'timestamp');
     streams.value[groupId] = iterator;
-    await loadChunk();
+    await loadChunk(groupId);
   }
   async function loadChunk(groupId) {
     if (!streams.value[groupId]) return;

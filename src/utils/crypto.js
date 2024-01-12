@@ -75,8 +75,8 @@ export const encryptText = async (text, key) => {
 };
 // base64 to (cipher:ArrayBuffer to plain:ArrayBuffer) to string
 export const decryptText = async (encryptedText, key) => {
-  let cipher = encryptedText.substring(0, encryptedText.indexOf('#'));
-  let iv = encryptedText.substring(encryptedText.indexOf('#') + 1);
+  let iv = encryptedText.substring(0, encryptedText.indexOf('#'));
+  let cipher = encryptedText.substring(encryptedText.indexOf('#') + 1);
   [cipher, iv] = await Promise.all([cipher, iv].map((input) => base64ToBuf(input)));
   let text = await crypto.decrypt({ name: 'AES-GCM', iv: new Uint8Array(iv) }, key, new Uint8Array(cipher));
 
