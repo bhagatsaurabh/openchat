@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { useGroupsStore } from '@/stores/groups';
 import { useUsersStore } from '@/stores/users';
@@ -16,6 +16,7 @@ const groups = useGroupsStore();
 const users = useUsersStore();
 const messagesStore = useMessagesStore();
 const group = ref(groups.activeGroup);
+const container = ref(null);
 const message = ref(null);
 const busy = ref(false);
 const names = computed(() =>
@@ -41,6 +42,7 @@ const handleSend = async () => {
   await messagesStore.send('text', message.value);
   message.value = null;
   busy.value = false;
+  container.value.scrollTo(0, container.value.scrollHeight);
 };
 
 watch(() => groups.activeGroup, handleLoad);
@@ -64,8 +66,10 @@ watch(() => groups.activeGroup, handleLoad);
         />
       </template>
     </Header>
-    <section class="messages">
-      <Message v-for="msg in messagesStore.messages[group.id] ?? []" :key="msg.id" :message="msg" />
+    <section ref="container" class="messages-container">
+      <div class="messages">
+        <Message v-for="msg in messagesStore.messages[group.id] ?? []" :key="msg.id" :message="msg" />
+      </div>
     </section>
     <Footer>
       <template #left>
@@ -123,8 +127,16 @@ watch(() => groups.activeGroup, handleLoad);
   z-index: 50;
 }
 
-.window .messages {
+.window .messages-container {
   flex: 1;
+  overflow-y: auto;
+  overflow-anchor: auto;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.window .messages {
+  width: 100%;
+  padding: 1rem 0rem;
 }
 
 .info {

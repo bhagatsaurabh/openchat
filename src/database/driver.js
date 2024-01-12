@@ -51,7 +51,7 @@ export const deleteGroupKey = async (uid, groupId) => {
   await deleteObject(`keys:${uid}`, groupId);
 };
 export const getGroupKey = async (uid, groupId) => {
-  await getObject(`keys:${uid}`, groupId);
+  return await getObject(`keys:${uid}`, groupId);
 };
 export const getGroup = async (uid, groupId) => {
   return await getObject(`groups:${uid}`, groupId);
