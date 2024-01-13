@@ -188,6 +188,11 @@ export const useMessagesStore = defineStore('messages', () => {
       streams.value[groupId] = null;
     }
   }
+  function unload(groupId) {
+    messages.value[groupId] = undefined;
+    messageIdx.value[groupId] = undefined;
+    streams.value[groupId] = null;
+  }
   async function encrypt(type, value) {
     if (type === 'text') {
       return await encryptText(value, groups.activeGroupKey);
@@ -224,6 +229,8 @@ export const useMessagesStore = defineStore('messages', () => {
     stop,
     attachListener,
     openStream,
+    loadChunk,
+    unload,
     encrypt,
     decrypt,
     send

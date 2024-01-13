@@ -1,9 +1,11 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { useGroupsStore } from '@/stores/groups';
 import { useUsersStore } from '@/stores/users';
 import { useMessagesStore } from '@/stores/messages';
+import { throttle } from '@/utils/utils';
 import Avatar from '@/components/Common/Avatar/Avatar.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Footer from '@/components/Common/Footer/Footer.vue';
@@ -11,14 +13,18 @@ import Options from '@/components/Common/Options/Options.vue';
 import Button from '@/components/Common/Button/Button.vue';
 import TextArea from '@/components/Common/TextArea/TextArea.vue';
 import Message from '@/components/Message/Message.vue';
+import Spinner from '@/components/Common/Spinner/Spinner.vue';
 
 const groups = useGroupsStore();
 const users = useUsersStore();
 const messagesStore = useMessagesStore();
+const router = useRouter();
 const group = ref(groups.activeGroup);
-const container = ref(null);
+const containerEl = ref(null);
+const listEl = ref(null);
 const message = ref(null);
 const busy = ref(false);
+const busyNextChunk = ref(false);
 const names = computed(() =>
   group.value.id === 'self' ? group.value.name : users.getNamesFromUIDs(group.value.members).join(', ')
 );
@@ -31,7 +37,12 @@ const handleLoad = () => {
   }
 };
 const handleGroupOption = (option) => {
-  // TODO
+  if (option === 'Profile') {
+    router.push({ hash: '#group-profile' });
+  } else if (option === 'Leave') {
+    // TODO
+    groups.leave(group.value.id);
+  }
 };
 const handleAttachOption = (option) => {
   // TODO
@@ -42,8 +53,18 @@ const handleSend = async () => {
   await messagesStore.send('text', message.value);
   message.value = null;
   busy.value = false;
-  container.value.scrollTo(0, container.value.scrollHeight);
+  containerEl.value.scrollTo(0, containerEl.value.scrollHeight);
 };
+const handleScroll = async () => {
+  if (busyNextChunk.value || !listEl.value || !containerEl.value) return;
+  const delta = listEl.value.clientHeight - containerEl.value.clientHeight;
+  if (delta > 0 && Math.abs(containerEl.value.scrollTop) >= delta * 0.75) {
+    busyNextChunk.value = true;
+    await messagesStore.loadChunk(groups.activeGroup.id);
+    busyNextChunk.value = false;
+  }
+};
+const throttledHandleScroll = throttle(handleScroll, 100);
 
 watch(() => groups.activeGroup, handleLoad);
 </script>
@@ -52,8 +73,8 @@ watch(() => groups.activeGroup, handleLoad);
   <section class="window">
     <Header class="header">
       <template #left>
-        <Avatar class="mr-0p5" :url="group.avatarUrl" />
-        <div class="info mr-0p5">
+        <Avatar @open="() => handleGroupOption('Profile')" class="mr-0p5" :url="group.avatarUrl" />
+        <div @click="() => handleGroupOption('Profile')" class="info mr-0p5">
           <h3 class="name">{{ group.name }}</h3>
           <h4 class="members">{{ names }}</h4>
         </div>
@@ -66,10 +87,11 @@ watch(() => groups.activeGroup, handleLoad);
         />
       </template>
     </Header>
-    <section ref="container" class="messages-container">
-      <div class="messages">
+    <section ref="containerEl" class="messages-container" @scroll="throttledHandleScroll">
+      <div ref="listEl" class="messages">
         <Message v-for="msg in messagesStore.messages[group.id] ?? []" :key="msg.id" :message="msg" />
       </div>
+      <div v-if="busyNextChunk" class="wait"><Spinner /></div>
     </section>
     <Footer>
       <template #left>
@@ -133,6 +155,12 @@ watch(() => groups.activeGroup, handleLoad);
   overflow-anchor: auto;
   display: flex;
   flex-direction: column-reverse;
+}
+.window .messages-container .wait {
+  width: min-content;
+  margin: auto;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 .window .messages {
   width: 100%;
