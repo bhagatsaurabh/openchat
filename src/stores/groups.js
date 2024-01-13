@@ -79,15 +79,17 @@ export const useGroupsStore = defineStore('groups', () => {
     if (id && groups.value[id]) {
       activeGroup.value = groups.value[id];
       activeGroupKey.value = await local.getGroupKey(auth.user.uid, id);
-      await messages.openStream(id)
+      await messages.openStream(id);
     } else {
       activeGroup.value = null;
       activeGroupKey.value = null;
     }
   }
   function unsetActiveGroup() {
+    const id = activeGroup.value.id;
     activeGroup.value = null;
     activeGroupKey.value = null;
+    messages.unload(id);
   }
   async function userAdded(data) {
     const { id, encryptedKey } = data.payload;
