@@ -115,6 +115,9 @@ export const useRemoteDBStore = defineStore('remote', () => {
       console.log(error);
     }
   }
+  async function updateGroup(group, groupId) {
+    await updateDoc(doc(remoteDB, 'groups', groupId), group);
+  }
 
   return {
     storePublicKey,
@@ -127,6 +130,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     deleteNotification,
     updateSeenTimestamp,
     updateSyncTimestamp,
-    addNewMessage
+    addNewMessage,
+    updateGroup
   };
 });
