@@ -38,7 +38,7 @@ const handleLoad = () => {
 };
 const handleGroupOption = (option) => {
   if (option === 'Profile') {
-    router.push({ hash: '#group-profile' });
+    router.push('/chat/profile');
   } else if (option === 'Leave') {
     // TODO
     groups.leave(group.value.id);
@@ -64,6 +64,12 @@ const handleScroll = async () => {
     busyNextChunk.value = false;
   }
 };
+const handleLeave = () => {
+  // TODO
+};
+const handleDelete = () => {
+  // TODO
+};
 const throttledHandleScroll = throttle(handleScroll, 100);
 
 watch(() => groups.activeGroup, handleLoad);
@@ -83,7 +89,7 @@ watch(() => groups.activeGroup, handleLoad);
             { text: 'Profile', icon: 'user' },
             { text: 'Leave', icon: 'leave' }
           ]"
-          @select="handleGroupOption"
+          @select="(opt) => handleGroupOption(opt.text)"
         />
       </template>
     </Header>
@@ -121,6 +127,11 @@ watch(() => groups.activeGroup, handleLoad);
         />
       </template>
     </Footer>
+    <RouterView v-slot="{ Component }">
+      <Transition name="fade-slide-rtr">
+        <component @leave="handleLeave" @delete="handleDelete" :is="Component" />
+      </Transition>
+    </RouterView>
   </section>
 </template>
 

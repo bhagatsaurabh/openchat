@@ -22,6 +22,10 @@ const props = defineProps({
   updater: {
     type: Function,
     default: () => {}
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -187,11 +191,12 @@ onBeforeUnmount(() => observer?.disconnect());
 </script>
 
 <template>
-  <section class="avatar-selector">
+  <section class="avatar-selector" :class="{ disabled }">
     <div
       ref="el"
       :style="{ height: `${size}px` }"
       class="container"
+      :class="{ editing: isEditing }"
       @pointerdown="handlePointerDown"
       @pointerup="handlePointerUp"
       @pointermove="handlePointerMove"
@@ -212,7 +217,15 @@ onBeforeUnmount(() => observer?.disconnect());
       </div>
     </div>
     <div v-hide="!isEditing" class="controls">
-      <Button @click="handleUpdate" :complementary="false" :busy="updating" async>Update Photo</Button>
+      <Button
+        :tabindex="isEditing ? 0 : -1"
+        @click="handleUpdate"
+        :complementary="false"
+        :busy="updating"
+        async
+      >
+        Update Photo
+      </Button>
       <Button
         v-if="isEditing"
         @click="handleReset"
@@ -235,10 +248,18 @@ onBeforeUnmount(() => observer?.disconnect());
   align-items: center;
   margin: 1rem 0 1rem 0;
 }
+.avatar-selector.disabled {
+  pointer-events: none;
+}
 .avatar-selector .container {
   touch-action: none;
   width: 70%;
   overflow: hidden;
+  transition: transform var(--fx-transition-duration-2) ease;
+  transform: translateY(1.5rem);
+}
+.avatar-selector .container.editing {
+  transform: translateY(0);
 }
 .avatar-selector .container .change-control {
   display: flex;
@@ -257,6 +278,9 @@ onBeforeUnmount(() => observer?.disconnect());
   z-index: 10;
   background-color: var(--c-text-2);
   color: var(--c-background-0);
+}
+.avatar-selector.disabled .container .change-control:deep(.icon-container img) {
+  pointer-events: none !important;
 }
 .avatar-selector .container .change-control:focus {
   opacity: 0.75;

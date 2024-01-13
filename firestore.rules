@@ -108,7 +108,7 @@ service cloud.firestore {
                : true);
     }
     function validateBCGroupUpdation(input, existing) {
-      let validKeys = ['seen', 'name', 'members', 'admins', 'active', 'avatarUrl'];
+      let validKeys = ['seen', 'sync', 'name', 'members', 'admins', 'active', 'avatarUrl'];
 
       return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
              ('active' in input

@@ -5,6 +5,7 @@ import Auth from '@/views/Auth/Auth.vue';
 import Chat from '@/views/Chat/Chat.vue';
 import Settings from '@/views/Settings/Settings.vue';
 import Interface from '@/views/Interface/Interface.vue';
+import GroupProfile from '@/components/GroupProfile/GroupProfile.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,7 +18,13 @@ const router = createRouter({
         {
           path: 'chat',
           component: Interface,
-          beforeEnter: chatGuard
+          beforeEnter: chatGuard,
+          children: [
+            {
+              path: 'profile',
+              component: GroupProfile
+            }
+          ]
         }
       ]
     },

@@ -11,10 +11,20 @@ service firebase.storage {
     function isAMember(request, chatId) {
       return request.auth.uid in firestore.get(/databases/(default)/documents/groups/$(chatId)).data.members;
     }
+    function isAnAdmin(request, chatId) {
+      return request.auth.uid in firestore.get(/databases/(default)/documents/groups/$(chatId)).data.admins;
+    }
 
     match /users/{userId}/profile.png {
       allow read: if signedIn(request);
       allow write: if signedInUser(request, userId) &&
+                   request.resource.size < 2 * 1024 * 1024 &&
+                   request.resource.contentType == 'image/png';
+    }
+    
+    match /groups/{chatId}/profile.png {
+      allow read: if signedIn(request) && isAMember(request, chatId);
+      allow write: if signedIn(request) && isAnAdmin(request, chatId) &&
                    request.resource.size < 2 * 1024 * 1024 &&
                    request.resource.contentType == 'image/png';
     }

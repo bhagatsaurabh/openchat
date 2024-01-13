@@ -107,7 +107,7 @@ defineExpose({ native, validate, invalidate });
       :disabled="async ? (isBusy ? true : null) : null"
       v-bind="attrs"
     />
-    <span class="controls" v-if="async || cancellable">
+    <span class="controls" v-if="(async || cancellable) && !attrs.disabled">
       <Button
         @click="handleAction"
         class="action"
