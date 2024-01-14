@@ -22,7 +22,7 @@ import ChatListener from '@/components/ChatListener/ChatListener.vue';
 const auth = useAuthStore();
 const groupsStore = useGroupsStore();
 const router = useRouter();
-const confirmSignOut = ref(null);
+const showConfirm = ref(null);
 const showProfile = ref(false);
 const showSettings = ref(false);
 const activeTab = ref(0);
@@ -39,6 +39,9 @@ const handleSignOut = async () => {
   await auth.signOut();
   router.push('/auth');
 };
+const handleDeleteAccount = async () => {
+  // TODO
+};
 const switchToGroup = async (id) => {
   await groupsStore.setActiveGroup(id);
   router.push({ path: '/chat' });
@@ -54,6 +57,17 @@ const handleForceSearch = () => {
 const handleSelfChat = async () => {
   const id = await groupsStore.createSelfGroup();
   switchToGroup(id);
+};
+const handleAction = (action) => {
+  if (action === 'sign-out')
+    showConfirm.value = { title: 'Sign out ?', buttonText: 'Sign out', action: handleSignOut };
+  else if (action === 'delete-account')
+    showConfirm.value = {
+      title: 'Delete account ?',
+      desc: 'This is an irreversible action',
+      buttonText: 'Delete',
+      action: handleDeleteAccount
+    };
 };
 
 watch(query, () => {
@@ -90,7 +104,7 @@ onBeforeUnmount(unregisterGuard);
         class="chat-control mr-0p5"
         :size="1.3"
         icon="logout"
-        @click="() => (confirmSignOut = true)"
+        @click="() => handleAction('sign-out')"
         :complementary="false"
         circular
         flat
@@ -108,12 +122,12 @@ onBeforeUnmount(unregisterGuard);
   </Header>
   <main class="chat-container">
     <Modal
-      v-if="confirmSignOut"
-      title="Sign out ?"
-      :controls="[{ text: 'Cancel' }, { text: 'Sign out', async: true, action: handleSignOut }]"
-      @dismiss="() => (confirmSignOut = false)"
+      v-if="!!showConfirm"
+      :title="showConfirm.title"
+      :controls="[{ text: 'Cancel' }, { text: 'Yes', async: true, action: showConfirm.action }]"
+      @dismiss="showConfirm = null"
     >
-      Are you sure ?
+      {{ showConfirm.desc ?? 'Are you sure ?' }}
     </Modal>
     <ChatSearch @search="(val) => (query = val)" />
     <Tabs
@@ -139,7 +153,12 @@ onBeforeUnmount(unregisterGuard);
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />
-    <Settings v-if="showSettings" @back="() => (showSettings = false)" @logout="confirmSignOut = true" />
+    <Settings
+      v-if="showSettings"
+      @back="() => (showSettings = false)"
+      @logout="() => handleAction('sign-out')"
+      @delete="() => handleAction('delete-account')"
+    />
     <ChatListener />
   </main>
   <RouterView v-slot="{ Component }">

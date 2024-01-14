@@ -143,7 +143,6 @@ onBeforeUnmount(unregisterGuard);
 .modal .title {
   font-weight: light;
   margin-bottom: 1rem;
-  padding: 0 0.25rem;
 }
 .modal .controls {
   display: flex;
