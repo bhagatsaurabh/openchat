@@ -91,7 +91,7 @@ onBeforeUnmount(unregisterGuard);
   <Transition @after-leave="handleLeave" v-bind="$attrs" name="slide-left" appear>
     <aside v-if="show" ref="el" class="profile">
       <header>
-        <Button @click="handleDismiss" :size="1.2" icon="back" :complementary="false" circular flat />
+        <Button class="mt-0p1" @click="handleDismiss" :size="1.2" icon="back" :complementary="false" circular flat />
         <h2 class="ml-1">Profile</h2>
       </header>
       <main>
@@ -158,4 +158,3 @@ onBeforeUnmount(unregisterGuard);
   flex-direction: column;
 }
 </style>
-@/stores/remote

@@ -2,7 +2,7 @@
 import { watch, onBeforeUnmount, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { getSlug, trapBetween, trapFocus } from '@/utils/utils';
+import { getSlug, trapBetween, trapFocus, noop } from '@/utils/utils';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Icon from '@/components/Common/Icon/Icon.vue';
 import Button from '@/components/Common/Button/Button.vue';
@@ -25,6 +25,7 @@ const el = ref(null);
 const queuedAction = ref(null);
 const bound = ref(null);
 const show = ref(false);
+const waitForAction = ref(false);
 
 const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
@@ -35,9 +36,16 @@ const handleDismiss = () => {
     router.back();
   }
 };
-const handleAction = (control) => {
-  if (queuedAction.value === null) {
-    queuedAction.value = control;
+const handleAction = async (control) => {
+  if (!control.async) {
+    if (queuedAction.value === null) {
+      queuedAction.value = control;
+      handleDismiss();
+    }
+  } else {
+    control.busy = true;
+    waitForAction.value = true;
+    await control.action();
     handleDismiss();
   }
 };
@@ -80,7 +88,7 @@ onBeforeUnmount(unregisterGuard);
 </script>
 
 <template>
-  <Backdrop :show="show" @dismiss="handleDismiss" />
+  <Backdrop :dismissable="!waitForAction" :show="show" @dismiss="handleDismiss" />
   <Transition @after-leave="handleLeave" v-bind="$attrs" name="scale-fade" appear>
     <div v-if="show" ref="el" class="modal" role="dialog">
       <Icon
@@ -89,15 +97,23 @@ onBeforeUnmount(unregisterGuard);
         alt="Close icon"
         name="close"
         adaptive
-        @click="handleDismiss"
+        @click="waitForAction ? noop : handleDismiss"
       />
       <h2 class="title">{{ title }}</h2>
       <div class="content">
         <slot></slot>
       </div>
       <div v-if="controls.length" class="controls">
-        <Button v-for="control in controls" :key="control" @click="() => handleAction(control)" accented>
-          {{ control }}
+        <Button
+          :disabled="waitForAction"
+          v-for="control in controls"
+          :key="control"
+          @click="() => handleAction(control)"
+          :async="control.async"
+          :busy="control.busy"
+          accented
+        >
+          {{ control.text }}
         </Button>
       </div>
     </div>

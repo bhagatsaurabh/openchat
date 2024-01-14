@@ -12,8 +12,7 @@ import InputText from '@/components/Common/InputText/InputText.vue';
 import AvatarSelector from '@/components/AvatarSelector/AvatarSelector.vue';
 import Icon from '../Common/Icon/Icon.vue';
 import Modal from '../Common/Modal/Modal.vue';
-
-const emit = defineEmits(['leave', 'delete']);
+import GroupMemberList from '@/components/GroupMemberList/GroupMemberList.vue';
 
 const router = useRouter();
 const remote = useRemoteDBStore();
@@ -52,7 +51,18 @@ const handleUpdate = async (field, args) => {
   return false;
 };
 const handleControl = (action) => {
-  showConfirm.value = { title: 'Leave group', action };
+  showConfirm.value =
+    action === 'leave'
+      ? { title: 'Leave group', action: handleLeave }
+      : { title: 'Delete group', action: handleDelete };
+};
+const handleLeave = async () => {
+  // TODO
+  console.log('leave');
+};
+const handleDelete = async () => {
+  // TODO
+  console.log('delete');
 };
 
 watch(el, () => {
@@ -73,9 +83,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
     <Modal
       v-if="!!showConfirm"
       :title="showConfirm.title"
-      :controls="['Yes', 'Cancel']"
+      :controls="[{ text: 'Yes', async: true, action: showConfirm.action }, { text: 'Cancel' }]"
       @dismiss="() => (showConfirm = null)"
-      @action="(action) => action === 'Yes' && emit(showConfirm.action)"
     >
       Are you sure ?
     </Modal>
@@ -120,7 +129,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
           />
         </Transition>
       </section>
-      <section class="members">Members</section>
+      <section class="members">
+        <GroupMemberList :group="group" :admin="isAdmin" />
+      </section>
       <section class="controls">
         <Button @click="() => handleControl('leave')" icon="leave" :complementary="false" flat>Leave</Button>
         <Button @click="() => handleControl('delete')" icon="delete" :complementary="false" flat>
@@ -191,8 +202,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
 .members {
   margin-top: 1.5rem;
   border-top: 1px solid var(--c-border-1);
-  padding-top: 1rem;
   padding-bottom: 1rem;
+  padding-top: 1rem;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
 .controls {

@@ -7,6 +7,10 @@ defineProps({
   clear: {
     type: Boolean,
     default: false
+  },
+  dismissable: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -15,7 +19,7 @@ const emit = defineEmits(['dismiss']);
 
 <template>
   <Transition name="fade">
-    <div @pointerup="emit('dismiss')" v-if="show" class="backdrop" :class="{ clear }">
+    <div @pointerup="() => dismissable && emit('dismiss')" v-if="show" class="backdrop" :class="{ clear }">
       <slot></slot>
     </div>
   </Transition>

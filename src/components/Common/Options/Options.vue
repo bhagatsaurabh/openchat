@@ -8,7 +8,7 @@ const props = defineProps({
   options: Array,
   icon: {
     type: String,
-    default: 'options'
+    default: 'menu'
   }
 });
 const emit = defineEmits(['select']);
