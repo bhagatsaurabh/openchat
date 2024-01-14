@@ -4,8 +4,9 @@ import { useRouter } from 'vue-router';
 
 import { trapBetween, trapFocus } from '@/utils/utils';
 import Button from '@/components/Common/Button/Button.vue';
+import ThemeSelector from '../Common/ThemeSelector/ThemeSelector.vue';
 
-const emit = defineEmits(['back', 'logout']);
+const emit = defineEmits(['back', 'logout', 'delete']);
 
 const router = useRouter();
 const el = ref(null);
@@ -72,8 +73,12 @@ onBeforeUnmount(unregisterGuard);
         <h2 class="ml-1">Settings</h2>
       </header>
       <main>
-        <section class="theme">Theme</section>
+        <section class="theme">
+          <h2 class="fw-lighter mb-1 pb-0p5 border-b-1">Theme</h2>
+          <ThemeSelector />
+        </section>
         <section class="controls">
+          <h2 class="fw-lighter mb-1 pb-0p5 border-b-1">Account</h2>
           <Button
             class="control-logout"
             @click="emit('logout')"
@@ -84,6 +89,17 @@ onBeforeUnmount(unregisterGuard);
             flat
           >
             <span class="ml-0p5">Log out</span>
+          </Button>
+          <Button
+            class="control-delete"
+            @click="emit('delete')"
+            :size="1.2"
+            icon="danger"
+            :complementary="false"
+            circular
+            flat
+          >
+            <span class="ml-0p5">Delete account</span>
           </Button>
         </section>
       </main>
@@ -133,10 +149,15 @@ onBeforeUnmount(unregisterGuard);
   padding-left: 0;
   padding-right: 0;
 }
-.control-logout {
+.controls button {
   color: #ff6565;
 }
 .control-logout:deep(.icon-container) {
   filter: invert(69%) sepia(28%) saturate(5520%) hue-rotate(319deg) brightness(100%) contrast(100%);
+}
+
+.settings .theme {
+  margin-bottom: 1.5rem;
+  margin-top: 1.5rem;
 }
 </style>

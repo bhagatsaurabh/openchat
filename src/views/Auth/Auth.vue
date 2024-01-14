@@ -7,6 +7,7 @@ import Footer from '@/components/Common/Footer/Footer.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import SignIn from '@/components/SignIn/SignIn.vue';
 import Brand from '@/components/Common/Brand/Brand.vue';
+import ThemeSelector from '@/components/Common/ThemeSelector/ThemeSelector.vue';
 
 const showHeaderBrand = ref(false);
 </script>
@@ -18,6 +19,9 @@ const showHeaderBrand = ref(false);
         <Transition name="fade">
           <Brand v-if="showHeaderBrand" />
         </Transition>
+      </template>
+      <template #right>
+        <ThemeSelector class="theme-select" type="vertical" />
       </template>
     </Header>
     <main class="main">
@@ -52,5 +56,11 @@ const showHeaderBrand = ref(false);
   justify-content: center;
   align-items: center;
   overflow: hidden;
+}
+.theme-select {
+  position: fixed;
+  z-index: 50;
+  top: 0.5rem;
+  right: 0.5rem;
 }
 </style>
