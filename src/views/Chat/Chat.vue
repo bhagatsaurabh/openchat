@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
 import { useGroupsStore } from '@/stores/groups';
+import { delay } from '@/utils/utils';
 import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
@@ -13,6 +14,7 @@ import ChatList from '@/components/ChatList/ChatList.vue';
 import ChatSearchList from '@/components/ChatSearchList/ChatSearchList.vue';
 import Tabs from '@/components/Common/Tabs/Tabs.vue';
 import Profile from '@/components/Profile/Profile.vue';
+import Settings from '@/components/Settings/Settings.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
 import ChatListener from '@/components/ChatListener/ChatListener.vue';
@@ -22,6 +24,7 @@ const groupsStore = useGroupsStore();
 const router = useRouter();
 const confirmSignOut = ref(null);
 const showProfile = ref(false);
+const showSettings = ref(false);
 const activeTab = ref(0);
 const query = ref('');
 const forceHeader = ref(false);
@@ -32,11 +35,9 @@ const tabs = ref([
 const isBusy = ref(null);
 
 const handleSignOut = async () => {
+  await delay(10000);
   await auth.signOut();
   router.push('/auth');
-};
-const handleSettings = () => {
-  // TODO: Handle settings panel
 };
 const switchToGroup = async (id) => {
   await groupsStore.setActiveGroup(id);
@@ -98,7 +99,7 @@ onBeforeUnmount(unregisterGuard);
         class="chat-control mr-0p5"
         :size="1.3"
         icon="cog"
-        @click="() => handleSettings()"
+        @click="showSettings = true"
         :complementary="false"
         circular
         flat
@@ -109,9 +110,8 @@ onBeforeUnmount(unregisterGuard);
     <Modal
       v-if="confirmSignOut"
       title="Sign out ?"
-      :controls="['Cancel', 'Sign out']"
+      :controls="[{ text: 'Cancel' }, { text: 'Sign out', async: true, action: handleSignOut }]"
       @dismiss="() => (confirmSignOut = false)"
-      @action="(action) => action === 'Sign out' && handleSignOut()"
     >
       Are you sure ?
     </Modal>
@@ -139,6 +139,7 @@ onBeforeUnmount(unregisterGuard);
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />
+    <Settings v-if="showSettings" @back="() => (showSettings = false)" @logout="confirmSignOut = true" />
     <ChatListener />
   </main>
   <RouterView v-slot="{ Component }">

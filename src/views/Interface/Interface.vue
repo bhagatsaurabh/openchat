@@ -64,12 +64,6 @@ const handleScroll = async () => {
     busyNextChunk.value = false;
   }
 };
-const handleLeave = () => {
-  // TODO
-};
-const handleDelete = () => {
-  // TODO
-};
 const throttledHandleScroll = throttle(handleScroll, 100);
 
 watch(() => groups.activeGroup, handleLoad);
@@ -129,7 +123,7 @@ watch(() => groups.activeGroup, handleLoad);
     </Footer>
     <RouterView v-slot="{ Component }">
       <Transition name="fade-slide-rtr">
-        <component @leave="handleLeave" @delete="handleDelete" :is="Component" />
+        <component :is="Component" />
       </Transition>
     </RouterView>
   </section>

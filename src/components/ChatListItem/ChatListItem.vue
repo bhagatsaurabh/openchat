@@ -14,7 +14,7 @@ const emit = defineEmits(['select']);
 const msInADay = 1000 * 60 * 60 * 24;
 const avatarUrl = computed(() => {
   let url = props.group.avatarUrl;
-  if (props.group.id === 'self') url = auth.profile.avatarUrl;
+  if (props.group.id === 'self') url = auth.profile?.avatarUrl;
   return url || `/assets/icons/avatar${props.group.type === 'broadcast' ? '-group' : ''}.png`;
 });
 const timestamp = computed(() => {

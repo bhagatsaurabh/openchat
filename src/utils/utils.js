@@ -108,3 +108,10 @@ export const bufToBase64 = async (buf, type = 'application/octet-stream') =>
 
 export const base64ToBuf = async (base64) =>
   await (await fetch('data:application/octet-stream;base64,' + base64)).arrayBuffer();
+
+export const noop = () => {};
+
+export const delay = async (ms) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
