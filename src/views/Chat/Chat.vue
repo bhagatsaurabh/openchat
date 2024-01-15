@@ -39,9 +39,6 @@ const handleSignOut = async () => {
   await auth.signOut();
   router.push('/auth');
 };
-const handleDeleteAccount = async () => {
-  // TODO
-};
 const switchToGroup = async (id) => {
   await groupsStore.setActiveGroup(id);
   router.push({ path: '/chat' });
@@ -61,13 +58,6 @@ const handleSelfChat = async () => {
 const handleAction = (action) => {
   if (action === 'sign-out')
     showConfirm.value = { title: 'Sign out ?', buttonText: 'Sign out', action: handleSignOut };
-  else if (action === 'delete-account')
-    showConfirm.value = {
-      title: 'Delete account ?',
-      desc: 'This is an irreversible action',
-      buttonText: 'Delete',
-      action: handleDeleteAccount
-    };
 };
 
 watch(query, () => {
@@ -157,7 +147,6 @@ onBeforeUnmount(unregisterGuard);
       v-if="showSettings"
       @back="() => (showSettings = false)"
       @logout="() => handleAction('sign-out')"
-      @delete="() => handleAction('delete-account')"
     />
     <ChatListener />
   </main>

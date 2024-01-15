@@ -24,3 +24,5 @@ export const days = Object.freeze({
 
 export const msInADay = 1000 * 60 * 60 * 24;
 export const msInAnHour = 1000 * 60 * 60;
+export const nameRegex = /^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/;
+export const fileNameRegex = /^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/;

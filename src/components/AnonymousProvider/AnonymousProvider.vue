@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import Icon from '../Common/Icon/Icon.vue';
 import Button from '../Common/Button/Button.vue';
 import InputText from '../Common/InputText/InputText.vue';
+import { nameRegex } from '@/utils/constants';
 
 const authStore = useAuthStore();
 const isBusy = ref(false);
@@ -21,7 +22,7 @@ const handleContinue = async () => {
 };
 const validateName = (val) => {
   if (!val) return 'Provide a name';
-  if (!/^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/.test(val)) {
+  if (!nameRegex.test(val)) {
     return 'Enter a valid name';
   }
   return null;

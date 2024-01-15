@@ -6,7 +6,7 @@ import { trapBetween, trapFocus } from '@/utils/utils';
 import Button from '@/components/Common/Button/Button.vue';
 import ThemeSelector from '../Common/ThemeSelector/ThemeSelector.vue';
 
-const emit = defineEmits(['back', 'logout', 'delete']);
+const emit = defineEmits(['back', 'logout']);
 
 const router = useRouter();
 const el = ref(null);
@@ -89,17 +89,6 @@ onBeforeUnmount(unregisterGuard);
             flat
           >
             <span class="ml-0p5">Log out</span>
-          </Button>
-          <Button
-            class="control-delete"
-            @click="emit('delete')"
-            :size="1.2"
-            icon="danger"
-            :complementary="false"
-            circular
-            flat
-          >
-            <span class="ml-0p5">Delete account</span>
           </Button>
         </section>
       </main>

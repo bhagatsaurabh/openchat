@@ -82,3 +82,26 @@ export const decryptText = async (encryptedText, key) => {
 
   return new TextDecoder().decode(text);
 };
+
+// plain:File to (plain:ArrayBuffer to cipher:ArrayBuffer) to cipher:File
+export const encryptFile = async (file, key) => {
+  const buffer = await file.arrayBuffer();
+  let iv = window.crypto.getRandomValues(new Uint8Array(12));
+  let encryptedBuffer = await crypto.encrypt({ name: 'AES-GCM', iv }, key, buffer);
+  iv = iv.buffer;
+
+  iv = await bufToBase64(iv);
+  const encryptedFile = new File([new Blob([encryptedBuffer], { type: file.type })], file.name);
+
+  return { iv, file: encryptedFile };
+};
+// cipher:File to (cipher:ArrayBuffer to plain:ArrayBuffer) to plain:File
+export const decryptFile = async ({ iv, file }, key) => {
+  const buffer = await file.arrayBuffer();
+  iv = await base64ToBuf(iv);
+
+  let decryptedBuffer = await crypto.decrypt({ name: 'AES-GCM', iv }, key, buffer);
+  const decryptedFile = new File([new Blob([decryptedBuffer], { type: file.type })], file.name);
+
+  return decryptedFile;
+};

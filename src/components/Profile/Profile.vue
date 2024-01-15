@@ -10,6 +10,7 @@ import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import AvatarSelector from '@/components/AvatarSelector/AvatarSelector.vue';
 import ProfilePhone from '@/components/ProfilePhone/ProfilePhone.vue';
+import { nameRegex } from '@/utils/constants';
 
 const emit = defineEmits(['back']);
 
@@ -35,7 +36,7 @@ const handleDismiss = () => {
 const handleLeave = () => emit('back');
 const validateName = (val) => {
   if (!val) return 'Provide a name';
-  if (!/^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/.test(val)) {
+  if (!nameRegex.test(val)) {
     return 'Enter a valid name';
   }
   return null;
@@ -47,7 +48,7 @@ const handleUpdate = async (field, args) => {
   } else if (field === 'avatar') {
     const { blob } = args;
     await storage.uploadFile(blob, `users/${auth.user.uid}/profile.png`, { contentType: 'image/png' });
-    const url = await storage.getUrl(`users/${auth.user.uid}/profile.png`);
+    const url = await storage.getUrlFromPath(`users/${auth.user.uid}/profile.png`);
     await remote.updateProfile({ avatarUrl: url });
   }
   return false;
@@ -91,7 +92,15 @@ onBeforeUnmount(unregisterGuard);
   <Transition @after-leave="handleLeave" v-bind="$attrs" name="slide-left" appear>
     <aside v-if="show" ref="el" class="profile">
       <header>
-        <Button class="mt-0p1" @click="handleDismiss" :size="1.2" icon="back" :complementary="false" circular flat />
+        <Button
+          class="mt-0p1"
+          @click="handleDismiss"
+          :size="1.2"
+          icon="back"
+          :complementary="false"
+          circular
+          flat
+        />
         <h2 class="ml-1">Profile</h2>
       </header>
       <main>

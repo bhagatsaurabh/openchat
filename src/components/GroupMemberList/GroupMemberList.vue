@@ -31,12 +31,15 @@ const handleAction = (action, user) => {
     showConfirm.value = { title: `Revoke adminship from ${user.name} ?`, action: handleRevokeAdmin, user };
 };
 const handleRemove = () => {
+  // TODO
   console.log('remove', showConfirm.value.user.name);
 };
 const handleMakeAdmin = () => {
+  // TODO
   console.log('admin', showConfirm.value.user.name);
 };
 const handleRevokeAdmin = () => {
+  // TODO
   console.log('revoke', showConfirm.value.user.name);
 };
 </script>

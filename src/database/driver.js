@@ -76,7 +76,7 @@ export const getAllProfiles = async () => {
 export const storeMessage = async (message, groupId) => {
   if (message.local?.docRef) {
     message = { ...message };
-    message.local.docRef = null;
+    message.local.docRef = { id: message.local.docRef.id };
   }
   await updateObject(`messages:${groupId}`, message.id, message);
 };
@@ -85,4 +85,14 @@ export const getMessage = async (messageId, groupId) => {
 };
 export const deleteMessage = async (messageId, groupId) => {
   await deleteObject(`messages:${groupId}`, messageId);
+};
+
+export const storeFile = async (data, id, groupId) => {
+  await updateObject(`files:${groupId}`, id, data);
+};
+export const getFile = async (id, groupId) => {
+  await getObject(`files:${groupId}`, id);
+};
+export const deleteFile = async (id, groupId) => {
+  await deleteObject(`files:${groupId}`, id);
 };

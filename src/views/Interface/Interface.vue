@@ -14,6 +14,7 @@ import Button from '@/components/Common/Button/Button.vue';
 import TextArea from '@/components/Common/TextArea/TextArea.vue';
 import Message from '@/components/Message/Message.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
+import Modal from '@/components/Common/Modal/Modal.vue';
 
 const groups = useGroupsStore();
 const users = useUsersStore();
@@ -21,10 +22,12 @@ const messagesStore = useMessagesStore();
 const router = useRouter();
 const group = ref(groups.activeGroup);
 const containerEl = ref(null);
+const attachEl = ref(null);
 const listEl = ref(null);
 const message = ref(null);
 const busy = ref(false);
 const busyNextChunk = ref(false);
+const showModal = ref(null);
 const names = computed(() =>
   group.value.id === 'self' ? group.value.name : users.getNamesFromUIDs(group.value.members).join(', ')
 );
@@ -41,17 +44,39 @@ const handleGroupOption = (option) => {
     router.push('/chat/profile');
   } else if (option === 'Leave') {
     // TODO
-    groups.leave(group.value.id);
+    // groups.leave(group.value.id);
   }
 };
 const handleAttachOption = (option) => {
-  // TODO
+  let accept = 'image/*,video/*,audio/*';
+  if (option.text === 'Document') accept = '*';
+  attachEl.value.accept = accept;
+  attachEl.value.click();
 };
-const handleSend = async () => {
+const handleFile = async (e) => {
+  if (e.target.files[0]) {
+    await handleSend(e.target.files[0]);
+  }
+};
+const handleSend = async (content) => {
+  if (!content) return;
+
   busy.value = true;
-  if (!message.value || !message.value.trim()) return;
-  await messagesStore.send('text', message.value);
-  message.value = null;
+  if (typeof content === 'string') {
+    if (!content.trim()) return;
+    await messagesStore.send('text', content);
+    message.value = null;
+  } else {
+    if (content.size > 31457280) {
+      showModal.value = {
+        title: 'File is too large',
+        controls: [{ text: 'Okay' }],
+        desc: 'Files with sizes up to 30MB can be shared at the moment'
+      };
+      return;
+    }
+    await messagesStore.send('file', content);
+  }
   busy.value = false;
   containerEl.value.scrollTo(0, containerEl.value.scrollHeight);
 };
@@ -71,6 +96,14 @@ watch(() => groups.activeGroup, handleLoad);
 
 <template>
   <section class="window">
+    <Modal
+      v-if="!!showModal"
+      :title="showModal.title"
+      :controls="showModal.controls"
+      @dismiss="() => (showModal = null)"
+    >
+      {{ showModal.desc }}
+    </Modal>
     <Header class="header">
       <template #left>
         <Avatar @open="() => handleGroupOption('Profile')" class="mr-0p5" :url="group.avatarUrl" />
@@ -105,13 +138,13 @@ watch(() => groups.activeGroup, handleLoad);
           @select="handleAttachOption"
         />
         <TextArea
-          @enter="handleSend"
+          @enter="() => handleSend(message)"
           class="input mr-0p5"
           :attrs="{ placeholder: 'Write a message' }"
           v-model="message"
         />
         <Button
-          @click="handleSend"
+          @click="() => handleSend(message)"
           :size="1.5"
           icon="send"
           :complementary="false"
@@ -126,6 +159,7 @@ watch(() => groups.activeGroup, handleLoad);
         <component :is="Component" />
       </Transition>
     </RouterView>
+    <input v-show="false" ref="attachEl" type="file" accept="image/*" @change="handleFile" />
   </section>
 </template>
 
