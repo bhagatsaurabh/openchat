@@ -8,6 +8,7 @@ import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import CountryInput from '@/components/CountryInput/CountryInput.vue';
 import Recaptcha from '@/components/Common/Recaptcha/Recaptcha.vue';
+import { nameRegex } from '@/utils/constants';
 
 const phoneUtil = window.libphonenumber.PhoneNumberUtil.getInstance();
 
@@ -34,7 +35,7 @@ const validatePhone = (val) => {
 };
 const validateName = (val) => {
   if (!val) return 'Provide a name';
-  if (!/^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/.test(val)) {
+  if (!nameRegex.test(val)) {
     return 'Enter a valid name';
   }
   return null;

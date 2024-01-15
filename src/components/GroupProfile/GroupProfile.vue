@@ -13,6 +13,7 @@ import AvatarSelector from '@/components/AvatarSelector/AvatarSelector.vue';
 import Icon from '../Common/Icon/Icon.vue';
 import Modal from '../Common/Modal/Modal.vue';
 import GroupMemberList from '@/components/GroupMemberList/GroupMemberList.vue';
+import { nameRegex } from '@/utils/constants';
 
 const router = useRouter();
 const remote = useRemoteDBStore();
@@ -33,7 +34,7 @@ const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
 const validateName = (val) => {
   if (!val) return 'Provide a name';
-  if (!/^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/.test(val)) {
+  if (!nameRegex.test(val)) {
     return 'Enter a valid name';
   }
   return null;
@@ -45,24 +46,17 @@ const handleUpdate = async (field, args) => {
   } else if (field === 'avatar') {
     const { blob } = args;
     await storage.uploadFile(blob, `groups/${group.value.id}/profile.png`, { contentType: 'image/png' });
-    const url = await storage.getUrl(`groups/${group.value.id}/profile.png`);
+    const url = await storage.getUrlFromPath(`groups/${group.value.id}/profile.png`);
     await remote.updateGroup({ avatarUrl: url });
   }
   return false;
 };
 const handleControl = (action) => {
-  showConfirm.value =
-    action === 'leave'
-      ? { title: 'Leave group', action: handleLeave }
-      : { title: 'Delete group', action: handleDelete };
+  showConfirm.value = action === 'leave' ? { title: 'Leave group', action: handleLeave } : null;
 };
 const handleLeave = async () => {
   // TODO
   console.log('leave');
-};
-const handleDelete = async () => {
-  // TODO
-  console.log('delete');
 };
 
 watch(el, () => {
@@ -134,9 +128,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
       </section>
       <section class="controls">
         <Button @click="() => handleControl('leave')" icon="leave" :complementary="false" flat>Leave</Button>
-        <Button @click="() => handleControl('delete')" icon="delete" :complementary="false" flat>
-          Delete
-        </Button>
       </section>
       <section class="promise">
         <Icon class="mr-0p5" name="badge-lock" alt="lock icon" adaptive />

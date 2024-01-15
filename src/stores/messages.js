@@ -11,12 +11,14 @@ import { LinkedList } from '@/utils/linked-list';
 import { msInAnHour } from '@/utils/constants';
 import { useGroupsStore } from './groups';
 import { stream } from '@/database/database';
-import { decryptText, encryptText } from '@/utils/crypto';
+import { decryptFile, decryptText, encryptFile, encryptText } from '@/utils/crypto';
+import { useFilesStore } from './files';
 
 export const useMessagesStore = defineStore('messages', () => {
   const auth = useAuthStore();
   const remote = useRemoteDBStore();
   const groups = useGroupsStore();
+  const filesStore = useFilesStore();
   const messages = ref({});
   const messageIdx = ref({});
   const unsubFns = ref({});
@@ -63,7 +65,6 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   };
   const handleOutMessage = async (message) => {
-    message.text = await encrypt(message.type, message.text);
     const msg = {
       by: message.by,
       timestamp: message.groupId === 'self' ? new Date() : serverTimestamp(),
@@ -193,34 +194,44 @@ export const useMessagesStore = defineStore('messages', () => {
     messageIdx.value[groupId] = undefined;
     streams.value[groupId] = null;
   }
-  async function encrypt(type, value) {
-    if (type === 'text') {
-      return await encryptText(value, groups.activeGroupKey);
+  async function encrypt(message) {
+    if (message.type === 'text') {
+      return await encryptText(message.text, groups.activeGroupKey);
+    } else {
+      return await encryptFile(message.file, groups.activeGroupKey);
     }
   }
-  async function decrypt(type, cipher) {
-    if (type === 'text') {
-      return await decryptText(cipher, groups.activeGroupKey);
+  async function decrypt(message) {
+    if (message.type === 'text') {
+      return await decryptText(message.text, groups.activeGroupKey);
+    } else {
+      // Assume the file is already present in cache
+      if (filesStore.files[message.id].decrypted) {
+        return filesStore.files[message.id].file;
+      } else {
+        return await decryptFile(filesStore.files[message.id], groups.activeGroupKey);
+      }
     }
   }
   async function send(type, value) {
     const docRef = doc(collection(remoteDB, 'groups', groups.activeGroup.id, 'messages'));
-    const message = {
+    let message = {
       id: docRef.id,
       groupId: groups.activeGroup.id,
       by: auth.user.uid,
       timestamp: new Date(),
       type,
-      text: value,
       local: { status: 'pending', docRef }
     };
-    if (type === 'text') {
-      addMessage(message);
-      await local.storeMessage(message, groups.activeGroup.id);
-      outQueue.push(message);
-      outQueueIdx.value[docRef.id] = message;
-      processOutQueue();
-    }
+
+    message[type === 'text' ? 'text' : 'file'] = value;
+    addMessage(message);
+    await local.storeMessage(message, groups.activeGroup.id);
+  }
+  function pushToOutQueue(message) {
+    outQueue.push(message);
+    outQueueIdx.value[message.local.docRef.id] = message;
+    processOutQueue();
   }
 
   return {
@@ -233,6 +244,7 @@ export const useMessagesStore = defineStore('messages', () => {
     unload,
     encrypt,
     decrypt,
-    send
+    send,
+    pushToOutQueue
   };
 });

@@ -49,9 +49,13 @@ const createSchema = (database, uid, groupId) => {
   }
   if (uid && groupId) {
     const messagesStoreName = `messages:${groupId}`;
+    const filesStoreName = `files:${groupId}`;
     if (!database.objectStoreNames.contains(messagesStoreName)) {
       const mOS = database.createObjectStore(messagesStoreName);
       mOS.createIndex('timestamp', 'timestamp', { unique: false });
+    }
+    if (!database.objectStoreNames.contains(filesStoreName)) {
+      database.createObjectStore(filesStoreName);
     }
   }
 };

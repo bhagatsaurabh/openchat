@@ -160,10 +160,11 @@ service cloud.firestore {
     function validateMessageCreation(request) {
       let input = request.resource.data;
       let validKeys = ['by', 'timestamp', 'expiry', 'text', 'type'];
-      let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys) &&
+      let isValid = input.keys().hasAll(validKeys) && input.keys().hasOnly(validKeys.concat(['mimetype'])) &&
                     input.by is string && input.text is string &&
                     input.timestamp is timestamp && input.timestamp == request.time &&
-                    input.expiry is timestamp;
+                    input.expiry is timestamp &&
+                    ('mimetype' in input ? input.mimetype is string : true);
       let delta = isValid ? input.expiry.toMillis() - request.time.toMillis() : 0;
       return isValid && input.by == request.auth.uid &&
              delta > 777600000 && delta < 950400000
@@ -186,7 +187,7 @@ service cloud.firestore {
     function validateMessage(request) {
       let input = request.resource.data;
       return 'type' in input && input.type is string &&
-             (input.type in ['text', 'image', 'video', 'doc']
+             (input.type in ['text', 'file']
                ? validateMessageCreation(request)
                : (input.type in ['meta:edit', 'meta:delete']
                  ? validateMessageUpdation(request)
