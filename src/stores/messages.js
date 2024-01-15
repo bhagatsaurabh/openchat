@@ -107,10 +107,9 @@ export const useMessagesStore = defineStore('messages', () => {
       await local.storeMessage(message, message.groupId);
       addMessage(message);
     }
-    await remote.updateSyncTimestamp(auth.user.uid, message.groupId);
-    if (isSynced(message)) {
-      await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
-    }
+    // For text messages, update sync info right-away
+    // For messages with files, update sync info only when downloaded successfully
+    if (message.type === 'text') await updateSync(message);
   };
   const handleError = (error) => console.log({ ...error });
   function stop() {
@@ -173,6 +172,12 @@ export const useMessagesStore = defineStore('messages', () => {
       }
     });
     return numMembers <= 0;
+  }
+  async function updateSync(message) {
+    await remote.updateSyncTimestamp(auth.user.uid, message.groupId);
+    if (isSynced(message)) {
+      await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
+    }
   }
   async function openStream(groupId) {
     const iterator = stream(`messages:${groupId}`, 'timestamp');
@@ -245,6 +250,7 @@ export const useMessagesStore = defineStore('messages', () => {
     encrypt,
     decrypt,
     send,
-    pushToOutQueue
+    pushToOutQueue,
+    updateSync
   };
 });

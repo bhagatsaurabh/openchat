@@ -98,6 +98,7 @@ onMounted(async () => {
       }
       state.value = { stage: 'decrypting' };
       file = await messagesStore.decrypt(props.message);
+      await messagesStore.updateSync(props.message);
       content.value = file;
     }
     state.value = null;
