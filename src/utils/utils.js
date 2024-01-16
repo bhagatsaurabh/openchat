@@ -133,3 +133,10 @@ export const getFileName = (file) => {
   }
   return name;
 };
+
+export const getIconFromFileType = (mime) => {
+  if (mime.startsWith('image/')) return 'media';
+  else if (mime.startsWith('audio/')) return 'audio';
+  else if (mime.startsWith('video/')) return 'video';
+  return 'document';
+};

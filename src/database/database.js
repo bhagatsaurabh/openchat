@@ -8,10 +8,6 @@ const openDB = async (version, uid, newGroupId) => {
       const database = e.target.result;
 
       createSchema(database, uid, newGroupId);
-
-      db = database;
-      db.addEventListener('close', closeListener);
-      resolve(db);
     });
 
     request.addEventListener('success', (e) => {
