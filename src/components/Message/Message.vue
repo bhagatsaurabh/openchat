@@ -1,13 +1,15 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { useMessagesStore } from '@/stores/messages';
 import { useUsersStore } from '@/stores/users';
 import { useAuthStore } from '@/stores/auth';
 import { useFilesStore } from '@/stores/files';
-import { normalize } from '@/utils/utils';
+import { normalize, getIconFromFileType } from '@/utils/utils';
 import Spinner from '../Common/Spinner/Spinner.vue';
 import Tail from '@/components/Common/Tail/Tail.vue';
+import ProgressBar from '../Common/ProgressBar/ProgressBar.vue';
+import Button from '../Common/Button/Button.vue';
 
 const props = defineProps({
   message: Object,
@@ -22,7 +24,9 @@ const messagesStore = useMessagesStore();
 const filesStore = useFilesStore();
 const auth = useAuthStore();
 const content = ref(null);
-const state = ref(null);
+const contentType = ref(null);
+const state = ref({ stage: 'pending' });
+const objUrl = ref(null);
 
 const time = computed(() => props.message.timestamp.toTimeString().substring(0, 5));
 const name = computed(() => usersStore.users[props.message.by].name);
@@ -40,8 +44,9 @@ const handleUploadTask = async (task) =>
       'state_changed',
       (snapshot) => {
         state.value.progress = normalize(snapshot.bytesTransferred, 0, snapshot.totalBytes);
-        if (snapshot.state === 'paused') state.value.stage = 'upload-paused';
-        else if (snapshot.state === 'running') state.value.stage = 'uploading';
+        if (snapshot.state === 'paused') state.value = { stage: 'paused', progress: -2, icon: 'upload' };
+        else if (snapshot.state === 'running')
+          state.value = { stage: 'uploading', progress: state.value.progress, icon: 'pause' };
       },
       (error) => {
         handleUploadCancel(error);
@@ -52,8 +57,26 @@ const handleUploadTask = async (task) =>
   });
 const handleUploadCancel = (error) => {
   // TODO
-  state.value.stage = 'failed';
+  state.value = { stage: 'failed', progress: -2, icon: 'retry' };
   console.log(error);
+};
+const handlePreview = () => {
+  let type = 'text';
+  if (props.message.type === 'file') {
+    type = content.value.type.substring(0, content.value.type.indexOf('/'));
+    if (['image', 'video', 'audio'].includes(type)) {
+      objUrl.value = URL.createObjectURL(content.value);
+    } else {
+      type = 'document';
+      state.value = { stage: 'done' };
+    }
+  } else {
+    state.value = { stage: 'done' };
+  }
+  contentType.value = type;
+};
+const handleStateAction = () => {
+  // TODO
 };
 
 onMounted(async () => {
@@ -62,7 +85,7 @@ onMounted(async () => {
     // TODO: Load file ?
     const msg = { ...props.message };
 
-    state.value = { stage: 'encrypting' };
+    state.value = { stage: 'encrypting', progress: -1, icon: 'lock' };
     const data = await messagesStore.encrypt(props.message);
     if (props.message.type === 'text') {
       msg.text = data;
@@ -70,20 +93,22 @@ onMounted(async () => {
       filesStore.addOriginalFile(content.value, props.message);
       await filesStore.saveFile(data, props.message);
 
-      state.value = { stage: 'uploading', progress: 0 };
-      const task = filesStore.upload(data.file, props.message);
-      try {
-        await handleUploadTask(task);
-      } catch (error) {
-        console.log(error);
-        handleUploadCancel(error);
+      if (props.message.groupId !== 'self') {
+        state.value = { stage: 'uploading', progress: 0, icon: 'pause' };
+        const task = filesStore.upload(data.file, props.message);
+        try {
+          await handleUploadTask(task);
+        } catch (error) {
+          console.log(error);
+          handleUploadCancel(error);
+        }
       }
       msg.text = data.iv;
+      state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(props.message.file.type) };
     }
-    state.value = null;
     messagesStore.pushToOutQueue(msg);
   } else {
-    state.value = { stage: 'decrypting' };
+    state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
     if (props.message.type === 'text') {
       content.value = await messagesStore.decrypt(props.message);
     } else {
@@ -91,25 +116,29 @@ onMounted(async () => {
       let file;
       if (!data) {
         const iv = props.message.text;
-        state.value = { stage: 'downloading' };
+        state.value = { stage: 'downloading', progress: -1, icon: 'download' };
         const encryptedFile = await filesStore.download(props.message);
         await filesStore.saveFile({ iv, file: encryptedFile }, props.message);
         filesStore.addEncryptedFile({ iv, file: encryptedFile }, props.message);
       }
-      state.value = { stage: 'decrypting' };
+      state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
       file = await messagesStore.decrypt(props.message);
       await messagesStore.updateSync(props.message);
       content.value = file;
+      state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(content.value.type) };
     }
-    state.value = null;
   }
+  handlePreview();
+});
+onBeforeUnmount(() => {
+  if (objUrl.value) URL.revokeObjectURL(objUrl.value);
 });
 </script>
 
 <template>
   <div class="message" :class="{ me: isSelf }">
     <div class="container">
-      <div v-if="!content" class="suspense">
+      <div v-if="state.stage === 'pending'" class="suspense">
         <Spinner />
       </div>
       <template v-else>
@@ -126,7 +155,27 @@ onMounted(async () => {
           <span class="tail">
             <Tail />
           </span>
-          <span class="data">{{ content }}</span>
+          <div class="state" v-if="state.stage !== 'done'">
+            <ProgressBar
+              v-if="state.progress !== -2"
+              class="progress"
+              :value="state.progress"
+              :indefinite="state.progress === -1"
+            />
+            <Button
+              :size="1.2"
+              @click="handleStateAction"
+              :icon="state.icon"
+              :complementary="false"
+              circular
+              flat
+            />
+          </div>
+          <span v-else-if="contentType === 'text'" class="text">{{ content }}</span>
+          <span v-else-if="contentType === 'document'" class="doc">{{ doc - preview }}</span>
+          <span v-else-if="contentType === 'image'" class="image">{{ image - preview }}</span>
+          <span v-else-if="contentType === 'audio'" class="audio">{{ audio - preview }}</span>
+          <span v-else-if="contentType === 'video'" class="video">{{ video - preview }}</span>
           <h5 class="time">{{ time }}</h5>
         </div>
       </template>
@@ -182,5 +231,29 @@ onMounted(async () => {
 .message .content .time {
   color: var(--c-text-2);
   text-align: right;
+}
+
+.content .text {
+  font-size: 1rem;
+}
+
+.state {
+  width: 5rem;
+  height: 5rem;
+  margin-top: 0.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+.state .progress {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+}
+.state button {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 </style>

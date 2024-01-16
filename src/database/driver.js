@@ -91,7 +91,7 @@ export const storeFile = async (data, id, groupId) => {
   await updateObject(`files:${groupId}`, id, data);
 };
 export const getFile = async (id, groupId) => {
-  await getObject(`files:${groupId}`, id);
+  return await getObject(`files:${groupId}`, id);
 };
 export const deleteFile = async (id, groupId) => {
   await deleteObject(`files:${groupId}`, id);

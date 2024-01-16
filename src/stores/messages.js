@@ -174,6 +174,7 @@ export const useMessagesStore = defineStore('messages', () => {
     return numMembers <= 0;
   }
   async function updateSync(message) {
+    if (message.groupId === 'self') return;
     await remote.updateSyncTimestamp(auth.user.uid, message.groupId);
     if (isSynced(message)) {
       await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
