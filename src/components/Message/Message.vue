@@ -25,6 +25,7 @@ const filesStore = useFilesStore();
 const auth = useAuthStore();
 const content = ref(null);
 const contentType = ref(null);
+const imgLoaded = ref(false);
 const state = ref({ stage: 'pending' });
 const objUrl = ref(null);
 
@@ -68,15 +69,20 @@ const handlePreview = () => {
       objUrl.value = URL.createObjectURL(content.value);
     } else {
       type = 'document';
-      state.value = { stage: 'done' };
     }
-  } else {
+  }
+  if (type !== 'image') {
+    // No need to wait for loading of streamed or non-previewable content
     state.value = { stage: 'done' };
   }
   contentType.value = type;
 };
 const handleStateAction = () => {
   // TODO
+};
+const handleImageLoaded = () => {
+  imgLoaded.value = true;
+  state.value = { stage: 'done' };
 };
 
 onMounted(async () => {
@@ -172,10 +178,16 @@ onBeforeUnmount(() => {
             />
           </div>
           <span v-else-if="contentType === 'text'" class="text">{{ content }}</span>
-          <span v-else-if="contentType === 'document'" class="doc">{{ doc - preview }}</span>
-          <span v-else-if="contentType === 'image'" class="image">{{ image - preview }}</span>
-          <span v-else-if="contentType === 'audio'" class="audio">{{ audio - preview }}</span>
-          <span v-else-if="contentType === 'video'" class="video">{{ video - preview }}</span>
+          <!-- <span v-else-if="contentType === 'document'" class="doc">{{ doc - preview }}</span> -->
+          <!-- <span v-else-if="contentType === 'audio'" class="audio">{{ audio - preview }}</span> -->
+          <!-- <span v-else-if="contentType === 'video'" class="video">{{ video - preview }}</span> -->
+          <img
+            v-if="contentType === 'image' && !!objUrl"
+            :style="{ width: imgLoaded ? 'auto' : 0, height: imgLoaded ? 'auto' : 0 }"
+            class="image"
+            :src="objUrl"
+            @load="handleImageLoaded"
+          />
           <h5 class="time">{{ time }}</h5>
         </div>
       </template>
@@ -255,5 +267,10 @@ onBeforeUnmount(() => {
 .state button {
   background-color: transparent !important;
   box-shadow: none !important;
+}
+
+.content .image {
+  max-width: 100%;
+  max-height: 12rem;
 }
 </style>

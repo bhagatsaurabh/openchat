@@ -91,7 +91,9 @@ export const encryptFile = async (file, key) => {
   iv = iv.buffer;
 
   iv = await bufToBase64(iv);
-  const encryptedFile = new File([new Blob([encryptedBuffer], { type: file.type })], file.name);
+  const encryptedFile = new File([new Blob([encryptedBuffer], { type: file.type })], file.name, {
+    type: file.type
+  });
 
   return { iv, file: encryptedFile };
 };
@@ -101,7 +103,9 @@ export const decryptFile = async ({ iv, file }, key) => {
   iv = await base64ToBuf(iv);
 
   let decryptedBuffer = await crypto.decrypt({ name: 'AES-GCM', iv }, key, buffer);
-  const decryptedFile = new File([new Blob([decryptedBuffer], { type: file.type })], file.name);
+  const decryptedFile = new File([new Blob([decryptedBuffer], { type: file.type })], file.name, {
+    type: file.type
+  });
 
   return decryptedFile;
 };

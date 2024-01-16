@@ -46,7 +46,7 @@ export const useStorageStore = defineStore('storage', () => {
       const meta = await getMetadata(storageRef);
       const name = meta.customMetadata.name;
       const blob = await getBlob(storageRef);
-      return new File([blob], name);
+      return new File([blob], name, { type: blob.type });
     } catch (error) {
       console.log(error);
     }
