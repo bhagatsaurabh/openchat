@@ -29,7 +29,7 @@ export const useGroupsStore = defineStore('groups', () => {
     if (snapshot.exists()) {
       const data = snapshot.data();
       data.id = snapshot.id;
-      queue.push(snapshot.data());
+      queue.push(data);
       process();
     }
   };
@@ -46,14 +46,19 @@ export const useGroupsStore = defineStore('groups', () => {
   };
   const handleGroup = async (group) => {
     group.timestamp = group.timestamp.toDate();
-    group.seen = group.seen?.map((seenTimestamp) => seenTimestamp.toDate());
-    group.sync = group.sync?.map((syncTimestamp) => syncTimestamp.toDate());
+    Object.keys(group.seen ?? {}).forEach((id) => (group.seen[id] = group.seen[id].toDate()));
+    Object.keys(group.sync ?? {}).forEach((id) => (group.sync[id] = group.sync[id].toDate()));
+
+    await users.saveProfiles(group.members);
+
+    if (group.type === 'private') {
+      let otherUserId = group.members.find((id) => id !== auth.user.uid);
+      group.name = users.users[otherUserId].name;
+      users.attachListener(otherUserId);
+    }
 
     await local.updateGroup(auth.user.uid, group.id, group);
     addGroup(group);
-
-    if (group.type === 'private') users.attachListener(group.members[1]);
-    else await users.saveProfiles(group.members);
 
     messages.attachListener(group.id);
   };
@@ -117,21 +122,23 @@ export const useGroupsStore = defineStore('groups', () => {
       }
     }
 
-    const groupId = await remote.createGroup({
+    const uids = members.map((member) => member.id);
+    let group = {
       name: name,
       type,
-      members: [...members],
-      admins: type === 'private' ? [...members] : [auth.user.uid],
+      members: uids,
+      admins: type === 'private' ? [...uids] : [auth.user.uid],
       avatarUrl: type === 'private' ? members[1].avatarUrl : avatarUrl
-    });
+    };
+    const groupId = await remote.createGroup(group);
     await schemaChange(auth.user.uid, groupId);
     attachListener(groupId);
 
-    if (type === 'private') users.attachListener(members[1]);
-    else await users.saveProfiles(members);
+    if (type === 'private') users.attachListener(members[1].id);
+    else await users.saveProfiles(uids);
 
     members.shift();
-    const rawPublicKeys = await Promise.all(members.map((id) => remote.getPublicKey(id)));
+    const rawPublicKeys = await Promise.all(members.map((member) => remote.getPublicKey(member.id)));
     const publicKeys = await Promise.all(rawPublicKeys.map((rawPublicKey) => importPublicKey(rawPublicKey)));
     publicKeys.unshift(auth.encKey);
 
@@ -142,10 +149,12 @@ export const useGroupsStore = defineStore('groups', () => {
     );
     await Promise.all(
       encryptedKeyCiphers.map((encryptedKeyCipher, idx) =>
-        remote.notifyUserAdded({ uid: members[idx], groupId, encryptedKey: encryptedKeyCipher })
+        remote.notifyUserAdded({ uid: members[idx].id, groupId, encryptedKey: encryptedKeyCipher })
       )
     );
 
+    group = { ...group, active: true, seen: {}, sync: {}, timestamp: null };
+    addGroup(group);
     return groupId;
   }
   async function createSelfGroup() {
@@ -188,6 +197,40 @@ export const useGroupsStore = defineStore('groups', () => {
     return groups.value[id] ?? null;
   }
 
+  async function removeMember(group, user) {
+    if (!group.admins.includes(auth.user.uid)) return;
+
+    const newMemberList = [...group.members];
+    const newAdminList = [...group.admins];
+    const midx = newMemberList.findIndex((id) => id === user.id);
+    const aidx = newAdminList.findIndex((id) => id === user.id);
+    if (midx >= 0) newMemberList.splice(midx, 1);
+    if (aidx >= 0) newAdminList.splice(aidx, 1);
+
+    await remote.updateGroup(
+      aidx >= 0 ? { members: newMemberList, admins: newAdminList } : { members: newMemberList }
+    );
+  }
+  async function makeAdmin(group, user) {
+    if (!group.admins.includes(auth.user.uid)) return;
+
+    if (!group.admins.includes(user.id)) {
+      const newAdminList = [...group.admins];
+      newAdminList.push(user.id);
+      await remote.updateGroup({ admins: newAdminList });
+    }
+  }
+  async function revokeAdmin(group, user) {
+    if (!group.admins.includes(auth.user.uid)) return;
+
+    const newAdminList = [...group.admins];
+    const idx = newAdminList.findIndex((id) => id === user.id);
+    if (idx >= 0) {
+      newAdminList.splice(idx, 1);
+      await remote.updateGroup({ admins: newAdminList });
+    }
+  }
+
   return {
     groups,
     activeGroup,
@@ -203,6 +246,9 @@ export const useGroupsStore = defineStore('groups', () => {
     stop,
     createGroup,
     createSelfGroup,
-    attachListener
+    attachListener,
+    removeMember,
+    makeAdmin,
+    revokeAdmin
   };
 });

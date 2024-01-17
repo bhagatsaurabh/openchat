@@ -135,6 +135,7 @@ export const getFileName = (file) => {
 };
 
 export const getIconFromFileType = (mime) => {
+  mime = mime ?? '';
   if (mime.startsWith('image/')) return 'media';
   else if (mime.startsWith('audio/')) return 'audio';
   else if (mime.startsWith('video/')) return 'video';

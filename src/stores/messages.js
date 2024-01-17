@@ -73,18 +73,18 @@ export const useMessagesStore = defineStore('messages', () => {
     };
     if (message.groupId !== 'self') {
       msg.expiry = Timestamp.fromDate(new Date(Date.now() + 864000000));
-      await remote.addNewMessage(message.docRef, msg);
+      await remote.addNewMessage(message.local.docRef, msg);
     } else {
       msg.id = message.id;
       msg.groupId = groups.activeGroup.id;
-      await local.storeMessage(msg, groups.activeGroup.id);
+      await local.storeMessage(msg);
       loadOldMessage(msg);
     }
   };
   const handleMessage = async (message) => {
     if (outQueueIdx.value[message.id]) {
       if (!message.type.startsWith('meta')) {
-        messageIdx.value[message.groupId][message.id].local = null;
+        messageIdx.value[message.groupId][message.id].value.local = null;
         await local.storeMessage(message);
       }
       outQueueIdx.value[message.id] = undefined;
@@ -94,7 +94,7 @@ export const useMessagesStore = defineStore('messages', () => {
     if (message.type === 'meta:edit') {
       const existingMsg = await local.getMessage(message.ref, message.groupId);
       if (existingMsg && (message.timestamp - existingMsg.timestamp) / msInAnHour <= 24) {
-        await local.storeMessage(message, message.groupId);
+        await local.storeMessage(message);
         updateMessage(message);
       }
     } else if (message.type === 'meta:delete') {
@@ -104,7 +104,7 @@ export const useMessagesStore = defineStore('messages', () => {
         removeMessage(message);
       }
     } else {
-      await local.storeMessage(message, message.groupId);
+      await local.storeMessage(message);
       addMessage(message);
     }
     // For text messages, update sync info right-away
@@ -232,7 +232,7 @@ export const useMessagesStore = defineStore('messages', () => {
 
     message[type === 'text' ? 'text' : 'file'] = value;
     addMessage(message);
-    await local.storeMessage(message, groups.activeGroup.id);
+    await local.storeMessage(message);
   }
   function pushToOutQueue(message) {
     outQueue.push(message);

@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { useUsersStore } from '@/stores/users';
+import { useGroupsStore } from '@/stores/groups';
 import GroupMemberItem from '../GroupMemberItem/GroupMemberItem.vue';
 import Modal from '../Common/Modal/Modal.vue';
 
@@ -14,6 +15,7 @@ const props = defineProps({
 });
 
 const usersStore = useUsersStore();
+const groups = useGroupsStore();
 const showConfirm = ref(null);
 const members = computed(() => {
   return props.group.members.map((member) => ({
@@ -30,17 +32,14 @@ const handleAction = (action, user) => {
   else if (action === 'revoke')
     showConfirm.value = { title: `Revoke adminship from ${user.name} ?`, action: handleRevokeAdmin, user };
 };
-const handleRemove = () => {
-  // TODO
-  console.log('remove', showConfirm.value.user.name);
+const handleRemove = async () => {
+  await groups.removeMember(props.group, showConfirm.value.user);
 };
-const handleMakeAdmin = () => {
-  // TODO
-  console.log('admin', showConfirm.value.user.name);
+const handleMakeAdmin = async () => {
+  await groups.makeAdmin(props.group, showConfirm.value.user);
 };
-const handleRevokeAdmin = () => {
-  // TODO
-  console.log('revoke', showConfirm.value.user.name);
+const handleRevokeAdmin = async () => {
+  await groups.revokeAdmin(props.group, showConfirm.value.user);
 };
 </script>
 

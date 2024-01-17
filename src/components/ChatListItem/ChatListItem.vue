@@ -18,7 +18,7 @@ const avatarUrl = computed(() => {
   return url || `/assets/icons/avatar${props.group.type === 'broadcast' ? '-group' : ''}.png`;
 });
 const timestamp = computed(() => {
-  const date = props.group.lastMsg?.timestamp ?? props.group.timestamp;
+  const date = props.group.lastMsg?.timestamp ?? props.group.timestamp ?? new Date(Date.now());
   const today = new Date();
   const delta = (today - date) / msInADay;
   if (delta < 1) {

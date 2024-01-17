@@ -99,11 +99,11 @@ service cloud.firestore {
       let validKeys = ['seen', 'sync'];
       return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
              ('seen' in input
-               ? (input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly(request.auth.uid) &&
+               ? (input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : true) &&
              ('sync' in input
-               ? (input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly(request.auth.uid) &&
+               ? (input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
                : true);
     }
@@ -130,12 +130,12 @@ service cloud.firestore {
                : true) &&
              ('seen' in input
                ? (validateExistingMembership(request.auth.uid, existing) &&
-                 input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly(request.auth.uid) &&
+                 input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : true) &&
              ('sync' in input
                ? (validateExistingMembership(request.auth.uid, existing) &&
-                 input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly(request.auth.uid) &&
+                 input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
                : true) &&
              ('name' in input
@@ -192,6 +192,10 @@ service cloud.firestore {
                : (input.type in ['meta:edit', 'meta:delete']
                  ? validateMessageUpdation(request)
                  : false));
+    }
+    function validateMessageRead(chatId, userId) {
+      let group = get(/databases/$(database)/documents/groups/$(chatId)).data;
+      return validateExistingMembership(userId, group);
     }
     function validateNotifyTypeGA(input) {
       let validKeys = ['id', 'encryptedKey'];
@@ -263,6 +267,7 @@ service cloud.firestore {
     // No direct updation/deletion allowed (achieved indirectly through creating a meta message)
     match /groups/{chatId}/messages/{messageId} {
       allow create: if signedIn(request) && validateMessage(request)
+      allow read: if signedIn(request) && validateMessageRead(chatId, request.auth.uid)
       allow update: if false
       allow delete: if false
     }
