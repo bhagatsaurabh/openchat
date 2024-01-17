@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
 import { useGroupsStore } from '@/stores/groups';
+import { useEventsStore } from '@/stores/events';
+import { useUsersStore } from '@/stores/users';
 import { delay } from '@/utils/utils';
 import Button from '@/components/Common/Button/Button.vue';
 import Header from '@/components/Common/Header/Header.vue';
@@ -17,10 +19,11 @@ import Profile from '@/components/Profile/Profile.vue';
 import Settings from '@/components/Settings/Settings.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
-import ChatListener from '@/components/ChatListener/ChatListener.vue';
 
 const auth = useAuthStore();
 const groupsStore = useGroupsStore();
+const eventsStore = useEventsStore();
+const usersStore = useUsersStore();
 const router = useRouter();
 const showConfirm = ref(null);
 const showProfile = ref(false);
@@ -67,15 +70,24 @@ watch(query, () => {
 });
 
 let unregisterGuard = () => {};
-onMounted(() => {
+onMounted(async () => {
   unregisterGuard = router.beforeEach((to, from, next) => {
     if (from.path === '/chat' && to.path === '/') {
       groupsStore.unsetActiveGroup();
     }
     next();
   });
+
+  eventsStore.listen();
+  await usersStore.listen();
+  await groupsStore.listen();
 });
-onBeforeUnmount(unregisterGuard);
+onBeforeUnmount(() => {
+  unregisterGuard();
+  eventsStore.stop();
+  usersStore.stop();
+  groupsStore.stop();
+});
 </script>
 
 <template>
@@ -148,7 +160,6 @@ onBeforeUnmount(unregisterGuard);
       @back="() => (showSettings = false)"
       @logout="() => handleAction('sign-out')"
     />
-    <ChatListener />
   </main>
   <RouterView v-slot="{ Component }">
     <Transition name="fade-slide-rtr">

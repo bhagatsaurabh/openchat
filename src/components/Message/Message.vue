@@ -109,6 +109,8 @@ const handleLocalMessage = async () => {
   const data = await messagesStore.encrypt(props.message);
   if (props.message.type === 'text') {
     msg.text = data;
+    contentType.value = 'text';
+    state.value = { stage: 'done' };
   } else {
     filesStore.addOriginalFile(content.value, props.message);
     await filesStore.saveFile(data, props.message);

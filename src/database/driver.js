@@ -73,12 +73,16 @@ export const getAllProfiles = async () => {
   return await getAll('profiles');
 };
 
-export const storeMessage = async (message, groupId) => {
+export const storeMessage = async (message) => {
+  let msg;
   if (message.local?.docRef) {
-    message = { ...message };
-    message.local.docRef = { id: message.local.docRef.id };
+    msg = { ...message };
+    msg.local = { ...message.local, docRef: { id: message.local.docRef.id } };
+  } else {
+    msg = message;
   }
-  await updateObject(`messages:${groupId}`, message.id, message);
+  delete msg.expiry;
+  await updateObject(`messages:${message.groupId}`, msg.id, msg);
 };
 export const getMessage = async (messageId, groupId) => {
   return await getObject(`messages:${groupId}`, messageId);

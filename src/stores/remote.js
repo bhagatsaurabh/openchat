@@ -83,7 +83,8 @@ export const useRemoteDBStore = defineStore('remote', () => {
         id: groupId,
         encryptedKey
       },
-      by: auth.user.uid
+      by: auth.user.uid,
+      timestamp: serverTimestamp()
     });
     return id;
   }
