@@ -38,9 +38,12 @@ const initials = computed(() =>
     .join('')
 );
 const isSelf = computed(() => props.message.by === auth.user.uid);
+const avatarUrl = computed(() => usersStore.users[props.message.by]?.avatarUrl);
 
-const handleUploadTask = async (task) =>
-  new Promise((resolve, reject) => {
+let uploadTask;
+const handleUploadTask = async (task) => {
+  uploadTask = task;
+  return new Promise((resolve, reject) => {
     task.on(
       'state_changed',
       (snapshot) => {
@@ -50,26 +53,27 @@ const handleUploadTask = async (task) =>
           state.value = { stage: 'uploading', progress: state.value.progress, icon: 'pause' };
       },
       (error) => {
-        handleUploadCancel(error);
         reject(error);
       },
-      () => resolve()
+      () => {
+        uploadTask = null;
+        resolve();
+      }
     );
   });
-const handleUploadCancel = (error) => {
-  // TODO
+};
+const handleUploadCancel = () => {
   state.value = { stage: 'failed', progress: -2, icon: 'retry' };
-  console.log(error);
+  // Fallback tasks ?
 };
 const handlePreview = () => {
+  if (state.value.stage !== 'previewing') return;
+
   let type = 'text';
   if (props.message.type === 'file') {
     type = content.value.type.substring(0, content.value.type.indexOf('/'));
-    if (['image', 'video', 'audio'].includes(type)) {
-      objUrl.value = URL.createObjectURL(content.value);
-    } else {
-      type = 'document';
-    }
+    if (!['image', 'audio', 'video'].includes(type)) type = 'document';
+    objUrl.value = URL.createObjectURL(content.value);
   }
   if (type !== 'image') {
     // No need to wait for loading of streamed or non-previewable content
@@ -77,63 +81,79 @@ const handlePreview = () => {
   }
   contentType.value = type;
 };
-const handleStateAction = () => {
-  // TODO
+const handleStateAction = async () => {
+  if (state.value.stage === 'uploading') uploadTask?.pause();
+  else if (state.value.stage === 'paused') uploadTask?.resume();
+  else if (state.value.stage === 'failed') {
+    await handleLocalMessage();
+  }
 };
 const handleImageLoaded = () => {
   imgLoaded.value = true;
   state.value = { stage: 'done' };
 };
+let downloader = null;
+const handleDocDownload = () => {
+  if (!downloader) {
+    downloader = document.createElement('a');
+    downloader.href = objUrl.value;
+    downloader.download = content.value.name;
+  }
+  downloader.click();
+};
+const handleLocalMessage = async () => {
+  content.value = props.message[props.message.type];
+  const msg = { ...props.message };
+
+  state.value = { stage: 'encrypting', progress: -1, icon: 'lock' };
+  const data = await messagesStore.encrypt(props.message);
+  if (props.message.type === 'text') {
+    msg.text = data;
+  } else {
+    filesStore.addOriginalFile(content.value, props.message);
+    await filesStore.saveFile(data, props.message);
+
+    if (props.message.groupId !== 'self') {
+      state.value = { stage: 'uploading', progress: 0, icon: 'pause' };
+      const task = await filesStore.upload(data.file, props.message);
+      try {
+        await handleUploadTask(task);
+      } catch (error) {
+        console.log(error);
+        handleUploadCancel(error);
+        return;
+      }
+    }
+    msg.text = data.iv;
+    state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(props.message.file.type) };
+  }
+  messagesStore.pushToOutQueue(msg);
+};
+const handleRemoteMessage = async () => {
+  state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
+  if (props.message.type === 'text') {
+    content.value = await messagesStore.decrypt(props.message);
+  } else {
+    let data = await filesStore.getFile(props.message);
+    let file;
+    if (!data) {
+      const iv = props.message.text;
+      state.value = { stage: 'downloading', progress: -1, icon: 'download' };
+      const encryptedFile = await filesStore.download(props.message);
+      await filesStore.saveFile({ iv, file: encryptedFile }, props.message);
+      filesStore.addEncryptedFile({ iv, file: encryptedFile }, props.message);
+    }
+    state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
+    file = await messagesStore.decrypt(props.message);
+    await messagesStore.updateSync(props.message);
+    content.value = file;
+    state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(content.value.type) };
+  }
+};
 
 onMounted(async () => {
-  if (props.message.local) {
-    content.value = props.message[props.message.type];
-    // TODO: Load file ?
-    const msg = { ...props.message };
-
-    state.value = { stage: 'encrypting', progress: -1, icon: 'lock' };
-    const data = await messagesStore.encrypt(props.message);
-    if (props.message.type === 'text') {
-      msg.text = data;
-    } else {
-      filesStore.addOriginalFile(content.value, props.message);
-      await filesStore.saveFile(data, props.message);
-
-      if (props.message.groupId !== 'self') {
-        state.value = { stage: 'uploading', progress: 0, icon: 'pause' };
-        const task = filesStore.upload(data.file, props.message);
-        try {
-          await handleUploadTask(task);
-        } catch (error) {
-          console.log(error);
-          handleUploadCancel(error);
-        }
-      }
-      msg.text = data.iv;
-      state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(props.message.file.type) };
-    }
-    messagesStore.pushToOutQueue(msg);
-  } else {
-    state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
-    if (props.message.type === 'text') {
-      content.value = await messagesStore.decrypt(props.message);
-    } else {
-      let data = await filesStore.getFile(props.message);
-      let file;
-      if (!data) {
-        const iv = props.message.text;
-        state.value = { stage: 'downloading', progress: -1, icon: 'download' };
-        const encryptedFile = await filesStore.download(props.message);
-        await filesStore.saveFile({ iv, file: encryptedFile }, props.message);
-        filesStore.addEncryptedFile({ iv, file: encryptedFile }, props.message);
-      }
-      state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
-      file = await messagesStore.decrypt(props.message);
-      await messagesStore.updateSync(props.message);
-      content.value = file;
-      state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(content.value.type) };
-    }
-  }
+  if (props.message.local) await handleLocalMessage();
+  else await handleRemoteMessage();
   handlePreview();
 });
 onBeforeUnmount(() => {
@@ -149,25 +169,14 @@ onBeforeUnmount(() => {
       </div>
       <template v-else>
         <div v-if="!isSelf" class="avatar">
-          <img
-            v-if="usersStore.users[message.by]?.avatarUrl"
-            alt="avatar icon"
-            :src="usersStore.users[message.by].avatarUrl"
-          />
+          <img v-if="avatarUrl" alt="avatar icon" :src="avatarUrl" />
           <span class="initials" v-else>{{ initials }}</span>
           <h3 class="name">{{ name }}</h3>
         </div>
         <div class="content">
-          <span class="tail">
-            <Tail />
-          </span>
+          <span class="tail"><Tail /></span>
           <div class="state" v-if="state.stage !== 'done'">
-            <ProgressBar
-              v-if="state.progress !== -2"
-              class="progress"
-              :value="state.progress"
-              :indefinite="state.progress === -1"
-            />
+            <ProgressBar v-if="state.progress !== -2" class="progress" :value="state.progress" />
             <Button
               :size="1.2"
               @click="handleStateAction"
@@ -177,10 +186,24 @@ onBeforeUnmount(() => {
               flat
             />
           </div>
-          <span v-else-if="contentType === 'text'" class="text">{{ content }}</span>
-          <!-- <span v-else-if="contentType === 'document'" class="doc">{{ doc - preview }}</span> -->
-          <!-- <span v-else-if="contentType === 'audio'" class="audio">{{ audio - preview }}</span> -->
-          <!-- <span v-else-if="contentType === 'video'" class="video">{{ video - preview }}</span> -->
+          <span v-if="contentType === 'text'" class="text">{{ content }}</span>
+          <audio v-if="contentType === 'audio' && !!objUrl" class="audio" controls>
+            <source :src="objUrl" />
+          </audio>
+          <video v-if="contentType === 'video' && !!objUrl" class="video" controls>
+            <source :src="objUrl" />
+          </video>
+          <div v-if="contentType === 'document' && !!objUrl" class="document">
+            <Button
+              class="doc-control"
+              @click="handleDocDownload"
+              icon="document"
+              :complementary="false"
+              flat
+            >
+              <h4 class="ellipsis">{{ content.name }}</h4>
+            </Button>
+          </div>
           <img
             v-if="contentType === 'image' && !!objUrl"
             :style="{ width: imgLoaded ? 'auto' : 0, height: imgLoaded ? 'auto' : 0 }"
@@ -226,7 +249,6 @@ onBeforeUnmount(() => {
   right: 0;
   transform: translateX(100%);
 }
-
 .message .content::after {
   content: '';
   position: absolute;
@@ -239,14 +261,9 @@ onBeforeUnmount(() => {
   top: 0;
   right: -2px;
 }
-
 .message .content .time {
   color: var(--c-text-2);
   text-align: right;
-}
-
-.content .text {
-  font-size: 1rem;
 }
 
 .state {
@@ -269,8 +286,33 @@ onBeforeUnmount(() => {
   box-shadow: none !important;
 }
 
+.content .text {
+  font-size: 1rem;
+}
 .content .image {
   max-width: 100%;
   max-height: 12rem;
+}
+.content .audio {
+  max-width: calc(75vw - 1rem);
+  margin-top: 0.25rem;
+}
+.content .video {
+  max-width: min(calc(75vw - 1rem), 25rem);
+  margin-top: 0.25rem;
+}
+.content .document {
+  max-width: min(calc(75vw - 1rem), 25rem);
+  margin-top: 0.25rem;
+}
+.content .document .doc-control {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--c-border-2);
+}
+.content .document .doc-control:deep(.icon-container) {
+  margin-right: 0.25rem;
 }
 </style>

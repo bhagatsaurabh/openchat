@@ -4,13 +4,10 @@ import { computed } from 'vue';
 import { clamp } from '@/utils/utils';
 
 const props = defineProps({
-  value: Number,
-  indefinite: {
-    type: Boolean,
-    default: false
-  }
+  value: Number
 });
 
+const indefinite = computed(() => props.value < 0);
 const progress = computed(() => Math.round(clamp(props.value, [0, 100])));
 const background = computed(
   () => `radial-gradient(closest-side, transparent 79%, transparent 80% 100%),
