@@ -98,7 +98,7 @@ defineExpose({
       :invert="complementary"
       :size="size"
     />
-    <div v-hide="busy">
+    <div class="content" v-hide="busy">
       <slot></slot>
     </div>
     <Icon
@@ -222,5 +222,9 @@ defineExpose({
   box-shadow:
     0 0 0 0 var(--c-shadow-0),
     2.5px 2.5px 5px 0 var(--c-shadow-0) inset;
+}
+
+.content {
+  overflow: auto;
 }
 </style>

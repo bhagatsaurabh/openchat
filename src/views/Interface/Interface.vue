@@ -73,9 +73,7 @@ const handleSend = async (content) => {
         controls: [{ text: 'Okay' }],
         desc: 'Files with sizes up to 30MB can be shared at the moment'
       };
-      return;
-    }
-    await messagesStore.send('file', content);
+    } else await messagesStore.send('file', content);
   }
   busy.value = false;
   containerEl.value.scrollTo(0, containerEl.value.scrollHeight);
