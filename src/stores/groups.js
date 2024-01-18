@@ -4,7 +4,7 @@ import { defineStore } from 'pinia';
 import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
-import { base64ToBuf, bufToBase64 } from '@/utils/utils';
+import { base64ToBuf, bufToBase64, sysMsgUserAdded } from '@/utils/utils';
 import { Queue } from '@/utils/queue';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { remoteDB } from '@/config/firebase';
@@ -45,9 +45,23 @@ export const useGroupsStore = defineStore('groups', () => {
     }
   };
   const handleGroup = async (group) => {
+    const localGroup = await local.getGroup(auth.user.uid, group.id);
+    let sysMsg;
+    if (localGroup) group.lastMsg = localGroup.lastMsg;
+    else {
+      // New group
+      sysMsg = sysMsgUserAdded(group.id);
+      await local.storeMessage(sysMsg);
+      group.lastMsg = { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text };
+    }
+
     group.timestamp = group.timestamp.toDate();
-    Object.keys(group.seen ?? {}).forEach((id) => (group.seen[id] = group.seen[id].toDate()));
-    Object.keys(group.sync ?? {}).forEach((id) => (group.sync[id] = group.sync[id].toDate()));
+    Object.keys(group.seen ?? {}).forEach(
+      (id) => (group.seen[id] = group.seen[id] ? group.seen[id].toDate() : new Date())
+    );
+    Object.keys(group.sync ?? {}).forEach(
+      (id) => (group.sync[id] = group.sync[id] ? group.sync[id].toDate() : new Date())
+    );
 
     await users.saveProfiles(group.members);
 
@@ -163,6 +177,7 @@ export const useGroupsStore = defineStore('groups', () => {
       return existing.id;
     }
 
+    const sysMsg = sysMsgUserAdded('self');
     const group = {
       name: 'Me',
       type: 'private',
@@ -172,7 +187,8 @@ export const useGroupsStore = defineStore('groups', () => {
       timestamp: new Date(),
       id: 'self',
       unseenCount: 0,
-      active: true
+      active: true,
+      lastMsg: { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text }
     };
 
     const encryptedKey = (await generateGroupKey([auth.encKey]))[0];
@@ -181,6 +197,7 @@ export const useGroupsStore = defineStore('groups', () => {
     await schemaChange(auth.user.uid, group.id);
 
     addGroup(group);
+    local.storeMessage(sysMsg);
     return 'self';
   }
   function attachListener(groupId) {

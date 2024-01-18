@@ -1,4 +1,5 @@
 import { fileNameRegex } from './constants';
+import { v4 as uuid } from 'uuid';
 
 export const getSlug = (title) => `#pop-${title.toLowerCase().replaceAll(' ', '-')}`;
 
@@ -121,11 +122,7 @@ export const delay = async (ms) =>
 export const getFileName = (file) => {
   let name = file.name;
   if (!fileNameRegex.test(file)) {
-    const timestamp = new Date(Date.now())
-      .toISOString()
-      .substring(0, 19)
-      .replace('T', '_')
-      .replaceAll(':', '-');
+    const timestamp = new Date().toISOString().substring(0, 19).replace('T', '_').replaceAll(':', '-');
     if (file.type.startsWith('image/')) name = `IMG_${timestamp}`;
     else if (file.type.startsWith('audio/')) name = `AUD_${timestamp}`;
     else if (file.type.startsWith('video/')) name = `VID_${timestamp}`;
@@ -141,3 +138,12 @@ export const getIconFromFileType = (mime) => {
   else if (mime.startsWith('video/')) return 'video';
   return 'document';
 };
+
+export const sysMsgUserAdded = (groupId) => ({
+  by: 'system',
+  groupId,
+  id: uuid(),
+  text: 'You were added',
+  timestamp: new Date(),
+  type: 'text'
+});

@@ -97,12 +97,13 @@ service cloud.firestore {
     }
     function validateDMGroupUpdation(input, existing) {
       let validKeys = ['seen', 'sync'];
-      return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
-             ('seen' in input
+      let affected = input.diff(existing).affectedKeys();
+      return debug(affected.hasOnly(validKeys)) && affected.hasAny(validKeys) &&
+             ('seen' in affected
                ? (input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : true) &&
-             ('sync' in input
+             ('sync' in affected
                ? (input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
                : true);
@@ -152,7 +153,7 @@ service cloud.firestore {
       let existing = resource.data;
     	return existing.type == 'private'
                ? validateDMGroupUpdation(input, existing)
-               : validateBCGroupUpdation(input, existing);
+               : (isAnAdmin(request, resource) && validateBCGroupUpdation(input, existing));
     }
     function isGroupActive(resource) {
       return resource.data.active
@@ -259,7 +260,7 @@ service cloud.firestore {
     match /groups/{chatId} {
       allow create: if signedIn(request) && validateGroupCreation(request)
     	allow read: if isGroupActive(resource) && isAMember(request, resource)
-      allow update: if isGroupActive(resource) && isAnAdmin(request, resource) && validateGroupUpdation(request, resource)
+      allow update: if isGroupActive(resource) && isAMember(request, resource) && validateGroupUpdation(request, resource)
       allow delete: if false
     }
 
