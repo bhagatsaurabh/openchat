@@ -28,14 +28,17 @@ const contentType = ref(null);
 const imgLoaded = ref(false);
 const state = ref({ stage: 'pending' });
 const objUrl = ref(null);
+const isSystem = ref(props.message.by === 'system');
 
 const time = computed(() => props.message.timestamp.toTimeString().substring(0, 5));
-const name = computed(() => usersStore.users[props.message.by].name);
+const name = computed(() => usersStore.users[props.message.by]?.name);
 const initials = computed(() =>
-  usersStore.users[props.message.by].name
-    .split(' ')
-    .map((part) => part[0].toUpperCase())
-    .join('')
+  name.value
+    ? name.value
+        .split(' ')
+        .map((part) => part[0].toUpperCase())
+        .join('')
+    : '?'
 );
 const isSelf = computed(() => props.message.by === auth.user.uid);
 const avatarUrl = computed(() => usersStore.users[props.message.by]?.avatarUrl);
@@ -135,6 +138,8 @@ const handleRemoteMessage = async () => {
   state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
   if (props.message.type === 'text') {
     content.value = await messagesStore.decrypt(props.message);
+    contentType.value = 'text';
+    state.value = { stage: 'done' };
   } else {
     let data = await filesStore.getFile(props.message);
     let file;
@@ -154,9 +159,15 @@ const handleRemoteMessage = async () => {
 };
 
 onMounted(async () => {
-  if (props.message.local) await handleLocalMessage();
-  else await handleRemoteMessage();
-  handlePreview();
+  if (props.message.by === 'system') {
+    content.value = props.message.text;
+    contentType.value = 'text';
+    state.value = { stage: 'done' };
+  } else {
+    if (props.message.local) await handleLocalMessage();
+    else await handleRemoteMessage();
+    handlePreview();
+  }
 });
 onBeforeUnmount(() => {
   if (objUrl.value) URL.revokeObjectURL(objUrl.value);
@@ -165,18 +176,18 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="message" :class="{ me: isSelf }">
-    <div class="container">
+    <div v-if="!isSystem" class="container">
       <div v-if="state.stage === 'pending'" class="suspense">
         <Spinner />
       </div>
       <template v-else>
         <div v-if="!isSelf" class="avatar">
-          <img v-if="avatarUrl" alt="avatar icon" :src="avatarUrl" />
-          <span class="initials" v-else>{{ initials }}</span>
-          <h3 class="name">{{ name }}</h3>
+          <img class="avatar-img" v-if="avatarUrl" alt="avatar icon" :src="avatarUrl" />
+          <div class="initials" v-else>{{ initials }}</div>
         </div>
         <div class="content">
-          <span class="tail"><Tail /></span>
+          <h4 class="name">{{ name }}</h4>
+          <span class="tail"><Tail :self="message.by === auth.user.uid" /></span>
           <div class="state" v-if="state.stage !== 'done'">
             <ProgressBar v-if="state.progress !== -2" class="progress" :value="state.progress" />
             <Button
@@ -217,6 +228,12 @@ onBeforeUnmount(() => {
         </div>
       </template>
     </div>
+    <div v-else class="container sys">
+      <div class="sys-content">
+        <span tabindex="0" v-if="contentType === 'text'" class="text">{{ content }}</span>
+        <h5 class="time">{{ time }}</h5>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -229,29 +246,61 @@ onBeforeUnmount(() => {
 .message .container {
   max-width: 75vw;
   min-width: 25vw;
+  margin-right: auto;
+  margin-left: 3rem;
+}
+.message .container.sys {
+  margin-left: auto;
+  margin-right: auto;
 }
 .message.me .container {
   margin-right: 0.75rem;
   margin-left: auto;
 }
-
+.sys-content {
+  text-align: center;
+  margin-top: 1rem;
+}
+.sys-content .text {
+  font-weight: lighter;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  background-color: var(--c-accent-light-3);
+}
+.sys-content .text:focus + .time {
+  transform: translateY(0);
+}
+.sys-content .time {
+  margin-top: 0.25rem;
+  font-weight: lighter;
+  transform: translateY(-120%);
+  z-index: -1;
+  transition: transform var(--fx-transition-duration-1) ease;
+}
 .message .content {
   background-color: var(--c-accent-light-4);
   box-shadow: 3px 3px 6px -3px var(--c-text-0);
   border-radius: 0.5rem;
   padding: 0.25rem 0.5rem 0.25rem 0.5rem;
+  border-top-left-radius: unset;
+}
+.message.me .content {
   border-top-right-radius: unset;
 }
 .message .content .tail {
   position: absolute;
   top: 0;
-  right: 0;
+  left: 0;
+  transform: translateX(-100%);
   color: var(--c-accent-light-4);
   font-size: 0;
+}
+.message.me .content .tail {
   right: 0;
+  left: unset;
   transform: translateX(100%);
 }
-.message .content::after {
+.message.me .content::after {
   content: '';
   position: absolute;
   display: block;
@@ -265,7 +314,38 @@ onBeforeUnmount(() => {
 }
 .message .content .time {
   color: var(--c-text-2);
-  text-align: right;
+  float: right;
+  position: relative;
+  font-size: 0.7rem;
+  top: 0.65rem;
+  left: 0.2rem;
+  margin-left: 0.25rem;
+}
+.message .content .name {
+  font-size: 0.85rem;
+  font-weight: lighter;
+}
+
+.message .avatar {
+  position: absolute;
+  left: -2.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.message .avatar .initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid var(--c-border-2);
+  border-radius: 1rem;
+  font-weight: bold;
+}
+.message .avatar .avatar-img {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 1rem;
 }
 
 .state {
@@ -316,5 +396,11 @@ onBeforeUnmount(() => {
 }
 .content .document .doc-control:deep(.icon-container) {
   margin-right: 0.25rem;
+}
+
+@media (hover: hover) {
+  .sys-content .text:hover + .time {
+    transform: translateY(0);
+  }
 }
 </style>

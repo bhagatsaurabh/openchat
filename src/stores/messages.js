@@ -1,11 +1,11 @@
-import { ref } from 'vue';
+import { capitalize, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
 import { Queue } from '@/utils/queue';
-import { Timestamp, collection, doc, onSnapshot, query, serverTimestamp } from 'firebase/firestore';
+import { Timestamp, collection, doc, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 import { deleteMessageFunction, remoteDB } from '@/config/firebase';
 import { LinkedList } from '@/utils/linked-list';
 import { msInAnHour } from '@/utils/constants';
@@ -13,6 +13,7 @@ import { useGroupsStore } from './groups';
 import { stream } from '@/database/database';
 import { decryptFile, decryptText, encryptFile, encryptText } from '@/utils/crypto';
 import { useFilesStore } from './files';
+import { getIconFromFileType } from '@/utils/utils';
 
 export const useMessagesStore = defineStore('messages', () => {
   const auth = useAuthStore();
@@ -71,6 +72,8 @@ export const useMessagesStore = defineStore('messages', () => {
       text: message.text,
       type: message.type
     };
+    if (msg.type === 'file') msg.mimetype = message.mimetype;
+
     if (message.groupId !== 'self') {
       msg.expiry = Timestamp.fromDate(new Date(Date.now() + 864000000));
       await remote.addNewMessage(message.local.docRef, msg);
@@ -82,15 +85,19 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   };
   const handleMessage = async (message) => {
+    message.timestamp = message.timestamp ? message.timestamp.toDate() : new Date();
+    await setLastMessage(message);
+
     if (outQueueIdx.value[message.id]) {
       if (!message.type.startsWith('meta')) {
         messageIdx.value[message.groupId][message.id].value.local = null;
         await local.storeMessage(message);
       }
       outQueueIdx.value[message.id] = undefined;
+      if (message.type === 'text') await updateSync(message);
       return;
     }
-    message.timestamp = message.timestamp?.toDate();
+
     if (message.type === 'meta:edit') {
       const existingMsg = await local.getMessage(message.ref, message.groupId);
       if (existingMsg && (message.timestamp - existingMsg.timestamp) / msInAnHour <= 24) {
@@ -117,8 +124,9 @@ export const useMessagesStore = defineStore('messages', () => {
   }
   function attachListener(groupId) {
     if (!unsubFns.value[groupId]) {
+      const mySyncTS = Timestamp.fromDate(groups.groups[groupId]?.sync[auth.user.uid] ?? new Date(0));
       const unsubscribe = onSnapshot(
-        query(collection(remoteDB, 'groups', groupId, 'messages')),
+        query(collection(remoteDB, 'groups', groupId, 'messages'), where('timestamp', '>', mySyncTS)),
         listener,
         handleError
       );
@@ -201,21 +209,31 @@ export const useMessagesStore = defineStore('messages', () => {
     streams.value[groupId] = null;
   }
   async function encrypt(message) {
+    const key =
+      message.groupId === groups.activeGroup?.id
+        ? groups.activeGroupKey
+        : await local.getGroupKey(auth.user.uid, message.groupId);
+
     if (message.type === 'text') {
-      return await encryptText(message.text, groups.activeGroupKey);
+      return await encryptText(message.text, key);
     } else {
-      return await encryptFile(message.file, groups.activeGroupKey);
+      return await encryptFile(message.file, key);
     }
   }
   async function decrypt(message) {
+    const key =
+      message.groupId === groups.activeGroup?.id
+        ? groups.activeGroupKey
+        : await local.getGroupKey(auth.user.uid, message.groupId);
+
     if (message.type === 'text') {
-      return await decryptText(message.text, groups.activeGroupKey);
+      return await decryptText(message.text, key);
     } else {
       // Assume the file is already present in cache
       if (filesStore.files[message.id].decrypted) {
         return filesStore.files[message.id].file;
       } else {
-        return await decryptFile(filesStore.files[message.id], groups.activeGroupKey);
+        return await decryptFile(filesStore.files[message.id], key);
       }
     }
   }
@@ -231,6 +249,8 @@ export const useMessagesStore = defineStore('messages', () => {
     };
 
     message[type === 'text' ? 'text' : 'file'] = value;
+    if (type === 'file') message.mimetype = value.type;
+
     addMessage(message);
     await local.storeMessage(message);
   }
@@ -238,6 +258,25 @@ export const useMessagesStore = defineStore('messages', () => {
     outQueue.push(message);
     outQueueIdx.value[message.local.docRef.id] = message;
     processOutQueue();
+  }
+  async function setLastMessage(message) {
+    let text, type;
+    if (message.type === 'text') {
+      text = await decrypt(message);
+      type = 'text';
+    } else {
+      type = getIconFromFileType(message.mimetype);
+      text = capitalize(type);
+    }
+
+    const lastMsg = {
+      timestamp: message.timestamp,
+      text,
+      by: message.by,
+      type
+    };
+    await local.updateGroup(auth.user.uid, message.groupId, { lastMsg });
+    groups.groups[message.groupId].lastMsg = lastMsg;
   }
 
   return {

@@ -24,6 +24,10 @@ const emit = defineEmits(['open']);
 .avatar {
   box-shadow: none !important;
 }
+.avatar:deep(.icon-container) {
+  width: 2.5rem;
+  height: 2.5rem;
+}
 .avatar:deep(img) {
   border-radius: 50%;
 }

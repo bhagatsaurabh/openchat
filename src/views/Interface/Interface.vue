@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { useGroupsStore } from '@/stores/groups';
 import { useUsersStore } from '@/stores/users';
 import { useMessagesStore } from '@/stores/messages';
+import { useAuthStore } from '@/stores/auth';
 import { throttle } from '@/utils/utils';
 import Avatar from '@/components/Common/Avatar/Avatar.vue';
 import Header from '@/components/Common/Header/Header.vue';
@@ -19,6 +20,7 @@ import Modal from '@/components/Common/Modal/Modal.vue';
 const groups = useGroupsStore();
 const users = useUsersStore();
 const messagesStore = useMessagesStore();
+const auth = useAuthStore();
 const router = useRouter();
 const group = ref(groups.activeGroup);
 const containerEl = ref(null);
@@ -31,6 +33,15 @@ const showModal = ref(null);
 const names = computed(() =>
   group.value.id === 'self' ? group.value.name : users.getNamesFromUIDs(group.value.members).join(', ')
 );
+const avatarUrl = computed(() => {
+  let url = group.value.avatarUrl;
+  if (group.value.id === 'self') url = auth.profile?.avatarUrl;
+  else if (group.value.type === 'private') {
+    const otherUserId = group.value.members.find((id) => id !== auth.user.uid);
+    url = users.users[otherUserId]?.avatarUrl;
+  }
+  return url || `/assets/icons/avatar${group.value.type === 'broadcast' ? '-group' : ''}.png`;
+});
 
 const handleLoad = () => {
   if (!groups.activeGroup) return;
@@ -104,7 +115,7 @@ watch(() => groups.activeGroup, handleLoad);
     </Modal>
     <Header class="header">
       <template #left>
-        <Avatar @open="() => handleGroupOption('Profile')" class="mr-0p5" :url="group.avatarUrl" />
+        <Avatar @open="() => handleGroupOption('Profile')" class="mr-0p5" :url="avatarUrl" />
         <div @click="() => handleGroupOption('Profile')" class="info mr-0p5">
           <h3 class="name">{{ group.name }}</h3>
           <h4 class="members">{{ names }}</h4>

@@ -63,7 +63,7 @@ export const useUsersStore = defineStore('users', () => {
     await Promise.all(newUsers.map((user) => handleUser(user)));
   }
   function getNamesFromUIDs(userIds = []) {
-    return userIds.map((uid) => users.value[uid].name);
+    return userIds.map((uid) => (uid === auth.user.uid ? 'Me' : users.value[uid].name));
   }
 
   return {

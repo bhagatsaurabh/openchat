@@ -31,7 +31,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     try {
       await updateDoc(doc(remoteDB, 'users', auth.user.uid), profile);
       auth.profile = { ...auth.profile, ...profile };
-      await local.updateProfile(auth.profile);
+      await local.updateProfile({ ...auth.profile });
       return true;
     } catch (error) {
       console.log(error);
@@ -40,6 +40,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
   }
   async function storePublicKey(publicKey) {
     try {
+      console.log('setting');
       await setDoc(doc(remoteDB, 'publicKeys', auth.user.uid), publicKey);
     } catch (e) {
       console.error(e);
@@ -47,7 +48,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
   }
   async function searchUsers(searchQ, page) {
     try {
-      const data = await (await fetchUsers(searchQ, page)).json();
+      const data = await fetchUsers(searchQ, page);
       return { users: data.hits, nbPages: data.nbPages };
     } catch (error) {
       console.log(error);
