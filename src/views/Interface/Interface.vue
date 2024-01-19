@@ -234,4 +234,8 @@ watch(() => groups.activeGroup, handleLoad);
   margin-bottom: 0.25rem;
   margin-top: 0.25rem;
 }
+
+.messages .message:last-child {
+  margin-bottom: 1rem;
+}
 </style>

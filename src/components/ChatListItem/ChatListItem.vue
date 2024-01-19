@@ -70,10 +70,12 @@ const otherUserId = computed(() =>
             {{ (group.lastMsg?.by === auth.user.uid ? 'Me' : lastMsgBy) + ':' }}&nbsp;
           </span>
           <Icon
+            class="mr-0p5 fs-0"
             v-if="lastMsgType && lastMsgType !== 'text'"
             :size="0.8"
             :name="group.lastMsg?.type"
             alt="icon"
+            adaptive
           />
           <span v-if="lastMsgText" class="d-inline-block ellipsis">{{ lastMsgText }}</span>
         </div>
@@ -133,6 +135,7 @@ const otherUserId = computed(() =>
   flex: 1;
   width: 100%;
   display: flex;
+  align-items: center;
 }
 .msg .text span:last-child {
   color: var(--c-text-2);

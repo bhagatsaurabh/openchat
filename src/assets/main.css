@@ -114,6 +114,9 @@
 .border-b-1 {
   border-bottom: 1px solid var(--c-border-1);
 }
+.fs-0 {
+  font-size: 0;
+}
 
 .fade-enter-active,
 .fade-leave-active {

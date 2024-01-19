@@ -19,6 +19,7 @@ export const useFilesStore = defineStore('files', () => {
     let data = await local.getFile(id, groupId);
     if (!data) data = null;
     else data.decrypted = false;
+
     files.value[id] = data;
     return files.value[id];
   }
@@ -36,13 +37,11 @@ export const useFilesStore = defineStore('files', () => {
   function addEncryptedFile({ iv, file }, { id }) {
     files.value[id] = { iv, file, decrypted: false };
   }
-  async function upload(file, { id, groupId }) {
-    return storage.uploadFile(
-      file,
-      `groups/${groupId}/${auth.user.uid}/${id}`,
-      { contentType: file.type, customMetadata: { name: getFileName(file.name) } },
-      true
-    );
+  function upload(file, { id, groupId }) {
+    return storage.uploadFileResumable(file, `groups/${groupId}/${auth.user.uid}/${id}`, {
+      contentType: file.type,
+      customMetadata: { name: getFileName(file) }
+    });
   }
   async function download({ groupId, by, id }) {
     return await storage.downloadFile(`groups/${groupId}/${by}/${id}`);

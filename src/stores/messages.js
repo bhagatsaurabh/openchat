@@ -94,7 +94,7 @@ export const useMessagesStore = defineStore('messages', () => {
         await local.storeMessage(message);
       }
       outQueueIdx.value[message.id] = undefined;
-      if (message.type === 'text') await updateSync(message);
+      await updateSync(message);
       return;
     }
 
@@ -185,7 +185,11 @@ export const useMessagesStore = defineStore('messages', () => {
     if (message.groupId === 'self') return;
     await remote.updateSyncTimestamp(auth.user.uid, message.groupId);
     if (isSynced(message)) {
-      await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
+      try {
+        await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
+      } catch (error) {
+        // This client may fail to delete the file when another client is also trying to delete simultaneously
+      }
     }
   }
   async function openStream(groupId) {

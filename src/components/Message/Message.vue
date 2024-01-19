@@ -50,8 +50,9 @@ const handleUploadTask = async (task) => {
     task.on(
       'state_changed',
       (snapshot) => {
-        state.value.progress = normalize(snapshot.bytesTransferred, 0, snapshot.totalBytes);
-        if (snapshot.state === 'paused') state.value = { stage: 'paused', progress: -2, icon: 'upload' };
+        state.value.progress = normalize(snapshot.bytesTransferred, 0, snapshot.totalBytes) * 100;
+        if (snapshot.state === 'paused')
+          state.value = { stage: 'paused', progress: state.value.progress, icon: 'upload' };
         else if (snapshot.state === 'running')
           state.value = { stage: 'uploading', progress: state.value.progress, icon: 'pause' };
       },
@@ -108,7 +109,9 @@ const handleLocalMessage = async () => {
   content.value = props.message[props.message.type];
   const msg = { ...props.message };
 
-  state.value = { stage: 'encrypting', progress: -1, icon: 'lock' };
+  if (props.message.type !== 'text') {
+    state.value = { stage: 'encrypting', progress: -1, icon: 'lock' };
+  }
   const data = await messagesStore.encrypt(props.message);
   if (props.message.type === 'text') {
     msg.text = data;
@@ -120,7 +123,7 @@ const handleLocalMessage = async () => {
 
     if (props.message.groupId !== 'self') {
       state.value = { stage: 'uploading', progress: 0, icon: 'pause' };
-      const task = await filesStore.upload(data.file, props.message);
+      const task = filesStore.upload(data.file, props.message);
       try {
         await handleUploadTask(task);
       } catch (error) {
@@ -135,24 +138,28 @@ const handleLocalMessage = async () => {
   messagesStore.pushToOutQueue(msg);
 };
 const handleRemoteMessage = async () => {
-  state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
   if (props.message.type === 'text') {
     content.value = await messagesStore.decrypt(props.message);
     contentType.value = 'text';
     state.value = { stage: 'done' };
   } else {
+    state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
     let data = await filesStore.getFile(props.message);
-    let file;
+    const iv = props.message.text;
     if (!data) {
-      const iv = props.message.text;
       state.value = { stage: 'downloading', progress: -1, icon: 'download' };
       const encryptedFile = await filesStore.download(props.message);
-      await filesStore.saveFile({ iv, file: encryptedFile }, props.message);
-      filesStore.addEncryptedFile({ iv, file: encryptedFile }, props.message);
+      if (!encryptedFile) {
+        state.value = { stage: 'lost', msg: 'File missing' };
+        return;
+      } else {
+        await messagesStore.updateSync(props.message);
+        await filesStore.saveFile({ iv, file: encryptedFile }, props.message);
+        filesStore.addEncryptedFile({ iv, file: encryptedFile }, props.message);
+      }
     }
     state.value = { stage: 'decrypting', progress: -1, icon: 'lock' };
-    file = await messagesStore.decrypt(props.message);
-    await messagesStore.updateSync(props.message);
+    const file = await messagesStore.decrypt(props.message);
     content.value = file;
     state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(content.value.type) };
   }
@@ -186,9 +193,9 @@ onBeforeUnmount(() => {
           <div class="initials" v-else>{{ initials }}</div>
         </div>
         <div class="content">
-          <h4 class="name">{{ name }}</h4>
+          <h4 v-if="message.by !== auth.user.uid" class="name">{{ name }}</h4>
           <span class="tail"><Tail :self="message.by === auth.user.uid" /></span>
-          <div class="state" v-if="state.stage !== 'done'">
+          <div class="state" v-if="!['done', 'lost'].includes(state.stage)">
             <ProgressBar v-if="state.progress !== -2" class="progress" :value="state.progress" />
             <Button
               :size="1.2"
@@ -199,31 +206,34 @@ onBeforeUnmount(() => {
               flat
             />
           </div>
-          <span v-if="contentType === 'text'" class="text">{{ content }}</span>
-          <audio v-if="contentType === 'audio' && !!objUrl" class="audio" controls>
-            <source :src="objUrl" />
-          </audio>
-          <video v-if="contentType === 'video' && !!objUrl" class="video" controls>
-            <source :src="objUrl" />
-          </video>
-          <div v-if="contentType === 'document' && !!objUrl" class="document">
-            <Button
-              class="doc-control"
-              @click="handleDocDownload"
-              icon="document"
-              :complementary="false"
-              flat
-            >
-              <h4 class="ellipsis">{{ content.name }}</h4>
-            </Button>
-          </div>
-          <img
-            v-if="contentType === 'image' && !!objUrl"
-            :style="{ width: imgLoaded ? 'auto' : 0, height: imgLoaded ? 'auto' : 0 }"
-            class="image"
-            :src="objUrl"
-            @load="handleImageLoaded"
-          />
+          <span class="lost" v-if="state.stage == 'lost'">{{ state.msg }}</span>
+          <template v-else>
+            <span v-if="contentType === 'text'" class="text">{{ content }}</span>
+            <audio v-if="contentType === 'audio' && !!objUrl" class="audio" controls>
+              <source :src="objUrl" />
+            </audio>
+            <video v-if="contentType === 'video' && !!objUrl" class="video" controls>
+              <source :src="objUrl" />
+            </video>
+            <div v-if="contentType === 'document' && !!objUrl" class="document">
+              <Button
+                class="doc-control"
+                @click="handleDocDownload"
+                icon="document"
+                :complementary="false"
+                flat
+              >
+                <h4 class="ellipsis">{{ content.name }}</h4>
+              </Button>
+            </div>
+            <img
+              v-if="contentType === 'image' && !!objUrl"
+              :style="{ width: imgLoaded ? 'auto' : 0, height: imgLoaded ? 'auto' : 0 }"
+              class="image"
+              :src="objUrl"
+              @load="handleImageLoaded"
+            />
+          </template>
           <h5 class="time">{{ time }}</h5>
         </div>
       </template>
@@ -240,7 +250,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .message {
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 2.5rem;
   display: flex;
 }
 .message .container {
@@ -285,6 +295,7 @@ onBeforeUnmount(() => {
   border-top-left-radius: unset;
 }
 .message.me .content {
+  border-top-left-radius: 0.5rem;
   border-top-right-radius: unset;
 }
 .message .content .tail {
@@ -314,16 +325,23 @@ onBeforeUnmount(() => {
 }
 .message .content .time {
   color: var(--c-text-2);
-  float: right;
-  position: relative;
   font-size: 0.7rem;
-  top: 0.65rem;
-  left: 0.2rem;
-  margin-left: 0.25rem;
+  position: absolute;
+  bottom: -1.35rem;
+  left: 0;
+  width: min-content;
+}
+.message.me .content .time {
+  right: 0;
+  left: unset;
 }
 .message .content .name {
   font-size: 0.85rem;
   font-weight: lighter;
+}
+.message .content .lost {
+  font-weight: lighter;
+  font-style: italic;
 }
 
 .message .avatar {

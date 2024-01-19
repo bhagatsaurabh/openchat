@@ -11,15 +11,20 @@ import {
 import { storage } from '@/config/firebase';
 
 export const useStorageStore = defineStore('storage', () => {
-  async function uploadFile(blob, path, meta = {}, resumable = false) {
+  async function uploadFile(blob, path, meta = {}) {
     const storageRef = ref(storage, path);
 
     try {
-      if (resumable) {
-        return uploadBytesResumable(storageRef, blob, meta);
-      } else {
-        await uploadBytes(storageRef, blob, meta);
-      }
+      return await uploadBytes(storageRef, blob, meta);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  function uploadFileResumable(blob, path, meta = {}) {
+    const storageRef = ref(storage, path);
+
+    try {
+      return uploadBytesResumable(storageRef, blob, meta);
     } catch (error) {
       console.log(error);
     }
@@ -54,6 +59,7 @@ export const useStorageStore = defineStore('storage', () => {
 
   return {
     uploadFile,
+    uploadFileResumable,
     getUrlFromPath,
     getUrlFromRef,
     downloadFile
