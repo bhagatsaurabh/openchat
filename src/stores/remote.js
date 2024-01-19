@@ -40,7 +40,6 @@ export const useRemoteDBStore = defineStore('remote', () => {
   }
   async function storePublicKey(publicKey) {
     try {
-      console.log('setting');
       await setDoc(doc(remoteDB, 'publicKeys', auth.user.uid), publicKey);
     } catch (e) {
       console.error(e);

@@ -121,7 +121,7 @@ export const delay = async (ms) =>
 
 export const getFileName = (file) => {
   let name = file.name;
-  if (!fileNameRegex.test(file)) {
+  if (!fileNameRegex.test(name)) {
     const timestamp = new Date().toISOString().substring(0, 19).replace('T', '_').replaceAll(':', '-');
     if (file.type.startsWith('image/')) name = `IMG_${timestamp}`;
     else if (file.type.startsWith('audio/')) name = `AUD_${timestamp}`;
