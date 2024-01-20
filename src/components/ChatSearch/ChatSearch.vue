@@ -11,17 +11,22 @@ const emit = defineEmits(['search']);
 
 const query = ref('');
 const filterUnread = ref(false);
+const el = ref(null);
 
 const handleClear = () => (query.value = '');
 const throttledEmit = throttle(() => emit('search', query.value), 1000);
+const focus = () => el.value.native.focus();
 
 watch(query, () => throttledEmit());
+
+defineExpose({ focus });
 </script>
 
 <template>
   <section class="search">
     <Icon :size="1" class="search-icon ml-1" alt="Search icon" name="search" adaptive />
     <InputText
+      ref="el"
       v-model="query"
       class="search-input"
       type="text"

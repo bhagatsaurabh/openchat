@@ -7,13 +7,14 @@ import { useRemoteDBStore } from '@/stores/remote';
 import { useStorageStore } from '@/stores/storage';
 import { useGroupsStore } from '@/stores/groups';
 import { useAuthStore } from '@/stores/auth';
+import { nameRegex } from '@/utils/constants';
 import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
 import AvatarSelector from '@/components/AvatarSelector/AvatarSelector.vue';
 import Icon from '../Common/Icon/Icon.vue';
 import Modal from '../Common/Modal/Modal.vue';
 import GroupMemberList from '@/components/GroupMemberList/GroupMemberList.vue';
-import { nameRegex } from '@/utils/constants';
+import ManageMembers from '../ManageMembers/ManageMembers.vue';
 
 const router = useRouter();
 const remote = useRemoteDBStore();
@@ -29,6 +30,7 @@ const group = computed(() => groups.activeGroup);
 const isPrivate = computed(() => group.value.type === 'private');
 const isAdmin = computed(() => !group.value.id === 'self' && group.value.admins.includes(auth.user.uid));
 const showConfirm = ref(null);
+const showManage = ref(false);
 
 const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
@@ -123,16 +125,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
           />
         </Transition>
       </section>
-      <section class="members">
+      <section v-if="!isPrivate" class="members">
         <GroupMemberList :group="group" :admin="isAdmin" />
       </section>
-      <section class="controls">
+      <section v-if="!isPrivate" class="controls">
+        <Button @click="showManage = true" icon="manage" :complementary="false" flat>Manage Members</Button>
         <Button @click="() => handleControl('leave')" icon="leave" :complementary="false" flat>Leave</Button>
       </section>
       <section class="promise">
         <Icon class="mr-0p5" name="badge-lock" alt="lock icon" adaptive />
         <span class="fw-lighter">Protected by end-to-end encryption and encryption-at-rest</span>
       </section>
+      <ManageMembers v-if="showManage" @back="showManage = false" />
     </main>
   </aside>
 </template>
