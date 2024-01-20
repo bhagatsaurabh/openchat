@@ -45,15 +45,7 @@ export const useGroupsStore = defineStore('groups', () => {
     }
   };
   const handleGroup = async (group) => {
-    const localGroup = await local.getGroup(auth.user.uid, group.id);
-    let sysMsg;
-    if (localGroup) group.lastMsg = localGroup.lastMsg;
-    else {
-      // New group
-      sysMsg = sysMsgUserAdded(group.id);
-      await local.storeMessage(sysMsg);
-      group.lastMsg = { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text };
-    }
+    await setLastMessage(group);
 
     group.timestamp = group.timestamp.toDate();
     Object.keys(group.seen ?? {}).forEach(
@@ -81,9 +73,8 @@ export const useGroupsStore = defineStore('groups', () => {
   async function listen() {
     const localGroups = await local.getAllGroups(auth.user.uid);
     const self = localGroups.find((grp) => grp.id === 'self');
-    if (self) {
-      addGroup(self);
-    }
+    if (self) addGroup(self);
+
     localGroups
       .filter((group) => group.active && group.id !== 'self')
       .forEach((group) => {
@@ -126,7 +117,7 @@ export const useGroupsStore = defineStore('groups', () => {
     await remote.deleteNotification(data.id);
   }
   function addGroup(group) {
-    groups.value[group.id] = group;
+    groups.value[group.id] = { ...group };
   }
   async function createGroup({ name, type, members = [], avatarUrl = '' }) {
     if (type === 'private') {
@@ -167,7 +158,8 @@ export const useGroupsStore = defineStore('groups', () => {
       )
     );
 
-    group = { ...group, active: true, seen: {}, sync: {}, timestamp: null };
+    group = { ...group, active: true, seen: {}, sync: {}, timestamp: null, id: groupId };
+    await setLastMessage(group);
     addGroup(group);
     return groupId;
   }
@@ -246,6 +238,17 @@ export const useGroupsStore = defineStore('groups', () => {
       newAdminList.splice(idx, 1);
       await remote.updateGroup({ admins: newAdminList });
     }
+  }
+  async function setLastMessage(group) {
+    const localGroup = await local.getGroup(auth.user.uid, group.id);
+    let sysMsg;
+    if (localGroup) group.lastMsg = localGroup.lastMsg;
+    else {
+      sysMsg = sysMsgUserAdded(group.id);
+      await local.storeMessage(sysMsg);
+      group.lastMsg = { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text };
+    }
+    return sysMsg;
   }
 
   return {

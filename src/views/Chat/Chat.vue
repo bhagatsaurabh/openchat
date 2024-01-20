@@ -19,15 +19,18 @@ import Profile from '@/components/Profile/Profile.vue';
 import Settings from '@/components/Settings/Settings.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
+import ManageMembers from '@/components/ManageMembers/ManageMembers.vue';
 
 const auth = useAuthStore();
 const groupsStore = useGroupsStore();
 const eventsStore = useEventsStore();
 const usersStore = useUsersStore();
 const router = useRouter();
+const searchEl = ref(null);
 const showConfirm = ref(null);
 const showProfile = ref(false);
 const showSettings = ref(false);
+const showManage = ref(false);
 const activeTab = ref(0);
 const query = ref('');
 const forceHeader = ref(false);
@@ -53,6 +56,7 @@ const handleCreateGroup = async (name, type, members, avatarUrl) => {
 const handleForceSearch = () => {
   activeTab.value = 1;
   forceHeader.value = true;
+  searchEl.value.focus();
 };
 const handleSelfChat = async () => {
   const id = await groupsStore.createSelfGroup();
@@ -61,6 +65,9 @@ const handleSelfChat = async () => {
 const handleAction = (action) => {
   if (action === 'sign-out')
     showConfirm.value = { title: 'Sign out ?', buttonText: 'Sign out', action: handleSignOut };
+  else if (action === 'add-group') {
+    showManage.value = true;
+  }
 };
 
 watch(query, () => {
@@ -114,6 +121,15 @@ onBeforeUnmount(() => {
       <Button
         class="chat-control mr-0p5"
         :size="1.3"
+        icon="add-group"
+        @click="() => handleAction('add-group')"
+        :complementary="false"
+        circular
+        flat
+      />
+      <Button
+        class="chat-control mr-0p5"
+        :size="1.3"
         icon="cog"
         @click="showSettings = true"
         :complementary="false"
@@ -131,7 +147,7 @@ onBeforeUnmount(() => {
     >
       {{ showConfirm.desc ?? 'Are you sure ?' }}
     </Modal>
-    <ChatSearch @search="(val) => (query = val)" />
+    <ChatSearch ref="searchEl" @search="(val) => (query = val)" />
     <Tabs
       :tabs="tabs"
       :active="activeTab"
@@ -160,6 +176,7 @@ onBeforeUnmount(() => {
       @back="() => (showSettings = false)"
       @logout="() => handleAction('sign-out')"
     />
+    <ManageMembers v-if="showManage" type="new" @back="showManage = false" @open-search="handleForceSearch" />
   </main>
   <RouterView v-slot="{ Component }">
     <Transition name="fade-slide-rtr">
