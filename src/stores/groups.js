@@ -4,11 +4,11 @@ import { defineStore } from 'pinia';
 import { useAuthStore } from './auth';
 import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
-import { base64ToBuf, bufToBase64, sysMsgUserAdded } from '@/utils/utils';
+import { base64ToBuf, bufToBase64, sysMsgLeft, sysMsgUserAdded, sysMsgUserRemoved } from '@/utils/utils';
 import { Queue } from '@/utils/queue';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { remoteDB } from '@/config/firebase';
-import { generateGroupKey, importPublicKey } from '@/utils/crypto';
+import { encryptGroupKey, generateGroupKey, importPublicKey } from '@/utils/crypto';
 import { useUsersStore } from './users';
 import { schemaChange } from '@/database/database';
 import { useMessagesStore } from './messages';
@@ -45,7 +45,7 @@ export const useGroupsStore = defineStore('groups', () => {
     }
   };
   const handleGroup = async (group) => {
-    await setLastMessage(group);
+    const localGroup = await setLastMessage(group);
 
     group.timestamp = group.timestamp.toDate();
     Object.keys(group.seen ?? {}).forEach(
@@ -55,6 +55,9 @@ export const useGroupsStore = defineStore('groups', () => {
       (id) => (group.sync[id] = group.sync[id] ? group.sync[id].toDate() : new Date())
     );
 
+    await users.saveProfiles(localGroup.pastMembers ?? []);
+    const removedMembers = localGroup.members.filter((id) => !group.members.includes(id));
+    group.pastMembers = [...removedMembers, ...(localGroup.pastMembers ?? [])];
     await users.saveProfiles(group.members);
 
     if (group.type === 'private') {
@@ -67,6 +70,17 @@ export const useGroupsStore = defineStore('groups', () => {
     addGroup(group);
 
     messages.attachListener(group.id);
+
+    if (activeGroup.value?.id === group.id) {
+      activeGroup.value = { ...group };
+    }
+  };
+  const handleLocalGroup = async (group) => {
+    addGroup(group);
+
+    if (activeGroup.value?.id === group.id) {
+      activeGroup.value = { ...group };
+    }
   };
   const handleError = (error) => console.log({ ...error });
 
@@ -75,6 +89,9 @@ export const useGroupsStore = defineStore('groups', () => {
     const self = localGroups.find((grp) => grp.id === 'self');
     if (self) addGroup(self);
 
+    localGroups
+      .filter((group) => !group.members.includes(auth.user.uid) && group.id !== 'self')
+      .forEach((group) => handleLocalGroup(group));
     localGroups
       .filter((group) => group.active && group.id !== 'self')
       .forEach((group) => {
@@ -112,9 +129,19 @@ export const useGroupsStore = defineStore('groups', () => {
   async function userRemoved(data) {
     const { id } = data.payload;
 
+    const sysMsg = sysMsgUserRemoved(id);
+    await local.storeMessage(sysMsg);
     await local.deleteGroupKey(auth.user.uid, id);
-    await local.updateGroup(auth.user.uid, id, { active: false, unseenCount: 1 });
-    await remote.deleteNotification(data.id);
+    await local.updateGroup(auth.user.uid, id, {
+      active: false,
+      unseenCount: 1,
+      lastMsg: { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text }
+    });
+    if (groups[id]) {
+      const updatedGroup = await local.getGroup(auth.user.uid, id);
+      groups.value[id] = { ...updatedGroup };
+    }
+    await remote.deleteNotification(id);
   }
   function addGroup(group) {
     groups.value[group.id] = { ...group };
@@ -216,7 +243,9 @@ export const useGroupsStore = defineStore('groups', () => {
     if (midx >= 0) newMemberList.splice(midx, 1);
     if (aidx >= 0) newAdminList.splice(aidx, 1);
 
-    await remote.updateGroup(
+    await remote.notifyUserRemoved({ uid: user.id, groupId: group.id });
+    await updateGroup(
+      group.id,
       aidx >= 0 ? { members: newMemberList, admins: newAdminList } : { members: newMemberList }
     );
   }
@@ -226,7 +255,7 @@ export const useGroupsStore = defineStore('groups', () => {
     if (!group.admins.includes(user.id)) {
       const newAdminList = [...group.admins];
       newAdminList.push(user.id);
-      await remote.updateGroup({ admins: newAdminList });
+      await updateGroup(group.id, { admins: newAdminList });
     }
   }
   async function revokeAdmin(group, user) {
@@ -236,7 +265,7 @@ export const useGroupsStore = defineStore('groups', () => {
     const idx = newAdminList.findIndex((id) => id === user.id);
     if (idx >= 0) {
       newAdminList.splice(idx, 1);
-      await remote.updateGroup({ admins: newAdminList });
+      await updateGroup(group.id, { admins: newAdminList });
     }
   }
   async function setLastMessage(group) {
@@ -248,7 +277,50 @@ export const useGroupsStore = defineStore('groups', () => {
       await local.storeMessage(sysMsg);
       group.lastMsg = { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text };
     }
-    return sysMsg;
+    return localGroup;
+  }
+
+  async function updateGroup(groupId, data) {
+    try {
+      await remote.updateGroup(data, groupId);
+      return true;
+    } catch (error) {
+      console.log(error);
+    }
+    return false;
+  }
+  async function notifyNewMembers(uids, groupId) {
+    await users.saveProfiles(uids);
+
+    const rawPublicKeys = await Promise.all(uids.map((id) => remote.getPublicKey(id)));
+    const publicKeys = await Promise.all(rawPublicKeys.map((rawPublicKey) => importPublicKey(rawPublicKey)));
+    const encryptedKeys = await encryptGroupKey(activeGroupKey.value, publicKeys);
+    const encryptedKeyCiphers = await Promise.all(
+      encryptedKeys.map((encryptedKey) => bufToBase64(encryptedKey))
+    );
+    await Promise.all(
+      encryptedKeyCiphers.map((encryptedKeyCipher, idx) =>
+        remote.notifyUserAdded({ uid: uids[idx], groupId, encryptedKey: encryptedKeyCipher })
+      )
+    );
+  }
+  async function notifyRemovedMembers(uids, groupId) {
+    await Promise.all(uids.map((uid) => remote.notifyUserRemoved({ uid, groupId })));
+  }
+
+  async function leave(group) {
+    const idx = group.members.indexOf(auth.user.uid);
+    if (idx >= 0) {
+      const newMembers = [...group.members];
+      newMembers.splice(idx, 1);
+      await updateGroup(group.id, { members: newMembers });
+
+      const sysMsg = sysMsgLeft(group.id);
+      await local.storeMessage(sysMsg);
+      group.lastMsg = { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text };
+      await local.updateGroup(auth.user.uid, group.id, { ...group, active: false });
+      groups.value[group.id] = { ...group };
+    }
   }
 
   return {
@@ -269,6 +341,10 @@ export const useGroupsStore = defineStore('groups', () => {
     attachListener,
     removeMember,
     makeAdmin,
-    revokeAdmin
+    revokeAdmin,
+    updateGroup,
+    notifyNewMembers,
+    notifyRemovedMembers,
+    leave
   };
 });

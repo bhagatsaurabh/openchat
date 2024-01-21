@@ -19,7 +19,7 @@ import Profile from '@/components/Profile/Profile.vue';
 import Settings from '@/components/Settings/Settings.vue';
 import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
-import ManageMembers from '@/components/ManageMembers/ManageMembers.vue';
+import CreateGroup from '@/components/CreateGroup/CreateGroup.vue';
 
 const auth = useAuthStore();
 const groupsStore = useGroupsStore();
@@ -177,7 +177,7 @@ onBeforeUnmount(() => {
       @back="() => (showSettings = false)"
       @logout="() => handleAction('sign-out')"
     />
-    <ManageMembers v-if="showManage" @back="showManage = false" @open-search="handleForceSearch" />
+    <CreateGroup v-if="showManage" @back="showManage = false" @open-search="handleForceSearch" />
   </main>
   <RouterView v-slot="{ Component }">
     <Transition name="fade-slide-rtr">

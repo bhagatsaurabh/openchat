@@ -30,6 +30,7 @@ const message = ref(null);
 const busy = ref(false);
 const busyNextChunk = ref(false);
 const showModal = ref(null);
+const showLeave = ref(false);
 const names = computed(() =>
   group.value.id === 'self' ? group.value.name : users.getNamesFromUIDs(group.value.members).join(', ')
 );
@@ -46,17 +47,17 @@ const avatarUrl = computed(() => {
 const handleLoad = () => {
   if (!groups.activeGroup) return;
 
-  if (group.value.id !== groups.activeGroup.id) {
-    group.value = groups.activeGroup;
-  }
+  group.value = groups.activeGroup;
 };
 const handleGroupOption = (option) => {
   if (option === 'Profile') {
     router.push('/chat/profile');
   } else if (option === 'Leave') {
-    // TODO
-    // groups.leave(group.value.id);
+    showLeave.value = true;
   }
+};
+const handleLeave = async () => {
+  await groups.leave(group.value.id);
 };
 const handleAttachOption = (option) => {
   let accept = 'image/*,video/*,audio/*';
@@ -112,6 +113,14 @@ watch(() => groups.activeGroup, handleLoad);
       @dismiss="() => (showModal = null)"
     >
       {{ showModal.desc }}
+    </Modal>
+    <Modal
+      v-if="!!showLeave"
+      :title="`Leave group: ${group.name}`"
+      :controls="[{ text: 'Yes', async: true, action: handleLeave }, { text: 'Cancel' }]"
+      @dismiss="() => (showLeave = false)"
+    >
+      Are you sure ?
     </Modal>
     <Header class="header">
       <template #left>

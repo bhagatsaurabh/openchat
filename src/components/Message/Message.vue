@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="message" :class="{ me: isSelf }">
+  <div class="message" :class="{ me: isSelf, sys: isSystem }">
     <div v-if="!isSystem" class="container">
       <div v-if="state.stage === 'pending'" class="suspense">
         <Spinner />
@@ -240,7 +240,9 @@ onBeforeUnmount(() => {
     </div>
     <div v-else class="container sys">
       <div class="sys-content">
-        <span tabindex="0" v-if="contentType === 'text'" class="text">{{ content }}</span>
+        <span tabindex="0" v-if="contentType === 'text'" class="text">{{
+          messagesStore.parseSysMsg(content)
+        }}</span>
         <h5 class="time">{{ time }}</h5>
       </div>
     </div>
@@ -253,8 +255,11 @@ onBeforeUnmount(() => {
   margin-bottom: 2.5rem;
   display: flex;
 }
+.message.sys {
+  margin-bottom: 0.5rem;
+}
 .message .container {
-  max-width: 75vw;
+  max-width: 90vw;
   min-width: 25vw;
   margin-right: auto;
   margin-left: 3rem;
@@ -272,6 +277,7 @@ onBeforeUnmount(() => {
   margin-top: 1rem;
 }
 .sys-content .text {
+  display: inline-block;
   font-weight: lighter;
   padding: 0.25rem 0.75rem;
   border-radius: 1rem;

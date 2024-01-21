@@ -11,7 +11,7 @@ export const generatePrivateKey = async (uid) => {
       publicExponent: new Uint8Array([1, 0, 1]),
       hash: 'SHA-512'
     },
-    !(await checkCompatibility()),
+    false,
     ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey']
   );
 
@@ -44,17 +44,15 @@ export const generateGroupKey = async (publicKeys = []) => {
     true,
     ['wrapKey', 'encrypt', 'decrypt']
   );
-
   // publicKeys are RSA public keys of every member of the group
-
-  const wrappedGroupKeys = await Promise.all(
-    publicKeys.map((publicKey) => crypto.wrapKey('jwk', groupKey, publicKey, { name: 'RSA-OAEP' }))
-  );
-
-  groupKey = undefined;
-
-  return wrappedGroupKeys;
+  return await encryptGroupKey(groupKey, publicKeys);
 };
+export const encryptGroupKey = async (key, publicKeys) => {
+  return await Promise.all(
+    publicKeys.map((publicKey) => crypto.wrapKey('jwk', key, publicKey, { name: 'RSA-OAEP' }))
+  );
+};
+
 export const decryptGroupKey = async (uid, wrappedKey) => {
   return await crypto.unwrapKey(
     'jwk',
@@ -62,7 +60,11 @@ export const decryptGroupKey = async (uid, wrappedKey) => {
     await local.getPrivateKey(uid),
     { name: 'RSA-OAEP' },
     { name: 'AES-GCM' },
-    !(await checkCompatibility()),
+    // Unfortunately I have to revert extractable to true... :(
+    // I missed an edge case in initial design that now poses a problem: KEY ROTATION 🤦🏽‍♂️
+    // since no member can extract their groupKey at this point, thay cannot share it with new group members
+    // and implementing this will impact entire application...maybe in next version
+    true,
     ['encrypt', 'decrypt']
   );
 };
@@ -119,11 +121,4 @@ export const decryptFile = async ({ iv, file }, key) => {
   });
 
   return decryptedFile;
-};
-
-export const checkCompatibility = async () => {
-  // Check if browser supports storing CryptoKeys in IndexedDB
-  await local.storeDummyKey();
-  const dummyKey = await local.getDummyKey();
-  return dummyKey instanceof CryptoKey;
 };

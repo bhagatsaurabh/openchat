@@ -24,8 +24,7 @@ const transitionName = ref('fade-slide-ltr-fast');
 const sliderWidth = computed(() => Math.round(100 / props.tabs.length));
 
 const getCountSign = (tab) => {
-  if (tab.count > 100) return '';
-  return tab.count < 0 ? '-' : '+';
+  return tab.count > 0 ? '+' : '';
 };
 
 watch(
@@ -117,6 +116,9 @@ watch(
   border-radius: 1rem;
   font-size: 0.7rem;
   background-color: var(--c-accent-light-2);
+  justify-content: center;
+  align-items: center;
+  min-width: 1.5rem;
 }
 
 .content {

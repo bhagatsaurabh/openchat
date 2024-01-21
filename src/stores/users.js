@@ -10,7 +10,7 @@ import { useAuthStore } from './auth';
 export const useUsersStore = defineStore('users', () => {
   const auth = useAuthStore();
   const users = ref({});
-  const unsubFns = ref([]);
+  const unsubFns = ref({});
   const busy = ref(false);
   const queue = new Queue();
 
@@ -45,15 +45,17 @@ export const useUsersStore = defineStore('users', () => {
 
     userIds.forEach((id) => {
       const unsubscribe = onSnapshot(doc(remoteDB, 'users', id), listener, handleError);
-      unsubFns.value.push(unsubscribe);
+      unsubFns.value[id] = unsubscribe;
     });
   }
   function stop() {
-    unsubFns.value.forEach((unsubscribe) => unsubscribe());
+    Object.values(unsubFns.value).forEach((unsubscribe) => unsubscribe());
   }
   function attachListener(uid) {
-    const unsubscribe = onSnapshot(doc(remoteDB, 'users', uid), listener, handleError);
-    unsubFns.value.push(unsubscribe);
+    if (!unsubFns.value[uid]) {
+      const unsubscribe = onSnapshot(doc(remoteDB, 'users', uid), listener, handleError);
+      unsubFns.value[uid] = unsubscribe;
+    }
   }
 
   async function saveProfiles(uids = []) {

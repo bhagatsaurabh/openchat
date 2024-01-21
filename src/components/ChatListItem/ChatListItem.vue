@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import { days } from '@/utils/constants';
 import { useAuthStore } from '@/stores/auth';
 import { useUsersStore } from '@/stores/users';
+import { useMessagesStore } from '@/stores/messages';
 import Icon from '../Common/Icon/Icon.vue';
 
 const props = defineProps({
@@ -12,6 +13,7 @@ const props = defineProps({
 
 const auth = useAuthStore();
 const usersStore = useUsersStore();
+const messages = useMessagesStore();
 const emit = defineEmits(['select']);
 
 const msInADay = 1000 * 60 * 60 * 24;
@@ -77,7 +79,9 @@ const otherUserId = computed(() =>
             alt="icon"
             adaptive
           />
-          <span v-if="lastMsgText" class="d-inline-block ellipsis">{{ lastMsgText }}</span>
+          <span v-if="lastMsgText" class="d-inline-block ellipsis">{{
+            group.lastMsg?.by !== 'system' ? lastMsgText : messages.parseSysMsg(lastMsgText)
+          }}</span>
         </div>
         <span v-if="group.unseenCount > 0" class="count">
           {{ group.unseenCount }}
