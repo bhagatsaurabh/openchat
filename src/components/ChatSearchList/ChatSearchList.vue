@@ -9,6 +9,14 @@ const props = defineProps({
   query: {
     type: String,
     default: ''
+  },
+  multiselect: {
+    type: Boolean,
+    default: false
+  },
+  selected: {
+    type: Set,
+    default: () => new Set()
   }
 });
 const emit = defineEmits(['select']);
@@ -80,6 +88,8 @@ onBeforeUnmount(() => observer?.disconnect());
       v-for="user in list"
       :key="user.id"
       :meta="user"
+      :selectable="multiselect"
+      :selected="selected.has(user.id)"
       @select="() => emit('select', user)"
     />
     <div class="list-fb">
@@ -87,12 +97,12 @@ onBeforeUnmount(() => observer?.disconnect());
       <h3 v-if="fbType === 'eos'"><i>End of search</i></h3>
       <h3 v-if="fbType === 'not-found'"><i>No users found</i></h3>
       <Button
-        ref="ctrlEl"
-        @click="searchUsers"
         v-show="(query.length >= 3 && isBusy) || page !== numPages"
+        ref="ctrlEl"
         class="control"
         :complementary="false"
         :busy="isBusy"
+        @click="searchUsers"
         flat
         async
       >
@@ -113,6 +123,7 @@ onBeforeUnmount(() => observer?.disconnect());
   color: var(--c-text-2);
 }
 .control {
+  display: flex;
   margin: auto;
   color: #a450ce;
   border: 1px solid var(--c-border-0);

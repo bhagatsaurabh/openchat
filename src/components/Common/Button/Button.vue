@@ -124,7 +124,8 @@ defineExpose({
 <style scoped>
 .control {
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
+  justify-content: center;
   align-items: center;
   color: var(--c-text-0);
   border: 1px solid var(--c-box-border);
@@ -167,6 +168,9 @@ defineExpose({
 }
 .control.accented:disabled {
   background-color: var(--c-background-2);
+}
+.control.complementary.accented:disabled {
+  color: var(--c-text-0);
 }
 
 .control:deep(span) {

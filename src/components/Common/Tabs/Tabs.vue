@@ -1,7 +1,9 @@
 <script setup>
+import { computed, ref, watch } from 'vue';
+
 import Button from '@/components/Common/Button/Button.vue';
 
-defineProps({
+const props = defineProps({
   tabs: {
     type: Array,
     default: () => []
@@ -15,13 +17,26 @@ defineProps({
     default: true
   }
 });
-
 const emit = defineEmits(['change']);
+
+const headerEl = ref(null);
+const transitionName = ref('fade-slide-ltr-fast');
+const sliderWidth = computed(() => Math.round(100 / props.tabs.length));
+
+const getCountSign = (tab) => {
+  if (tab.count > 100) return '';
+  return tab.count < 0 ? '-' : '+';
+};
+
+watch(
+  () => props.active,
+  (newVal, oldVal) => (transitionName.value = newVal < oldVal ? 'fade-slide-rtl-fast' : 'fade-slide-ltr-fast')
+);
 </script>
 
 <template>
   <div class="tabs">
-    <div class="headings" :class="{ show: showHeader }">
+    <div ref="headerEl" class="headings" :class="{ show: showHeader }">
       <Button
         v-for="(tab, idx) in tabs"
         :key="tab.id"
@@ -33,25 +48,34 @@ const emit = defineEmits(['change']);
         flat
         @click="() => emit('change', idx)"
       >
-        {{ tab.name }}
+        <span>{{ tab.name }}</span>
+        <span v-if="tab.count" class="count">{{ getCountSign(tab) + tab.count }}</span>
       </Button>
+      <div class="slider" :style="{ width: `${sliderWidth}%`, left: `${active * sliderWidth}%` }"></div>
     </div>
-    <div
-      class="content"
-      :class="{ 'with-header': showHeader }"
-      v-for="(tab, idx) in tabs"
-      :key="idx"
-      v-show="active === idx"
-    >
-      <slot :name="tab.id"></slot>
-    </div>
+    <TransitionGroup :name="transitionName">
+      <div
+        class="content"
+        :class="{ 'with-header': showHeader }"
+        v-for="(tab, idx) in tabs"
+        :key="idx"
+        v-show="active === idx"
+      >
+        <slot :name="tab.id"></slot>
+      </div>
+    </TransitionGroup>
   </div>
 </template>
 
 <style scoped>
+.tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 .headings {
   display: flex;
-  height: 0;
+  height: 0rem;
   transition: height var(--fx-transition-duration-0) linear;
   overflow: hidden;
 }
@@ -76,30 +100,35 @@ const emit = defineEmits(['change']);
   justify-content: center;
   border-radius: 0;
 }
-.headings button:not(:last-child) {
-  border-right: 1px solid var(--c-border-0);
-}
-.headings button::after {
-  content: '';
+.headings .slider {
   position: absolute;
   left: 0;
   bottom: 0;
-  width: 100%;
-  height: 0px;
-  transition: height var(--fx-transition-duration-0) linear;
-  background-color: var(--c-accent);
-}
-.headings button.active::after {
   height: 3px;
+  transition: left var(--fx-transition-duration-2) ease;
+  background-color: var(--c-accent);
 }
 .headings:deep(button img) {
   filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
 }
+.headings .count {
+  margin-left: 0.5rem;
+  padding: 0.35rem;
+  border-radius: 1rem;
+  font-size: 0.7rem;
+  background-color: var(--c-accent-light-2);
+}
 
 .content {
-  height: calc(100vh - var(--header-height) - 3.25rem);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  flex: 1;
+  height: 100%;
+  width: 100%;
 }
 .content.with-header {
-  height: calc(100vh - var(--header-height) - 3.25rem - 2.5rem);
+  height: calc(100% - 2.5rem);
+  top: 2.5rem;
 }
 </style>

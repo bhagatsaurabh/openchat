@@ -149,6 +149,7 @@ onBeforeUnmount(() => {
     </Modal>
     <ChatSearch ref="searchEl" @search="(val) => (query = val)" />
     <Tabs
+      class="tabs"
       :tabs="tabs"
       :active="activeTab"
       :show-header="!!query || forceHeader"
@@ -176,7 +177,7 @@ onBeforeUnmount(() => {
       @back="() => (showSettings = false)"
       @logout="() => handleAction('sign-out')"
     />
-    <ManageMembers v-if="showManage" type="new" @back="showManage = false" @open-search="handleForceSearch" />
+    <ManageMembers v-if="showManage" @back="showManage = false" @open-search="handleForceSearch" />
   </main>
   <RouterView v-slot="{ Component }">
     <Transition name="fade-slide-rtr">
@@ -187,11 +188,18 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .chat-container {
-  min-height: calc(100vh - var(--header-height));
+  height: calc(100vh - var(--header-height));
   width: 100vw;
+  display: flex;
+  flex-direction: column;
 }
 .chat-control:deep(img) {
   filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
+}
+
+.tabs {
+  height: calc(100% - 3.25rem);
+  flex: 1;
 }
 
 .wait {

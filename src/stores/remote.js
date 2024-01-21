@@ -117,6 +117,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     }
   }
   async function updateGroup(group, groupId) {
+    group.modifiedBy = auth.user.uid;
     await updateDoc(doc(remoteDB, 'groups', groupId), group);
   }
 

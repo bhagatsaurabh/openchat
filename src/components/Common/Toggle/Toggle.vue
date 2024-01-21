@@ -6,6 +6,7 @@ defineProps({
     type: Number,
     default: 1
   },
+  icon: String,
   modelValue: Boolean
 });
 
@@ -17,7 +18,7 @@ const emit = defineEmits(['update:modelValue']);
     @click="emit('update:modelValue', !modelValue)"
     class="toggle"
     :class="{ active: modelValue }"
-    icon="unread"
+    :icon="icon"
     :size="size"
     :complementary="false"
     circular
@@ -26,9 +27,7 @@ const emit = defineEmits(['update:modelValue']);
 </template>
 
 <style scoped>
-.toggle {
-}
 .toggle.active {
-  background-color: var(--c-accent-light-3)
+  background-color: var(--c-accent-light-3);
 }
 </style>

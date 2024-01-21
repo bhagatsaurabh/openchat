@@ -16,6 +16,9 @@ const emit = defineEmits(['provider']);
 </template>
 
 <style scoped>
+.signin-providers {
+  text-align: center;
+}
 .signin-providers button {
   margin: auto;
 }

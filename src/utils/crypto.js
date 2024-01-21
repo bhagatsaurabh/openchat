@@ -11,7 +11,7 @@ export const generatePrivateKey = async (uid) => {
       publicExponent: new Uint8Array([1, 0, 1]),
       hash: 'SHA-512'
     },
-    false,
+    !(await checkCompatibility()),
     ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey']
   );
 
@@ -21,7 +21,6 @@ export const generatePrivateKey = async (uid) => {
 
   return { key, publicKey };
 };
-
 export const importPublicKey = async (data) => {
   const key = await crypto.importKey('jwk', data, { name: 'RSA-OAEP', hash: 'SHA-512' }, true, [
     'wrapKey',
@@ -29,7 +28,13 @@ export const importPublicKey = async (data) => {
   ]);
   return key;
 };
-
+export const importPrivateKey = async (data) => {
+  const key = await crypto.importKey('jwk', data, { name: 'RSA-OAEP', hash: 'SHA-512' }, false, [
+    'unwrapKey',
+    'decrypt'
+  ]);
+  return key;
+};
 export const generateGroupKey = async (publicKeys = []) => {
   let groupKey = await crypto.generateKey(
     {
@@ -50,17 +55,24 @@ export const generateGroupKey = async (publicKeys = []) => {
 
   return wrappedGroupKeys;
 };
-
-export const importGroupKey = async (uid, wrappedKey) => {
+export const decryptGroupKey = async (uid, wrappedKey) => {
   return await crypto.unwrapKey(
     'jwk',
     wrappedKey,
     await local.getPrivateKey(uid),
     { name: 'RSA-OAEP' },
     { name: 'AES-GCM' },
-    false,
+    !(await checkCompatibility()),
     ['encrypt', 'decrypt']
   );
+};
+export const importGroupKey = async (data) => {
+  const key = await crypto.importKey('jwk', data, { name: 'AES-GCM' }, false, [
+    'wrapKey',
+    'encrypt',
+    'decrypt'
+  ]);
+  return key;
 };
 
 // string to (plain:ArrayBuffer to cipher:ArrayBuffer) to base64
@@ -82,7 +94,6 @@ export const decryptText = async (encryptedText, key) => {
 
   return new TextDecoder().decode(text);
 };
-
 // plain:File to (plain:ArrayBuffer to cipher:ArrayBuffer) to cipher:File
 export const encryptFile = async (file, key) => {
   const buffer = await file.arrayBuffer();
@@ -108,4 +119,11 @@ export const decryptFile = async ({ iv, file }, key) => {
   });
 
   return decryptedFile;
+};
+
+export const checkCompatibility = async () => {
+  // Check if browser supports storing CryptoKeys in IndexedDB
+  await local.storeDummyKey();
+  const dummyKey = await local.getDummyKey();
+  return dummyKey instanceof CryptoKey;
 };
