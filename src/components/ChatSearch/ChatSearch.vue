@@ -7,6 +7,12 @@ import Icon from '@/components/Common/Icon/Icon.vue';
 import Button from '@/components/Common/Button/Button.vue';
 import Toggle from '@/components/Common/Toggle/Toggle.vue';
 
+defineProps({
+  showUnread: {
+    type: Boolean,
+    default: true
+  }
+});
 const emit = defineEmits(['search']);
 
 const query = ref('');
@@ -23,8 +29,15 @@ defineExpose({ focus });
 </script>
 
 <template>
-  <section class="search">
-    <Icon :size="1" class="search-icon ml-1" alt="Search icon" name="search" adaptive />
+  <section class="search" :class="{ 'no-unread': !showUnread }">
+    <Icon
+      :size="1"
+      class="search-icon"
+      :class="[showUnread ? 'ml-1' : 'ml-0p5']"
+      alt="Search icon"
+      name="search"
+      adaptive
+    />
     <InputText
       ref="el"
       v-model="query"
@@ -47,7 +60,7 @@ defineExpose({ focus });
         @click="handleClear"
       />
     </Transition>
-    <Toggle :size="1.2" class="unread-filter" v-model="filterUnread" />
+    <Toggle v-if="showUnread" :size="1.2" class="unread-filter" icon="unread" v-model="filterUnread" />
   </section>
 </template>
 
@@ -61,10 +74,11 @@ defineExpose({ focus });
   padding: 0.25rem 5.5rem 0.4rem 3rem;
   flex: 1;
 }
-.search-input:deep(input) {
-  font-family: system-ui;
+.search.no-unread .search-input {
+  padding: 0.25rem 3rem 0.4rem 2.5rem;
 }
 .search-input:deep(input) {
+  font-family: system-ui;
   color: var(--c-text-2);
   font-size: 1.2rem;
 }
@@ -79,6 +93,9 @@ defineExpose({ focus });
 }
 .clear-control {
   right: 3rem;
+}
+.search.no-unread .clear-control {
+  right: 1rem;
 }
 .unread-filter {
   position: absolute;

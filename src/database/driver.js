@@ -9,7 +9,10 @@ import {
   deleteObject,
   getAllKeys
 } from './database';
-import { importGroupKey } from '@/utils/crypto';
+import { decryptGroupKey, importGroupKey, importPrivateKey, importPublicKey } from '@/utils/crypto';
+import { dummyKey } from '@/utils/constants';
+
+const crypto = window.crypto.subtle;
 
 export const registerPreferencesPersistence = () => {
   const preferencesStore = usePreferencesStore();
@@ -24,15 +27,52 @@ export const getPreferences = async () => {
 export const storeUser = async (uid) => {
   await schemaChange(uid);
 };
+
 export const storeKey = async (uid, key) => {
-  await updateObject(`keys:${uid}`, 'private', key.privateKey);
-  await updateObject(`keys:${uid}`, 'public', key.publicKey);
+  await Promise.all([
+    updateObject(`keys:${uid}`, 'private', key.privateKey),
+    updateObject(`keys:${uid}`, 'public', key.publicKey)
+  ]);
+
+  // Check if stored as CryptoKeys, if not, serialize for unsupported browsers
+  if (!((await getObject(`keys:${uid}`, 'private')) instanceof CryptoKey)) {
+    const keys = await Promise.all([
+      crypto.exportKey('jwk', key.privateKey),
+      crypto.exportKey('jwk', key.publicKey)
+    ]);
+    await Promise.all([
+      updateObject(`keys:${uid}`, 'private', keys[0]),
+      updateObject(`keys:${uid}`, 'public', keys[1])
+    ]);
+  }
 };
 export const getPublicKey = async (uid) => {
-  return await getObject(`keys:${uid}`, 'public');
+  let key = await getObject(`keys:${uid}`, 'public');
+  if (!(key instanceof CryptoKey)) key = await importPublicKey(key);
+  return key;
 };
 export const getPrivateKey = async (uid) => {
-  return await getObject(`keys:${uid}`, 'private');
+  let key = await getObject(`keys:${uid}`, 'private');
+  if (!(key instanceof CryptoKey)) key = await importPrivateKey(key);
+  return key;
+};
+export const storeGroupKey = async (uid, groupId, encryptedKey) => {
+  const key = await decryptGroupKey(uid, encryptedKey);
+  await updateObject(`keys:${uid}`, groupId, key);
+
+  // Check if stored as CryptoKey, if not, serialize for unsupported browsers
+  if (!((await getObject(`keys:${uid}`, groupId)) instanceof CryptoKey)) {
+    const exported = await crypto.exportKey('jwk', key);
+    await updateObject(`keys:${uid}`, groupId, exported);
+  }
+};
+export const getGroupKey = async (uid, groupId) => {
+  let key = await getObject(`keys:${uid}`, groupId);
+  if (!(key instanceof CryptoKey)) key = await importGroupKey(key);
+  return key;
+};
+export const deleteGroupKey = async (uid, groupId) => {
+  await deleteObject(`keys:${uid}`, groupId);
 };
 
 export const updateGroup = async (uid, groupId, group) => {
@@ -42,16 +82,6 @@ export const updateGroup = async (uid, groupId, group) => {
     newGroup = { ...existingGroup, ...group };
   }
   await updateObject(`groups:${uid}`, groupId, newGroup);
-};
-export const storeGroupKey = async (uid, groupId, encryptedKey) => {
-  const key = await importGroupKey(uid, encryptedKey);
-  await updateObject(`keys:${uid}`, groupId, key);
-};
-export const deleteGroupKey = async (uid, groupId) => {
-  await deleteObject(`keys:${uid}`, groupId);
-};
-export const getGroupKey = async (uid, groupId) => {
-  return await getObject(`keys:${uid}`, groupId);
 };
 export const getGroup = async (uid, groupId) => {
   return await getObject(`groups:${uid}`, groupId);
@@ -99,4 +129,11 @@ export const getFile = async (id, groupId) => {
 };
 export const deleteFile = async (id, groupId) => {
   await deleteObject(`files:${groupId}`, id);
+};
+
+export const storeDummyKey = async () => {
+  await updateObject('profiles', 'dummy', await dummyKey());
+};
+export const getDummyKey = async () => {
+  return await getObject('profiles', 'dummy');
 };

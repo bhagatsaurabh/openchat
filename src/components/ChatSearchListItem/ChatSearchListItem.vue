@@ -1,8 +1,18 @@
 <script setup>
 import { computed } from 'vue';
 
+import Icon from '../Common/Icon/Icon.vue';
+
 const props = defineProps({
-  meta: Object
+  meta: Object,
+  selectable: {
+    type: Boolean,
+    default: false
+  },
+  selected: {
+    type: Boolean,
+    default: false
+  }
 });
 const emit = defineEmits(['select']);
 
@@ -11,7 +21,16 @@ const isVerified = computed(() => !!props.meta.phone);
 </script>
 
 <template>
-  <div class="user-item" tabindex="0" @click="emit('select', meta)">
+  <div
+    class="user-item"
+    tabindex="0"
+    @click="emit('select', meta)"
+    @keydown.enter="emit('select', meta)"
+    @keydown.space="emit('select', meta)"
+  >
+    <div v-if="selectable" class="state" :class="{ selected }">
+      <Icon v-hide="!selected" name="check" alt="check icon" adaptive />
+    </div>
     <span class="avatar" :class="{ verified: isVerified, default: avatarUrl === '/assets/icons/user.png' }">
       <img :src="avatarUrl" />
     </span>
@@ -92,5 +111,16 @@ const isVerified = computed(() => !!props.meta.phone);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.state {
+  font-size: 0;
+  padding: 0.35rem;
+  margin-right: 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--c-border-0);
+}
+.state.selected {
+  background-color: var(--c-accent-light-3);
 }
 </style>

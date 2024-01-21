@@ -42,9 +42,6 @@ service cloud.firestore {
     function isAMember(request, resource) {
     	return signedIn(request) && request.auth.uid in resource.data.members;
     }
-    function isAnAdmin(request, resource) {
-    	return isAMember(request, resource) && request.auth.uid in resource.data.admins;
-    }
     function validateNewMembership(request) {
     	return request.auth.uid in request.resource.data.members;
     }
@@ -98,7 +95,7 @@ service cloud.firestore {
     function validateDMGroupUpdation(input, existing) {
       let validKeys = ['seen', 'sync'];
       let affected = input.diff(existing).affectedKeys();
-      return debug(affected.hasOnly(validKeys)) && affected.hasAny(validKeys) &&
+      return affected.hasOnly(validKeys) && affected.hasAny(validKeys) &&
              ('seen' in affected
                ? (input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
@@ -109,43 +106,49 @@ service cloud.firestore {
                : true);
     }
     function validateBCGroupUpdation(input, existing) {
-      let validKeys = ['seen', 'sync', 'name', 'members', 'admins', 'active', 'avatarUrl'];
+      let validKeys = ['seen', 'sync', 'name', 'members', 'admins', 'active', 'avatarUrl', 'modifiedBy'];
+      let affected = input.diff(existing).affectedKeys();
 
-      return input.keys().hasOnly(validKeys) && input.keys().hasAny(validKeys) &&
-             ('active' in input
-               ? (validateExistingAdminship(request.auth.uid, existing) &&
+      return affected.hasOnly(validKeys) && affected.hasAny(validKeys) &&
+             ('active' in affected
+               ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
+                 validateExistingAdminship(request.auth.uid, existing) &&
                  input.active is bool && input.active != existing.active)
                : true) &&
-             ('members' in input
-               ? (validateExistingAdminship(request.auth.uid, existing) &&
+             ('members' in affected
+               ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
+                 validateExistingAdminship(request.auth.uid, existing) &&
                  input.members is list && validateNewMembership(request) &&
                  input.members.toSet().size() > 2 &&
                  input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0])) &&
                  input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1])) &&
                  input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2])))
                : true) &&
-             ('admins' in input
-               ? (validateExistingAdminship(request.auth.uid, existing) &&
+             ('admins' in affected
+               ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
+                 validateExistingAdminship(request.auth.uid, existing) &&
                  input.admins is list && validateNewAdminship(request) &&
                  input.admins.toSet().size() > 0)
                : true) &&
-             ('seen' in input
+             ('seen' in affected
                ? (validateExistingMembership(request.auth.uid, existing) &&
                  input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : true) &&
-             ('sync' in input
+             ('sync' in affected
                ? (validateExistingMembership(request.auth.uid, existing) &&
                  input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
                : true) &&
-             ('name' in input
-               ? (validateExistingAdminship(request.auth.uid, existing) &&
+             ('name' in affected
+               ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
+                 validateExistingAdminship(request.auth.uid, existing) &&
                  input.name is string && input.name.matches('^.[^!@#\\$%\\^&\\*\\(\\)\\+=\\{\\}\\[\\]`~:;"?/<>]{3,}$'))
                : true) &&
-             ('avatarUrl' in input
-               ? (validateExistingAdminship(request.auth.uid, existing) &&
-                 input.avatarUrl is string)
+             ('avatarUrl' in affected
+               ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
+                 validateExistingAdminship(request.auth.uid, existing) &&
+                 input.avatarUrl is string && input.avatarUrl != existing.avatarUrl)
                : true);
     }
     function validateGroupUpdation(request, resource) {
@@ -153,7 +156,7 @@ service cloud.firestore {
       let existing = resource.data;
     	return existing.type == 'private'
                ? validateDMGroupUpdation(input, existing)
-               : (isAnAdmin(request, resource) && validateBCGroupUpdation(input, existing));
+               : validateBCGroupUpdation(input, existing);
     }
     function isGroupActive(resource) {
       return resource.data.active

@@ -24,7 +24,7 @@ const showHeaderBrand = ref(false);
         <ThemeSelector class="theme-select" type="vertical" />
       </template>
     </Header>
-    <main class="main">
+    <main class="main scroll-shadows scroll-shadows-0">
       <SignIn @home="(val) => (showHeaderBrand = !val)" />
     </main>
     <Footer transparent>
@@ -55,7 +55,8 @@ const showHeaderBrand = ref(false);
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .theme-select {
   position: fixed;

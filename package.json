@@ -6,13 +6,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "emulators": "firebase emulators:start",
+    "emulators": "firebase emulators:start --import ./emulatorstate --export-on-exit ./emulatorstate",
     "test:unit": "vitest",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
     "format": "prettier --write src/"
   },
   "dependencies": {
     "firebase": "^10.7.0",
+    "is_js": "^0.9.0",
     "pinia": "^2.1.7",
     "uuid": "^9.0.1",
     "vue": "^3.3.4",
