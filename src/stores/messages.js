@@ -1,25 +1,27 @@
 import { capitalize, ref } from 'vue';
 import { defineStore } from 'pinia';
+import { Timestamp, collection, doc, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 
 import { useAuthStore } from './auth';
-import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
+import { useGroupsStore } from './groups';
+import { useFilesStore } from './files';
+import { useUsersStore } from './users';
+import * as local from '@/database/driver';
 import { Queue } from '@/utils/queue';
-import { Timestamp, collection, doc, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
-import { deleteMessageFunction, remoteDB } from '@/config/firebase';
+import { getIconFromFileType } from '@/utils/utils';
 import { LinkedList } from '@/utils/linked-list';
 import { msInAnHour } from '@/utils/constants';
-import { useGroupsStore } from './groups';
-import { stream } from '@/database/database';
 import { decryptFile, decryptText, encryptFile, encryptText } from '@/utils/crypto';
-import { useFilesStore } from './files';
-import { getIconFromFileType } from '@/utils/utils';
+import { deleteMessageFunction, remoteDB } from '@/config/firebase';
+import { stream } from '@/database/database';
 
 export const useMessagesStore = defineStore('messages', () => {
   const auth = useAuthStore();
   const remote = useRemoteDBStore();
   const groups = useGroupsStore();
   const filesStore = useFilesStore();
+  const usersStore = useUsersStore();
   const messages = ref({});
   const messageIdx = ref({});
   const unsubFns = ref({});
@@ -266,7 +268,7 @@ export const useMessagesStore = defineStore('messages', () => {
   async function setLastMessage(message) {
     let text, type;
     if (message.type === 'text') {
-      text = await decrypt(message);
+      text = message.by !== 'system' ? await decrypt(message) : message.text;
       type = 'text';
     } else {
       type = getIconFromFileType(message.mimetype);
@@ -282,6 +284,15 @@ export const useMessagesStore = defineStore('messages', () => {
     await local.updateGroup(auth.user.uid, message.groupId, { lastMsg });
     groups.groups[message.groupId].lastMsg = lastMsg;
   }
+  function parseSysMsg(text) {
+    let parsed = text;
+    const instances = text.matchAll(/##.[a-zA-Z0-9]+/g);
+    let curr;
+    while (!(curr = instances.next()).done) {
+      parsed = parsed.replace(curr.value[0], usersStore.users[curr.value[0].substring(2)].name);
+    }
+    return parsed;
+  }
 
   return {
     messages,
@@ -295,6 +306,7 @@ export const useMessagesStore = defineStore('messages', () => {
     decrypt,
     send,
     pushToOutQueue,
-    updateSync
+    updateSync,
+    parseSysMsg
   };
 });

@@ -217,15 +217,7 @@ onBeforeUnmount(() => observer?.disconnect());
       </div>
     </div>
     <div v-hide="!isEditing" class="controls">
-      <Button
-        :tabindex="isEditing ? 0 : -1"
-        @click="handleUpdate"
-        :complementary="false"
-        :busy="updating"
-        async
-      >
-        Update Photo
-      </Button>
+      <Button @click="handleUpdate" :complementary="false" :busy="updating" async> Update Photo </Button>
       <Button
         v-if="isEditing"
         @click="handleReset"

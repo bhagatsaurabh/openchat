@@ -3,6 +3,8 @@ import { computed, ref } from 'vue';
 
 import { useUsersStore } from '@/stores/users';
 import { useGroupsStore } from '@/stores/groups';
+import { useAuthStore } from '@/stores/auth';
+import { useNotificationStore } from '@/stores/notification';
 import GroupMemberItem from '../GroupMemberItem/GroupMemberItem.vue';
 import Modal from '../Common/Modal/Modal.vue';
 
@@ -16,11 +18,14 @@ const props = defineProps({
 
 const usersStore = useUsersStore();
 const groups = useGroupsStore();
+const auth = useAuthStore();
+const notify = useNotificationStore();
 const showConfirm = ref(null);
 const members = computed(() => {
   return props.group.members.map((member) => ({
     ...usersStore.users[member],
-    admin: props.group.admins.includes(member)
+    admin: props.group.admins.includes(member),
+    name: usersStore.users[member].id === auth.user.uid ? 'Me' : usersStore.users[member].name
   }));
 });
 
@@ -33,6 +38,14 @@ const handleAction = (action, user) => {
     showConfirm.value = { title: `Revoke adminship from ${user.name} ?`, action: handleRevokeAdmin, user };
 };
 const handleRemove = async () => {
+  if (props.group.members.length <= 3) {
+    notify.push({
+      type: 'snackbar',
+      status: 'warn',
+      message: 'Cannot update this group to less than 3 members, use Search instead to chat privately'
+    });
+    return;
+  }
   await groups.removeMember(props.group, showConfirm.value.user);
 };
 const handleMakeAdmin = async () => {
@@ -54,7 +67,12 @@ const handleRevokeAdmin = async () => {
   </Modal>
   <ul class="members-list">
     <li v-for="member in members" :key="member.id">
-      <GroupMemberItem :profile="member" :admin="admin" @action="handleAction" />
+      <GroupMemberItem
+        :profile="member"
+        :admin="admin"
+        @action="handleAction"
+        :show-options="member.id !== auth.user.uid"
+      />
     </li>
   </ul>
 </template>

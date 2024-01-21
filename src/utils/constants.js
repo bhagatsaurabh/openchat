@@ -26,18 +26,3 @@ export const msInADay = 1000 * 60 * 60 * 24;
 export const msInAnHour = 1000 * 60 * 60;
 export const nameRegex = /^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/;
 export const fileNameRegex = /^.[^!@#$%^&*()+={}[\]`~:;"?/<>]{3,}$/;
-
-let _dummyKey;
-export const dummyKey = async () => {
-  if (!_dummyKey) {
-    _dummyKey = await window.crypto.subtle.generateKey(
-      {
-        name: 'AES-GCM',
-        length: 256
-      },
-      false,
-      ['encrypt']
-    );
-  }
-  return _dummyKey;
-};

@@ -8,6 +8,10 @@ defineProps({
   admin: {
     type: Boolean,
     default: false
+  },
+  showOptions: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -24,9 +28,17 @@ const getAction = (option) => {
   <div class="group-member">
     <Avatar class="avatar mr-0p5" :url="profile.avatarUrl" />
     <span class="name ellipsis">{{ profile.name }}</span>
-    <Icon :size="1.3" class="admin ml-0p5" v-if="profile.admin" name="admin" alt="admin icon" singular />
+    <Icon
+      :size="1.3"
+      class="admin ml-0p5"
+      :class="{ 'mr-3p1': !showOptions }"
+      v-if="profile.admin"
+      name="admin"
+      alt="admin icon"
+      singular
+    />
     <Options
-      v-if="admin"
+      v-if="admin && showOptions"
       class="options"
       icon="options"
       :options="[

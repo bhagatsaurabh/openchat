@@ -38,6 +38,12 @@
 .mr-0p5 {
   margin-right: 0.5rem;
 }
+.mr-0p6 {
+  margin-right: 0.6rem;
+}
+.mr-3p1 {
+  margin-right: 3.1rem;
+}
 .ml-0p5 {
   margin-left: 0.5rem;
 }
@@ -117,6 +123,9 @@
 }
 .fs-0 {
   font-size: 0;
+}
+.fs-0p8 {
+  font-size: 0.8rem;
 }
 .d-flex {
   display: flex;

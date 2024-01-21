@@ -147,3 +147,25 @@ export const sysMsgUserAdded = (groupId) => ({
   timestamp: new Date(),
   type: 'text'
 });
+export const sysMsgUserRemoved = (groupId) => ({
+  by: 'system',
+  groupId,
+  id: uuid(),
+  text: 'You were removed',
+  timestamp: new Date(),
+  type: 'text'
+});
+export const sysMsgLeft = (groupId) => ({
+  by: 'system',
+  groupId,
+  id: uuid(),
+  text: 'You left the group',
+  timestamp: new Date(),
+  type: 'text'
+});
+
+export const diff = (arr1 = [], arr2 = []) => {
+  const arr2Set = new Set(arr2);
+  return arr1.filter((x) => !arr2Set.has(x));
+};
+export const symDiff = (arr1, arr2) => diff(arr1, arr2).concat(diff(arr2, arr1));

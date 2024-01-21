@@ -207,16 +207,14 @@ service cloud.firestore {
                     input.payload.id is string &&
                     input.payload.encryptedKey is string;
       let group = isValid ? get(/databases/$(database)/documents/groups/$(input.payload.id)).data : {};
-      return isValid && request.auth.uid in group.members && input.by in group.members &&
-             input.by in group.admins;
+      return isValid && input.by in group.members && input.by in group.admins;
     }
     function validateNotifyTypeGR(input) {
       let validKeys = ['id'];
       let isValid = input.payload.keys().hasAll(validKeys) && input.payload.keys().hasOnly(validKeys) &&
                     input.payload.id is string;
       let group = isValid ? get(/databases/$(database)/documents/groups/$(input.payload.id)).data : {};
-      return isValid && request.auth.uid in group.members && input.by in group.members &&
-             input.by in group.admins && group.type != 'private';
+      return isValid && input.by in group.members && input.by in group.admins && group.type != 'private';
     }
     function validateNotifyCreation(request) {
       let input = request.resource.data;
@@ -225,6 +223,7 @@ service cloud.firestore {
              input.type is string && input.type in ['group:add', 'group:remove'] &&
              input.timestamp is timestamp && input.timestamp == request.time &&
              input.by is string && exists(/databases/$(database)/documents/users/$(input.by)) &&
+             input.by == request.auth.uid &&
              input.payload is map &&
              (input.type == 'group:add' ? validateNotifyTypeGA(input) : true) &&
              (input.type == 'group:remove' ? validateNotifyTypeGR(input) : true);

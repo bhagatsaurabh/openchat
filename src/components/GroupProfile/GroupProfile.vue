@@ -3,7 +3,6 @@ import { watch, onBeforeUnmount, ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { trapBetween, trapFocus } from '@/utils/utils';
-import { useRemoteDBStore } from '@/stores/remote';
 import { useStorageStore } from '@/stores/storage';
 import { useGroupsStore } from '@/stores/groups';
 import { useAuthStore } from '@/stores/auth';
@@ -14,10 +13,9 @@ import AvatarSelector from '@/components/AvatarSelector/AvatarSelector.vue';
 import Icon from '../Common/Icon/Icon.vue';
 import Modal from '../Common/Modal/Modal.vue';
 import GroupMemberList from '@/components/GroupMemberList/GroupMemberList.vue';
-import ManageMembers from '../ManageMembers/ManageMembers.vue';
+import EditGroup from '../EditGroup/EditGroup.vue';
 
 const router = useRouter();
-const remote = useRemoteDBStore();
 const storage = useStorageStore();
 const groups = useGroupsStore();
 const auth = useAuthStore();
@@ -26,11 +24,11 @@ const bound = ref(null);
 const nameEl = ref(null);
 const name = ref(null);
 const editing = ref(false);
-const group = computed(() => groups.activeGroup);
-const isPrivate = computed(() => group.value.type === 'private');
-const isAdmin = computed(() => !group.value.id === 'self' && group.value.admins.includes(auth.user.uid));
 const showConfirm = ref(null);
 const showManage = ref(false);
+const group = ref(groups.activeGroup);
+const isPrivate = computed(() => group.value.type === 'private');
+const isAdmin = computed(() => group.value.id !== 'self' && group.value.admins.includes(auth.user.uid));
 
 const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
@@ -42,14 +40,18 @@ const validateName = (val) => {
   return null;
 };
 const handleUpdate = async (field, args) => {
+  let res = false;
   if (field === 'name') {
     if (nameEl.value.validate(name.value)) return false;
-    return await remote.updateGroup({ name: name.value }, group.value.id);
+    res = await groups.updateGroup(group.value.id, { name: name.value });
+    editing.value = !res;
+    if (res) group.value.name = name.value;
   } else if (field === 'avatar') {
     const { blob } = args;
     await storage.uploadFile(blob, `groups/${group.value.id}/profile.png`, { contentType: 'image/png' });
     const url = await storage.getUrlFromPath(`groups/${group.value.id}/profile.png`);
-    await remote.updateGroup({ avatarUrl: url });
+    res = await groups.updateGroup(group.value.id, { avatarUrl: url });
+    if (res) group.value.avatarUrl = url;
   }
   return false;
 };
@@ -57,8 +59,7 @@ const handleControl = (action) => {
   showConfirm.value = action === 'leave' ? { title: 'Leave group', action: handleLeave } : null;
 };
 const handleLeave = async () => {
-  // TODO
-  console.log('leave');
+  await groups.leave(group.value);
 };
 
 watch(el, () => {
@@ -67,6 +68,14 @@ watch(el, () => {
     window.addEventListener('keydown', keyListener);
   }
 });
+watch(
+  () => groups.activeGroup,
+  () => {
+    if (!groups.activeGroup) return;
+    group.value = groups.activeGroup;
+    name.value = group.value.name;
+  }
+);
 onMounted(() => {
   document.activeElement?.blur();
   name.value = group.value.name;
@@ -90,7 +99,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
     </header>
     <main>
       <AvatarSelector
-        :disabled="isPrivate"
+        :disabled="isPrivate || !isAdmin"
         :url="group.avatarUrl"
         :updater="async (blob) => handleUpdate('avatar', { blob })"
       />
@@ -129,14 +138,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
         <GroupMemberList :group="group" :admin="isAdmin" />
       </section>
       <section v-if="!isPrivate" class="controls">
-        <Button @click="showManage = true" icon="manage" :complementary="false" flat>Manage Members</Button>
+        <Button v-if="isAdmin" @click="showManage = true" icon="manage" :complementary="false" flat
+          >Manage Members</Button
+        >
         <Button @click="() => handleControl('leave')" icon="leave" :complementary="false" flat>Leave</Button>
       </section>
       <section class="promise">
         <Icon class="mr-0p5" name="badge-lock" alt="lock icon" adaptive />
         <span class="fw-lighter">Protected by end-to-end encryption and encryption-at-rest</span>
       </section>
-      <ManageMembers v-if="showManage" @back="showManage = false" />
+      <EditGroup v-if="showManage" @back="showManage = false" :group="group" />
     </main>
   </aside>
 </template>
@@ -167,6 +178,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
   padding: 1rem;
   border-bottom: 1px solid var(--c-border-1);
   background-color: var(--c-accent-light-3);
+  box-shadow: 0 0 10px 0 var(--c-shadow-0);
+  z-index: 1;
 }
 .group-profile header button {
   background-color: transparent;
@@ -175,6 +188,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
 .group-profile main {
   padding: 1rem 0 1rem 0;
   flex: 1;
+  overflow-y: auto;
 }
 
 .group-profile .info {
@@ -209,6 +223,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
   border-top: 1px solid var(--c-border-1);
 }
 .controls button {
+  display: block;
   font-size: 1rem;
   padding: 0.5rem 0;
   box-shadow: none !important;

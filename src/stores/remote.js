@@ -88,6 +88,17 @@ export const useRemoteDBStore = defineStore('remote', () => {
     });
     return id;
   }
+  async function notifyUserRemoved({ uid, groupId }) {
+    const { id } = await addDoc(collection(remoteDB, 'users', uid, 'notify'), {
+      type: 'group:remove',
+      payload: {
+        id: groupId
+      },
+      by: auth.user.uid,
+      timestamp: serverTimestamp()
+    });
+    return id;
+  }
   async function deleteNotification(id) {
     await deleteDoc(doc(remoteDB, 'users', auth.user.uid, 'notify', id));
   }
@@ -129,6 +140,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     getPublicKey,
     createGroup,
     notifyUserAdded,
+    notifyUserRemoved,
     deleteNotification,
     updateSeenTimestamp,
     updateSyncTimestamp,

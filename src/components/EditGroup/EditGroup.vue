@@ -2,30 +2,27 @@
 import { watch, onBeforeUnmount, ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { trapBetween, trapFocus } from '@/utils/utils';
+import { useAuthStore } from '@/stores/auth';
+import { useUsersStore } from '@/stores/users';
+import { useNotificationStore } from '@/stores/notification';
 import { useGroupsStore } from '@/stores/groups';
+import { trapBetween, trapFocus, symDiff } from '@/utils/utils';
 import Button from '@/components/Common/Button/Button.vue';
-import Link from '../Common/Link/Link.vue';
 import Tabs from '@/components/Common/Tabs/Tabs.vue';
 import ManageMemberItem from '@/components/ManageMemberItem/ManageMemberItem.vue';
-import ChatSearch from '../ChatSearch/ChatSearch.vue';
 import ChatSearchList from '@/components/ChatSearchList/ChatSearchList.vue';
-import InputText from '../Common/InputText/InputText.vue';
-import { nameRegex } from '@/utils/constants';
-import { useAuthStore } from '@/stores/auth';
+import ChatSearch from '../ChatSearch/ChatSearch.vue';
 
 const props = defineProps({
-  type: {
-    type: String,
-    default: 'new'
-  }
+  group: Object
 });
-
 const emit = defineEmits(['back', 'open-search']);
 
 const router = useRouter();
-const groupsStore = useGroupsStore();
 const auth = useAuthStore();
+const usersStore = useUsersStore();
+const groups = useGroupsStore();
+const notify = useNotificationStore();
 const el = ref(null);
 const bound = ref(null);
 const show = ref(false);
@@ -35,14 +32,20 @@ const tabs = ref([
   { name: 'Members', id: 'members', icon: 'members', count: 0 },
   { name: 'Find', id: 'find', icon: 'search' }
 ]);
-const activeTab = ref(1);
-const members = ref([]);
-const memberIds = ref(new Set());
-const nameEl = ref(null);
-const name = ref(null);
-const orgCount = ref(members.value.length);
+const activeTab = ref(0);
+const orgGroup = ref({
+  members: [...props.group.members.filter((id) => id !== auth.user.uid)],
+  admins: [...props.group.admins.filter((id) => id !== auth.user.uid)]
+});
+const edtGroup = ref({
+  members: [...props.group.members.filter((id) => id !== auth.user.uid)],
+  admins: [...props.group.admins.filter((id) => id !== auth.user.uid)]
+});
+const orgCount = ref(orgGroup.value.members.length);
 const isBusy = ref(false);
-const hash = computed(() => (props.type === 'new' ? '#new-group' : '#manage'));
+const isDirty = ref(false);
+const members = ref(edtGroup.value.members.map((id) => usersStore.users[id]));
+const selected = computed(() => new Set(edtGroup.value.members));
 
 const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
@@ -57,62 +60,77 @@ const handleLeave = () => {
   if (isBusy.value) return;
   emit('back');
 };
-const handleOpenSearch = () => {
-  if (isBusy.value) return;
-  handleDismiss();
-  emit('open-search');
-};
-const handleCreate = async () => {
-  if (nameEl.value.validate(name.value)) return;
+const handleEdit = async () => {
+  if (edtGroup.value.members.length + 1 < 3) {
+    notify.push({
+      type: 'snackbar',
+      status: 'warn',
+      message: 'Cannot update this group to less than 3 members, use Search instead to chat privately'
+    });
+    return;
+  }
 
   isBusy.value = true;
-  const id = await groupsStore.createGroup({
-    name: name.value,
-    type: 'broadcast',
-    members: [auth.profile, ...members.value]
+  const newUserIds = edtGroup.value.members.filter((id) => !orgGroup.value.members.includes(id));
+  const removedUserIds = orgGroup.value.members.filter((id) => !edtGroup.value.members.includes(id));
+  await groups.updateGroup(props.group.id, {
+    members: [auth.user.uid, ...edtGroup.value.members],
+    admins: [auth.user.uid, ...edtGroup.value.admins]
   });
-  await groupsStore.setActiveGroup(id);
-  router.push({ path: '/chat' });
+
+  await groups.notifyNewMembers(newUserIds, props.group.id);
+  await groups.notifyRemovedMembers(removedUserIds, props.group.id);
   isBusy.value = false;
+  handleDismiss();
 };
 const handleSearchSelect = (otherUser) => {
   if (isBusy.value) return;
-  if (!memberIds.value.has(otherUser.id)) {
+  if (!edtGroup.value.members.includes(otherUser.id)) {
+    edtGroup.value.members.push(otherUser.id);
     members.value.push(otherUser);
-    memberIds.value.add(otherUser.id);
   } else {
-    members.value.splice(
-      members.value.findIndex((m) => m.id === otherUser.id),
+    edtGroup.value.members.splice(
+      edtGroup.value.members.findIndex((id) => id === otherUser.id),
       1
     );
-    memberIds.value.delete(otherUser.id);
+    if (edtGroup.value.admins.includes(otherUser.id)) {
+      edtGroup.value.admins.splice(
+        edtGroup.value.admins.findIndex((id) => id === otherUser.id),
+        1
+      );
+    }
   }
-  tabs.value[0].count = members.value.length - orgCount.value;
-  if (!members.value.length) {
-    activeTab.value = 1;
-  }
+  tabs.value[0].count = edtGroup.value.members.length - orgCount.value;
+  edtGroup.value = { ...edtGroup.value };
 };
 const handleAction = (action, user) => {
+  if (isBusy.value) return;
+
   if (action === 'remove') handleSearchSelect(user);
-};
-const validateName = (val) => {
-  if (!val) return 'Provide a name';
-  if (!nameRegex.test(val)) {
-    return 'Enter a valid name';
+  else if (action === 'admin' || action === 'revoke') {
+    if (!edtGroup.value.admins.includes(user.id)) {
+      edtGroup.value.admins.push(user.id);
+    } else {
+      edtGroup.value.admins.splice(
+        edtGroup.value.admins.findIndex((id) => id === user.id),
+        1
+      );
+    }
+    edtGroup.value = { ...edtGroup.value };
   }
-  return null;
 };
+const isAdmin = (user) => edtGroup.value.admins.includes(user.id);
 
 let unregisterGuard = () => {};
 watch(
   show,
   async (newVal, oldVal) => {
     if (oldVal !== newVal && newVal) {
-      await router.push({ hash: hash.value });
+      await router.push({ hash: '#manage' });
       searchEl.value.focus();
 
       unregisterGuard = router.beforeEach((_to, from, next) => {
-        if (from.hash === hash.value) {
+        if (from.hash === '#manage') {
           window.removeEventListener('keydown', keyListener);
           show.value = false;
         }
@@ -129,7 +147,13 @@ watch(el, () => {
     window.addEventListener('keydown', keyListener);
   }
 });
-watch(query, () => (activeTab.value = 1));
+watch(query, () => !!query.value && (activeTab.value = 1));
+watch(edtGroup, () => {
+  const memberSymDiff = symDiff(orgGroup.value.members, edtGroup.value.members);
+  const adminSymDiff = symDiff(orgGroup.value.admins, edtGroup.value.admins);
+
+  isDirty.value = memberSymDiff.length || adminSymDiff.length;
+});
 
 onMounted(() => {
   document.activeElement?.blur();
@@ -151,27 +175,11 @@ onBeforeUnmount(unregisterGuard);
           circular
           flat
         />
-        <h2 class="ml-1">{{ type === 'new' ? 'Create new group' : 'Manage Members' }}</h2>
+        <h2 class="ml-1">Manage members</h2>
       </header>
-      <section class="name-input">
-        <InputText
-          ref="nameEl"
-          type="text"
-          placeholder="Name"
-          v-model="name"
-          :attrs="{ spellcheck: false, autocomplete: 'off' }"
-          :validator="validateName"
-        />
-      </section>
       <div class="container">
         <ChatSearch ref="searchEl" @search="(val) => (query = val)" :show-unread="false" />
-        <Tabs
-          class="tabs"
-          :tabs="tabs"
-          :active="activeTab"
-          :show-header="members.length > 0"
-          @change="(val) => (activeTab = val)"
-        >
+        <Tabs class="tabs" :tabs="tabs" :active="activeTab" @change="(val) => (activeTab = val)">
           <template #members>
             <TransitionGroup name="list-fade">
               <ManageMemberItem
@@ -179,6 +187,8 @@ onBeforeUnmount(unregisterGuard);
                 :key="member.id"
                 :profile="member"
                 @action="handleAction"
+                :admin="isAdmin(member)"
+                admin-control
               />
             </TransitionGroup>
           </template>
@@ -186,7 +196,7 @@ onBeforeUnmount(unregisterGuard);
             <ChatSearchList
               class="p-0"
               :query="query"
-              :selected="memberIds"
+              :selected="selected"
               @select="handleSearchSelect"
               multiselect
             />
@@ -206,8 +216,8 @@ onBeforeUnmount(unregisterGuard);
             Cancel
           </Button>
           <Button
-            :disabled="members.length < 2 || !name"
-            @click="handleCreate"
+            :disabled="!isDirty"
+            @click="handleEdit"
             :size="1.2"
             icon="create"
             icon-left
@@ -215,11 +225,8 @@ onBeforeUnmount(unregisterGuard);
             accented
             async
           >
-            Create
+            Save
           </Button>
-        </section>
-        <section v-if="type === 'new'">
-          Want to create a private chat ? Use <Link @click="handleOpenSearch">Search</Link>
         </section>
       </footer>
     </aside>
@@ -255,7 +262,6 @@ onBeforeUnmount(unregisterGuard);
   border-top: 1px solid var(--c-border-2);
 }
 .manage-members footer .controls {
-  margin-bottom: 1rem;
   text-align: right;
 }
 footer .controls button:not(:last-child) {
@@ -271,12 +277,5 @@ footer .controls button:not(:last-child) {
 
 .tabs {
   height: calc(100% - 3.25rem);
-}
-
-.name-input {
-  padding: 0 1rem;
-}
-.name-input:deep(.input) {
-  width: 100%;
 }
 </style>
