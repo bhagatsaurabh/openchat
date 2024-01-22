@@ -155,7 +155,7 @@ onBeforeUnmount(unregisterGuard);
           :validator="validateName"
         />
       </section>
-      <div class="container">
+      <div class="members">
         <ChatSearch ref="searchEl" @search="(val) => (query = val)" :show-unread="false" />
         <Tabs
           class="tabs"
@@ -253,10 +253,10 @@ footer .controls button:not(:last-child) {
   margin-right: 1rem;
 }
 
-.container {
+.members {
   flex: 1;
 }
-.container section {
+.members section {
   padding: 0 1rem;
 }
 

@@ -5,6 +5,12 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "database": [
+    {
+      "target": "default",
+      "rules": "database.rules.json"
+    }
+  ],
   "emulators": {
     "firestore": {
       "port": 8080
@@ -21,6 +27,12 @@
     "ui": {
       "enabled": true
     },
+    "database": {
+      "port": 9000
+    },
     "singleProjectMode": true
+  },
+  "functions": {
+    "source": "functions"
   }
 }

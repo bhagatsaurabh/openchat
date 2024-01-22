@@ -96,7 +96,7 @@ export const useMessagesStore = defineStore('messages', () => {
         await local.storeMessage(message);
       }
       outQueueIdx.value[message.id] = undefined;
-      await updateSync(message);
+      await updateSeenAndSync(message);
       return;
     }
 
@@ -118,7 +118,10 @@ export const useMessagesStore = defineStore('messages', () => {
     }
     // For text messages, update sync info right-away
     // For messages with files, update sync info only when downloaded successfully
-    if (message.type === 'text') await updateSync(message);
+    if (message.type === 'text') {
+      if (groups.activeGroup?.id === message.groupId) await updateSeenAndSync(message);
+      else await updateSync(message);
+    }
   };
   const handleError = (error) => console.log({ ...error });
   function stop() {
@@ -126,7 +129,9 @@ export const useMessagesStore = defineStore('messages', () => {
   }
   function attachListener(groupId) {
     if (!unsubFns.value[groupId]) {
-      const mySyncTS = Timestamp.fromDate(groups.groups[groupId]?.sync[auth.user.uid] ?? new Date(0));
+      const mySyncTS = Timestamp.fromDate(
+        groups.groups[groupId]?.sync[auth.user.uid] ?? groups.groups[groupId].joinedAt
+      );
       const unsubscribe = onSnapshot(
         query(collection(remoteDB, 'groups', groupId, 'messages'), where('timestamp', '>', mySyncTS)),
         listener,
@@ -136,6 +141,7 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   }
   function addMessage(message) {
+    setStatus(message);
     const list = messages.value[message.groupId];
     const index = messageIdx.value[message.groupId];
     if (!list || !index) {
@@ -146,6 +152,7 @@ export const useMessagesStore = defineStore('messages', () => {
     messageIdx.value[message.groupId][message.id] = node;
   }
   function loadOldMessage(message) {
+    setStatus(message);
     const list = messages.value[message.groupId];
     const index = messageIdx.value[message.groupId];
     if (!list || !index) {
@@ -186,6 +193,17 @@ export const useMessagesStore = defineStore('messages', () => {
   async function updateSync(message) {
     if (message.groupId === 'self') return;
     await remote.updateSyncTimestamp(auth.user.uid, message.groupId);
+    if (isSynced(message)) {
+      try {
+        await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
+      } catch (error) {
+        // This client may fail to delete the file when another client is also trying to delete simultaneously
+      }
+    }
+  }
+  async function updateSeenAndSync(message) {
+    if (message.groupId === 'self') return;
+    await remote.updateSeenAndSyncTimestamp(auth.user.uid, message.groupId);
     if (isSynced(message)) {
       try {
         await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
@@ -293,6 +311,24 @@ export const useMessagesStore = defineStore('messages', () => {
     }
     return parsed;
   }
+  function setStatus(message) {
+    if (message.by === auth.user.uid) {
+      let status;
+      if (message.local?.status === 'pending') status = 'wait';
+      else if (!isDelivered(message)) status = 'sent';
+      else if (!isSeen(message)) status = 'delivered';
+      else status = 'seen';
+      message.status = status;
+    }
+  }
+  function isDelivered(message) {
+    const group = groups.groups[message.groupId];
+    return group.members.reduce((prev, id) => prev && group.sync[id] >= message.timestamp, true);
+  }
+  function isSeen(message) {
+    const group = groups.groups[message.groupId];
+    return group.members.reduce((prev, id) => prev && group.seen[id] >= message.timestamp, true);
+  }
 
   return {
     messages,
@@ -307,6 +343,7 @@ export const useMessagesStore = defineStore('messages', () => {
     send,
     pushToOutQueue,
     updateSync,
+    updateSeenAndSync,
     parseSysMsg
   };
 });

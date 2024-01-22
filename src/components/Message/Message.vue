@@ -42,6 +42,7 @@ const initials = computed(() =>
 );
 const isSelf = computed(() => props.message.by === auth.user.uid);
 const avatarUrl = computed(() => usersStore.users[props.message.by]?.avatarUrl);
+const isMine = computed(() => props.message.by === auth.user.uid);
 
 let uploadTask;
 const handleUploadTask = async (task) => {
@@ -68,7 +69,6 @@ const handleUploadTask = async (task) => {
 };
 const handleUploadCancel = () => {
   state.value = { stage: 'failed', progress: -2, icon: 'retry' };
-  // Fallback tasks ?
 };
 const handlePreview = () => {
   if (state.value.stage !== 'previewing') return;
@@ -193,8 +193,8 @@ onBeforeUnmount(() => {
           <div class="initials" v-else>{{ initials }}</div>
         </div>
         <div class="content">
-          <h4 v-if="message.by !== auth.user.uid" class="name">{{ name }}</h4>
-          <span class="tail"><Tail :self="message.by === auth.user.uid" /></span>
+          <h4 v-if="!isMine" class="name">{{ name }}</h4>
+          <span class="tail"><Tail :self="isMine" /></span>
           <div class="state" v-if="!['done', 'lost'].includes(state.stage)">
             <ProgressBar v-if="state.progress !== -2" class="progress" :value="state.progress" />
             <Button
@@ -234,16 +234,21 @@ onBeforeUnmount(() => {
               @load="handleImageLoaded"
             />
           </template>
-          <h5 class="time">{{ time }}</h5>
+          <div class="footer">
+            <h5 class="time">{{ time }}</h5>
+            <div v-if="isMine" class="status ml-0p3" :class="[message.status]"></div>
+          </div>
         </div>
       </template>
     </div>
     <div v-else class="container sys">
       <div class="sys-content">
-        <span tabindex="0" v-if="contentType === 'text'" class="text">{{
-          messagesStore.parseSysMsg(content)
-        }}</span>
-        <h5 class="time">{{ time }}</h5>
+        <span tabindex="0" v-if="contentType === 'text'" class="text">
+          {{ messagesStore.parseSysMsg(content) }}
+        </span>
+        <div class="footer">
+          <h5 class="time">{{ time }}</h5>
+        </div>
       </div>
     </div>
   </div>
@@ -329,15 +334,20 @@ onBeforeUnmount(() => {
   top: 0;
   right: -2px;
 }
-.message .content .time {
-  color: var(--c-text-2);
-  font-size: 0.7rem;
+.content .footer {
   position: absolute;
   bottom: -1.35rem;
   left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.content .footer .time {
+  color: var(--c-text-2);
+  font-size: 0.7rem;
   width: min-content;
 }
-.message.me .content .time {
+.message.me .content .footer {
   right: 0;
   left: unset;
 }
@@ -420,6 +430,34 @@ onBeforeUnmount(() => {
 }
 .content .document .doc-control:deep(.icon-container) {
   margin-right: 0.25rem;
+}
+
+.footer .status {
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-bottom: 0.1rem;
+}
+.footer .status.wait {
+  background-color: var(--c-text-2);
+  clip-path: polygon(0% 0%, 50% 50%, 0% 100%, 100% 100%, 50% 50%, 100% 0%);
+  transform: scaleX(0.7);
+  opacity: 0.7;
+}
+.footer .status.sent,
+.footer .status.delivered,
+.footer .status.seen {
+  border-radius: 1rem;
+}
+.footer .status.sent {
+  border: 2px solid var(--c-text-2);
+  opacity: 0.7;
+}
+.footer .status.delivered {
+  background-color: var(--c-text-2);
+  opacity: 0.7;
+}
+.footer .status.seen {
+  background-color: var(--c-accent-light-1);
 }
 
 @media (hover: hover) {

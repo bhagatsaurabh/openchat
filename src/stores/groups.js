@@ -55,9 +55,12 @@ export const useGroupsStore = defineStore('groups', () => {
       (id) => (group.sync[id] = group.sync[id] ? group.sync[id].toDate() : new Date())
     );
 
-    await users.saveProfiles(localGroup.pastMembers ?? []);
-    const removedMembers = localGroup.members.filter((id) => !group.members.includes(id));
-    group.pastMembers = [...removedMembers, ...(localGroup.pastMembers ?? [])];
+    if (localGroup) {
+      await users.saveProfiles(localGroup.pastMembers ?? []);
+      const removedMembers = localGroup.members.filter((id) => !group.members.includes(id));
+      group.pastMembers = [...removedMembers, ...(localGroup.pastMembers ?? [])];
+      group.joinedAt = localGroup.joinedAt;
+    }
     await users.saveProfiles(group.members);
 
     if (group.type === 'private') {
@@ -66,6 +69,14 @@ export const useGroupsStore = defineStore('groups', () => {
       users.attachListener(otherUserId);
     }
 
+    if (!localGroup) {
+      group.unseenCount = 1;
+      group.joinedAt = new Date();
+    } else if (group.id === activeGroup.value?.id) {
+      group.unseenCount = 0;
+    } else {
+      group.unseenCount = await local.getUnseenCount(auth.user.uid, group.id, group.seen[auth.user.uid]);
+    }
     await local.updateGroup(auth.user.uid, group.id, group);
     addGroup(group);
 
@@ -90,7 +101,7 @@ export const useGroupsStore = defineStore('groups', () => {
     if (self) addGroup(self);
 
     localGroups
-      .filter((group) => !group.members.includes(auth.user.uid) && group.id !== 'self')
+      .filter((group) => !group.active && group.id !== 'self')
       .forEach((group) => handleLocalGroup(group));
     localGroups
       .filter((group) => group.active && group.id !== 'self')
@@ -107,6 +118,8 @@ export const useGroupsStore = defineStore('groups', () => {
       activeGroup.value = groups.value[id];
       activeGroupKey.value = await local.getGroupKey(auth.user.uid, id);
       await messages.openStream(id);
+      await resetUnseenCount(id);
+      await remote.updateSeenTimestamp(auth.user.uid, id);
     } else {
       activeGroup.value = null;
       activeGroupKey.value = null;
@@ -185,7 +198,7 @@ export const useGroupsStore = defineStore('groups', () => {
       )
     );
 
-    group = { ...group, active: true, seen: {}, sync: {}, timestamp: null, id: groupId };
+    group = { ...group, active: true, seen: {}, sync: {}, timestamp: null, id: groupId, unseenCount: 0 };
     await setLastMessage(group);
     addGroup(group);
     return groupId;
@@ -322,6 +335,11 @@ export const useGroupsStore = defineStore('groups', () => {
       groups.value[group.id] = { ...group };
     }
   }
+  async function resetUnseenCount(groupId) {
+    const group = groups.value[groupId];
+    await local.updateGroup(auth.user.uid, group.id, { unseenCount: 0 });
+    groups.value[group.id] = { ...groups.value[group.id], unseenCount: 0 };
+  }
 
   return {
     groups,
@@ -345,6 +363,7 @@ export const useGroupsStore = defineStore('groups', () => {
     updateGroup,
     notifyNewMembers,
     notifyRemovedMembers,
-    leave
+    leave,
+    resetUnseenCount
   };
 });
