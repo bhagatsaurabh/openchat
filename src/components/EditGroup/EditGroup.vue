@@ -99,6 +99,12 @@ const handleSearchSelect = (otherUser) => {
         1
       );
     }
+    const newMembers = [...members.value];
+    newMembers.splice(
+      newMembers.findIndex((m) => m.id === otherUser.id),
+      1
+    );
+    members.value = newMembers;
   }
   tabs.value[0].count = edtGroup.value.members.length - orgCount.value;
   edtGroup.value = { ...edtGroup.value };

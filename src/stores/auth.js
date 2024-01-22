@@ -17,6 +17,7 @@ import { useRemoteDBStore } from '@/stores/remote';
 import { generatePrivateKey } from '@/utils/crypto';
 import * as local from '@/database/driver';
 import { useUsersStore } from './users';
+import { usePresenceStore } from './presence';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
@@ -33,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
   const notify = useNotificationStore();
   const remote = useRemoteDBStore();
   const users = useUsersStore();
+  const presence = usePresenceStore();
 
   function setUser(signedInUser) {
     user.value = signedInUser;
@@ -46,6 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
     const unsubscribe = onAuthStateChanged(auth, async (usr) => {
       if (usr) {
         setUser(usr);
+        presence.listen();
         if (status.value !== 'signingIn') {
           await handleExistingUser();
           setStatus('signedin');

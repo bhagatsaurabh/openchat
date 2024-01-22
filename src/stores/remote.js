@@ -111,6 +111,16 @@ export const useRemoteDBStore = defineStore('remote', () => {
       console.log(error);
     }
   }
+  async function updateSeenAndSyncTimestamp(uid, groupId) {
+    try {
+      await updateDoc(doc(remoteDB, 'groups', groupId), {
+        [`seen.${uid}`]: serverTimestamp(),
+        [`sync.${uid}`]: serverTimestamp()
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
   async function updateSyncTimestamp(uid, groupId) {
     try {
       await updateDoc(doc(remoteDB, 'groups', groupId), {
@@ -144,6 +154,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     deleteNotification,
     updateSeenTimestamp,
     updateSyncTimestamp,
+    updateSeenAndSyncTimestamp,
     addNewMessage,
     updateGroup
   };

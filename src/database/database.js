@@ -233,6 +233,21 @@ const getCount = async (objectStore) => {
     }
   });
 };
+const getIndexCount = async (objectStore, indexName, keyRange) => {
+  return new Promise((resolve, reject) => {
+    if (!db) resolve(null);
+    else {
+      let request;
+      try {
+        request = db.transaction(objectStore).objectStore(objectStore).index(indexName).count(keyRange);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+      } catch (error) {
+        reject(error);
+      }
+    }
+  });
+};
 
 export {
   db,
@@ -247,5 +262,6 @@ export {
   getAll,
   getAllKeys,
   getCount,
-  stream
+  stream,
+  getIndexCount
 };

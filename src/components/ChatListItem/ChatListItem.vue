@@ -160,5 +160,9 @@ const otherUserId = computed(() =>
   background-color: var(--c-accent);
   color: var(--c-background-0);
   font-weight: bold;
+  min-width: 1.35rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

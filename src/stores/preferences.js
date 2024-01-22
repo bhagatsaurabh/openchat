@@ -32,11 +32,12 @@ export const usePreferencesStore = defineStore('preferences', () => {
   async function load() {
     try {
       const storedPreferences = await local.getPreferences();
-      sanitizePrefs(storedPreferences);
+      if (!storedPreferences) return;
 
+      sanitizePrefs(storedPreferences);
       setTheme(storedPreferences.theme);
     } catch (error) {
-      // notify
+      console.log(error);
     }
   }
   function setTheme(newTheme) {
