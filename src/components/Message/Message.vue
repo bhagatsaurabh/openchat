@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { useMessagesStore } from '@/stores/messages';
 import { useUsersStore } from '@/stores/users';
@@ -10,6 +10,7 @@ import Spinner from '../Common/Spinner/Spinner.vue';
 import Tail from '@/components/Common/Tail/Tail.vue';
 import ProgressBar from '../Common/ProgressBar/ProgressBar.vue';
 import Button from '../Common/Button/Button.vue';
+import Options from '@/components/Common/Options/Options.vue';
 
 const props = defineProps({
   message: Object,
@@ -18,6 +19,7 @@ const props = defineProps({
     default: false
   }
 });
+const emit = defineEmits(['edit']);
 
 const usersStore = useUsersStore();
 const messagesStore = useMessagesStore();
@@ -29,6 +31,7 @@ const imgLoaded = ref(false);
 const state = ref({ stage: 'pending' });
 const objUrl = ref(null);
 const isSystem = ref(props.message.by === 'system');
+const optionsEl = ref(null);
 
 const time = computed(() => props.message.timestamp.toTimeString().substring(0, 5));
 const name = computed(() => usersStore.users[props.message.by]?.name);
@@ -164,8 +167,30 @@ const handleRemoteMessage = async () => {
     state.value = { stage: 'previewing', progress: -1, icon: getIconFromFileType(content.value.type) };
   }
 };
+const handleContextMenu = (e) => {
+  e.stopPropagation();
+  e.preventDefault();
+  if (!isSystem.value && !props.message.deleted && isMine.value) optionsEl.value.openMenu();
+};
+const handleMessageAction = async (option) => {
+  if (option.text === 'Delete') {
+    await messagesStore.modifyMessage('meta:delete', props.message);
+  } else {
+    emit('edit', props.message, content.value);
+  }
+};
 
+watch(
+  () => props.message.text,
+  async () => (content.value = await messagesStore.decrypt(props.message))
+);
 onMounted(async () => {
+  if (props.message.deleted) {
+    state.value = { stage: 'done' };
+    contentType.value = 'text';
+    return;
+  }
+
   if (props.message.by === 'system') {
     content.value = props.message.text;
     contentType.value = 'text';
@@ -182,7 +207,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="message" :class="{ me: isSelf, sys: isSystem }">
+  <div class="message" :class="{ me: isSelf, sys: isSystem }" @contextmenu="handleContextMenu">
     <div v-if="!isSystem" class="container">
       <div v-if="state.stage === 'pending'" class="suspense">
         <Spinner />
@@ -208,7 +233,9 @@ onBeforeUnmount(() => {
           </div>
           <span class="lost" v-if="state.stage == 'lost'">{{ state.msg }}</span>
           <template v-else>
-            <span v-if="contentType === 'text'" class="text">{{ content }}</span>
+            <span v-if="contentType === 'text'" class="text" :class="{ del: message.deleted }">
+              {{ message.deleted ? 'Message deleted' : content }}
+            </span>
             <audio v-if="contentType === 'audio' && !!objUrl" class="audio" controls>
               <source :src="objUrl" />
             </audio>
@@ -235,11 +262,22 @@ onBeforeUnmount(() => {
             />
           </template>
           <div class="footer">
+            <span v-if="message.edited" class="edited">Edited</span>
             <h5 class="time">{{ time }}</h5>
             <div v-if="isMine" class="status ml-0p3" :class="[message.status]"></div>
           </div>
         </div>
       </template>
+      <Options
+        ref="optionsEl"
+        class="options"
+        icon="options"
+        :options="[
+          { text: 'Edit', icon: 'edit' },
+          { text: 'Delete', icon: 'delete' }
+        ]"
+        @select="handleMessageAction"
+      />
     </div>
     <div v-else class="container sys">
       <div class="sys-content">
@@ -405,6 +443,10 @@ onBeforeUnmount(() => {
 .content .text {
   font-size: 1rem;
 }
+.content .text.del {
+  font-style: italic;
+  font-weight: lighter;
+}
 .content .image {
   max-width: 100%;
   max-height: 12rem;
@@ -458,6 +500,23 @@ onBeforeUnmount(() => {
 }
 .footer .status.seen {
   background-color: var(--c-accent-light-1);
+}
+.footer .edited {
+  font-size: 0.7rem;
+  margin-right: 0.5rem;
+}
+
+.message .options {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.message .options:deep(button) {
+  display: none;
+}
+.message.me .options {
+  left: unset;
+  right: 0;
 }
 
 @media (hover: hover) {

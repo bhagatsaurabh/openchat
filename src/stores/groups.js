@@ -75,7 +75,7 @@ export const useGroupsStore = defineStore('groups', () => {
     } else if (group.id === activeGroup.value?.id) {
       group.unseenCount = 0;
     } else {
-      group.unseenCount = await local.getUnseenCount(auth.user.uid, group.id, group.seen[auth.user.uid]);
+      group.unseenCount = await local.getUnseenCount(group.id, group.seen[auth.user.uid]);
     }
     await local.updateGroup(auth.user.uid, group.id, group);
     addGroup(group);

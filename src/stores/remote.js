@@ -137,6 +137,13 @@ export const useRemoteDBStore = defineStore('remote', () => {
       console.log(error);
     }
   }
+  async function addMetaMessage(message, id, groupId) {
+    try {
+      await setDoc(doc(remoteDB, 'groups', groupId, 'messages', id), message);
+    } catch (error) {
+      console.log(error);
+    }
+  }
   async function updateGroup(group, groupId) {
     group.modifiedBy = auth.user.uid;
     await updateDoc(doc(remoteDB, 'groups', groupId), group);
@@ -156,6 +163,7 @@ export const useRemoteDBStore = defineStore('remote', () => {
     updateSyncTimestamp,
     updateSeenAndSyncTimestamp,
     addNewMessage,
+    addMetaMessage,
     updateGroup
   };
 });

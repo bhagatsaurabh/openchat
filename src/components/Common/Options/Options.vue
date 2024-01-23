@@ -21,8 +21,8 @@ const el = ref(null);
 const container = ref(null);
 
 const handleClick = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+  e?.preventDefault();
+  e?.stopPropagation();
   open.value = !open.value;
   if (open.value) {
     active.value = -1;
@@ -77,6 +77,11 @@ const computeOpeningDirection = () => {
     pos.value = { x: cRect.x + cRect.width - rect.width, y: cRect.y + cRect.height };
   else if (direction.value === 'tl') pos.value = { x: cRect.x + cRect.width - rect.width, y: cRect.y };
 };
+const openMenu = () => {
+  if (!open.value) {
+    handleClick();
+  }
+};
 
 watch(open, () => {
   if (open.value) {
@@ -85,6 +90,8 @@ watch(open, () => {
 });
 
 onMounted(() => computeOpeningDirection());
+
+defineExpose({ openMenu });
 </script>
 
 <template>
