@@ -88,7 +88,10 @@ export const useMessagesStore = defineStore('messages', () => {
   };
   const handleMessage = async (message) => {
     message.timestamp = message.timestamp ? message.timestamp.toDate() : new Date();
-    await setLastMessage(message);
+
+    if (!['meta:edit', 'meta:delete'].includes(message.type)) {
+      await setLastMessage(message);
+    }
 
     if (outQueueIdx.value[message.id]) {
       if (!message.type.startsWith('meta')) {
@@ -100,17 +103,13 @@ export const useMessagesStore = defineStore('messages', () => {
       return;
     }
 
-    if (message.type === 'meta:edit') {
+    if (['meta:edit', 'meta:delete'].includes(message.type)) {
       const existingMsg = await local.getMessage(message.ref, message.groupId);
       if (existingMsg && (message.timestamp - existingMsg.timestamp) / msInAnHour <= 24) {
-        await local.storeMessage(message);
-        updateMessage(message);
-      }
-    } else if (message.type === 'meta:delete') {
-      const existingMsg = await local.getMessage(message.ref, message.groupId);
-      if (existingMsg && (message.timestamp - existingMsg.timestamp) / msInAnHour <= 24) {
-        await local.deleteMessage(message.ref, message.groupId);
-        removeMessage(message);
+        if (message.type === 'meta:edit') existingMsg.text = message.text;
+        existingMsg[message.type === 'meta:delete' ? 'deleted' : 'edited'] = true;
+        await local.storeMessage(existingMsg);
+        updateMessage(existingMsg, true);
       }
     } else {
       await local.storeMessage(message);
@@ -166,18 +165,16 @@ export const useMessagesStore = defineStore('messages', () => {
       messageIdx.value[message.groupId][message.id].value = message;
     }
   }
-  function updateMessage(message) {
+  function updateMessage(message, forceRender = false) {
     const list = messages.value[message.groupId];
     const existingMsgNode = messageIdx.value[message.groupId]?.[message.id];
     if (list && existingMsgNode) {
+      if (forceRender) {
+        delete message[message.force];
+        message.force = (message.force ?? 0) + 1;
+        message[message.force] = null;
+      }
       existingMsgNode.value = message;
-    }
-  }
-  function removeMessage(message) {
-    const list = messages.value[message.groupId];
-    const existingMsgNode = messageIdx.value[message.groupId]?.[message.id];
-    if (list && existingMsgNode) {
-      list.delete(existingMsgNode);
     }
   }
   function isSynced(message) {
@@ -329,6 +326,19 @@ export const useMessagesStore = defineStore('messages', () => {
     const group = groups.groups[message.groupId];
     return group.members.reduce((prev, id) => prev && group.seen[id] >= message.timestamp, true);
   }
+  async function modifyMessage(type, message, newText) {
+    let cipher;
+    if (type === 'meta:edit') cipher = await encryptText(newText, groups.activeGroupKey);
+    const msg = {
+      by: auth.user.uid,
+      timestamp: message.groupId === 'self' ? new Date() : serverTimestamp(),
+      expiry: Timestamp.fromDate(new Date(Date.now() + 864000000)),
+      type,
+      ref: message.id
+    };
+    if (type === 'meta:edit') msg.text = cipher;
+    await remote.addMetaMessage(msg, message.id, message.groupId);
+  }
 
   return {
     messages,
@@ -344,6 +354,7 @@ export const useMessagesStore = defineStore('messages', () => {
     pushToOutQueue,
     updateSync,
     updateSeenAndSync,
-    parseSysMsg
+    parseSysMsg,
+    modifyMessage
   };
 });

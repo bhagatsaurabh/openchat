@@ -16,6 +16,7 @@ import TextArea from '@/components/Common/TextArea/TextArea.vue';
 import Message from '@/components/Message/Message.vue';
 import Spinner from '@/components/Common/Spinner/Spinner.vue';
 import Modal from '@/components/Common/Modal/Modal.vue';
+import Backdrop from '@/components/Common/Backdrop/Backdrop.vue';
 
 const groups = useGroupsStore();
 const users = useUsersStore();
@@ -31,6 +32,8 @@ const busy = ref(false);
 const busyNextChunk = ref(false);
 const showModal = ref(null);
 const showLeave = ref(false);
+const editing = ref(null);
+const messageEl = ref(null);
 const names = computed(() =>
   group.value.id === 'self' ? group.value.name : users.getNamesFromUIDs(group.value.members).join(', ')
 );
@@ -74,6 +77,12 @@ const handleSend = async (content) => {
   if (!content) return;
 
   busy.value = true;
+  if (editing.value) {
+    await messagesStore.modifyMessage('meta:edit', editing.value, message.value);
+    handleEditCancel();
+    return;
+  }
+
   if (typeof content === 'string') {
     if (!content.trim()) return;
     await messagesStore.send('text', content);
@@ -100,6 +109,15 @@ const handleScroll = async () => {
   }
 };
 const throttledHandleScroll = throttle(handleScroll, 100);
+const handleEdit = (msg, text) => {
+  editing.value = msg;
+  message.value = text;
+  messageEl.value.native.focus();
+};
+const handleEditCancel = () => {
+  message.value = null;
+  editing.value = false;
+};
 
 watch(() => groups.activeGroup, handleLoad);
 </script>
@@ -140,13 +158,21 @@ watch(() => groups.activeGroup, handleLoad);
     </Header>
     <section ref="containerEl" class="messages-container" @scroll="throttledHandleScroll">
       <div ref="listEl" class="messages">
-        <Message v-for="msg in messagesStore.messages[group.id] ?? []" :key="msg.id" :message="msg" />
+        <Backdrop :show="!!editing" @dismiss="handleEditCancel" />
+        <Message
+          :class="{ edit: !!editing && msg.id === editing.id }"
+          v-for="msg in messagesStore.messages[group.id] ?? []"
+          :key="msg.id"
+          :message="msg"
+          @edit="handleEdit"
+        />
       </div>
       <div v-if="busyNextChunk" class="wait"><Spinner /></div>
     </section>
-    <Footer>
+    <Footer class="footer" :class="{ edit: !!editing }">
       <template #left>
         <Options
+          v-show="!editing"
           class="mr-0p5"
           :options="[
             { text: 'Document', icon: 'document' },
@@ -156,6 +182,7 @@ watch(() => groups.activeGroup, handleLoad);
           @select="handleAttachOption"
         />
         <TextArea
+          ref="messageEl"
           @enter="() => handleSend(message)"
           class="input mr-0p5"
           :attrs="{ placeholder: 'Write a message' }"
@@ -246,5 +273,15 @@ watch(() => groups.activeGroup, handleLoad);
 
 .messages .message:last-child {
   margin-bottom: 1rem;
+}
+.messages .edit {
+  position: absolute;
+  bottom: 0;
+  z-index: 150;
+  pointer-events: none;
+  user-select: none;
+}
+.footer.edit {
+  z-index: 150;
 }
 </style>

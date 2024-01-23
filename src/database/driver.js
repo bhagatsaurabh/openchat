@@ -108,7 +108,7 @@ export const deleteFile = async (id, groupId) => {
   await deleteObject(`files:${groupId}`, id);
 };
 
-export const getUnseenCount = async (uid, groupId, seenTimestamp) => {
+export const getUnseenCount = async (groupId, seenTimestamp) => {
   if (!seenTimestamp) seenTimestamp = new Date(0);
 
   return await getIndexCount(`messages:${groupId}`, 'timestamp', IDBKeyRange.lowerBound(seenTimestamp, true));
