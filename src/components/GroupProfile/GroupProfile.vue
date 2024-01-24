@@ -94,8 +94,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
       Are you sure ?
     </Modal>
     <header>
-      <Button @click="() => router.back()" :size="1.2" icon="back" :complementary="false" circular flat />
-      <h2 class="ml-1">Profile</h2>
+      <Button
+        @click="() => router.back()"
+        :size="1.2"
+        icon="back"
+        :complementary="false"
+        :adaptive="false"
+        circular
+        flat
+      />
+      <h2 class="ml-1 c-black">Profile</h2>
     </header>
     <main>
       <AvatarSelector
@@ -227,7 +235,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
   font-size: 1rem;
   padding: 0.5rem 0;
   box-shadow: none !important;
-  background-color: none !important;
+  background-color: transparent !important;
   color: #ff6565;
 }
 .controls button:deep(.icon-container) {
@@ -247,5 +255,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
   font-size: 0;
   color: var(--c-text-2);
   filter: invert(77%) sepia(82%) saturate(2090%) hue-rotate(209deg) brightness(90%) contrast(88%);
+}
+
+@media (min-width: 768px) {
+  .group-profile {
+    width: 390px;
+    left: unset;
+    right: 0;
+  }
+}
+@media (min-width: 1024px) {
+  .group-profile {
+    width: 425px;
+    left: unset;
+    right: 0;
+  }
 }
 </style>

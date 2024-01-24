@@ -29,7 +29,7 @@ defineProps({
 .brand.cover {
   text-align: center;
   background-color: var(--c-background-0);
-  transition: var(--theme-bg-transition);
+  transition: var(--theme-bgc-transition);
 }
 .brand.cover .hero {
   width: 7rem;

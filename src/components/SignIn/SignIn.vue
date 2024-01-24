@@ -99,7 +99,7 @@ watch(
 <style scoped>
 .auth-card {
   position: absolute;
-  width: 100vw;
+  width: 100%;
   padding: 0 1rem 0 1rem;
 }
 .auth-card:deep(section) {
@@ -119,5 +119,16 @@ watch(
 
 .signin-control .spinner {
   position: absolute;
+}
+
+@media (min-width: 768px) {
+  .main .auth-card {
+    max-width: 576px;
+  }
+}
+@media (min-width: 1024px) {
+  .main .auth-card {
+    max-width: 768px;
+  }
 }
 </style>

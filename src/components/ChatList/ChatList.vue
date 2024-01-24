@@ -1,5 +1,7 @@
 <script setup>
 import { computed } from 'vue';
+
+import { useGroupsStore } from '@/stores/groups';
 import ChatListItem from '../ChatListItem/ChatListItem.vue';
 import Icon from '../Common/Icon/Icon.vue';
 import Link from '../Common/Link/Link.vue';
@@ -21,6 +23,8 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'open-search', 'self-chat', 'clear-filter']);
 
+const groupsStore = useGroupsStore();
+
 const filteredGroups = computed(() =>
   props.groups.filter(
     (group) =>
@@ -36,6 +40,7 @@ const filteredGroups = computed(() =>
       v-for="group in filteredGroups"
       :key="group.id"
       :group="group"
+      :active="groupsStore.activeGroup?.id === group.id"
       @select="(id) => emit('select', id)"
     />
     <div class="fb filtered" v-if="groups.length && !filteredGroups.length">

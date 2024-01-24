@@ -178,10 +178,11 @@ onBeforeUnmount(unregisterGuard);
           :size="1.2"
           icon="back"
           :complementary="false"
+          :adaptive="false"
           circular
           flat
         />
-        <h2 class="ml-1">Manage members</h2>
+        <h2 class="ml-1 c-black">Manage members</h2>
       </header>
       <div class="container">
         <ChatSearch ref="searchEl" @search="(val) => (query = val)" :show-unread="false" />
@@ -251,6 +252,7 @@ onBeforeUnmount(unregisterGuard);
   box-shadow: 0 0 10px 0px var(--c-shadow-0);
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 .manage-members header {
   position: sticky;
@@ -283,5 +285,20 @@ footer .controls button:not(:last-child) {
 
 .tabs {
   height: calc(100% - 3.25rem);
+}
+
+@media (min-width: 768px) {
+  .manage-members {
+    width: 390px;
+    left: unset;
+    right: 0;
+  }
+}
+@media (min-width: 1024px) {
+  .manage-members {
+    width: 425px;
+    left: unset;
+    right: 0;
+  }
 }
 </style>

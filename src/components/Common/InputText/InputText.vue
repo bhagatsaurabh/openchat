@@ -153,7 +153,7 @@ defineExpose({ native, validate, invalidate });
   font-size: 1rem;
   border: none;
   padding: 0.5rem 0 0.5rem 0;
-  transition: border var(--fx-transition-duration-0) linear;
+  transition: border var(--fx-duration-0) linear;
   background-color: transparent;
 }
 .input::before {
@@ -166,7 +166,7 @@ defineExpose({ native, validate, invalidate });
   line-height: 2.4rem;
   color: var(--c-text-2);
   pointer-events: none;
-  transition: all var(--fx-transition-duration-0) ease-out;
+  transition: all var(--fx-duration-0) ease-out;
   top: 75%;
   font-size: 0.75rem;
 }
@@ -204,8 +204,8 @@ defineExpose({ native, validate, invalidate });
   bottom: 0;
   left: 0;
   transition:
-    height var(--fx-transition-duration-0) linear,
-    background-color var(--fx-transition-duration-0) linear;
+    height var(--fx-duration-0) linear,
+    background-color var(--fx-duration-0) linear;
   background-color: gray;
 }
 .input:focus-within::after {

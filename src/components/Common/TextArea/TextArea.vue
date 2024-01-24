@@ -56,11 +56,13 @@ defineExpose({ native });
   font-size: 1rem;
   border: none;
   padding: 0.5rem 0.3rem 0.5rem 0.3rem;
-  transition: border var(--fx-transition-duration-0) linear;
+  transition: border var(--fx-duration-0) linear;
   padding: 0.5rem 0.5rem 0.5rem 0.75rem;
   resize: none;
   height: calc(2rem + 2px);
   background-color: var(--c-background-2);
+  color: var(--c-text-0);
+  transition: var(--theme-bgc-transition), var(--theme-color-transition);
 }
 
 .textarea:focus {

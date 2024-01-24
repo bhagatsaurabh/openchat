@@ -61,7 +61,7 @@ const validateName = (val) => {
       </ul>
     </h4>
   </section>
-  <section class="name-input">
+  <section class="name-input mb-1">
     <InputText
       ref="inputEl"
       type="text"
@@ -72,7 +72,7 @@ const validateName = (val) => {
     />
   </section>
   <section class="controls">
-    <Button class="continue-action" @click="handleContinue" :busy="isBusy" async accented>Continue</Button>
+    <Button class="continue-action" @click="handleContinue" :busy="isBusy" async accented> Continue </Button>
   </section>
 </template>
 

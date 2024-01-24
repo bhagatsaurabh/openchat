@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { authGuard, chatGuard, noAuthGuard } from './guards';
 import Auth from '@/views/Auth/Auth.vue';
 import Chat from '@/views/Chat/Chat.vue';
-import Settings from '@/views/Settings/Settings.vue';
 import Interface from '@/views/Interface/Interface.vue';
 import GroupProfile from '@/components/GroupProfile/GroupProfile.vue';
 
@@ -27,11 +26,6 @@ const router = createRouter({
           ]
         }
       ]
-    },
-    {
-      path: '/settings',
-      component: Settings,
-      beforeEnter: authGuard
     },
     {
       path: '/auth',

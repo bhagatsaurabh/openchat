@@ -1,3 +1,19 @@
+@property --c-scroll-shadows-0 {
+  syntax: '<color>';
+  initial-value: #ffffff;
+  inherits: true;
+}
+@property --c-scroll-shadows-2 {
+  syntax: '<color>';
+  initial-value: #f2f2f2;
+  inherits: true;
+}
+@property --c-scroll-shadows-shadow {
+  syntax: '<color>';
+  initial-value: rgba(0, 0, 0, 0.2);
+  inherits: true;
+}
+
 :root {
   --c-white: #ffffff;
   --c-white-soft: #f8f8f8;
@@ -30,18 +46,19 @@
 
   --c-shadow-light-0: #8b8b8b;
   --c-shadow-light-1: lightgrey;
-  --c-shadow-dark-0: rgb(20, 20, 20);
+  --c-shadow-dark-0: rgb(12, 12, 12);
   --c-shadow-dark-1: #000000;
 
-  --fx-transition-duration-0: 0.1s;
-  --fx-transition-duration-1: 0.2s;
-  --fx-transition-duration-2: 0.3s;
+  --fx-duration-0: 0.1s;
+  --fx-duration-1: 0.2s;
+  --fx-duration-2: 0.3s;
 
-  --theme-color-transition: color var(--fx-transition-duration-1) linear;
-  --theme-border-transition: border var(--fx-transition-duration-1) linear;
-  --theme-bg-transition: background-color var(--fx-transition-duration-1) linear;
-  --theme-shadow-transition: box-shadow var(--fx-transition-duration-1) linear;
-  --theme-opacity-transition: opacity var(--fx-transition-duration-1) linear;
+  --theme-color-transition: color var(--fx-duration-1) linear;
+  --theme-border-transition: border var(--fx-duration-1) linear;
+  --theme-bgc-transition: background-color var(--fx-duration-1) linear;
+  --theme-bg-transition: background var(--fx-duration-1) linear;
+  --theme-shadow-transition: box-shadow var(--fx-duration-1) linear;
+  --theme-opacity-transition: opacity var(--fx-duration-1) linear;
 
   --header-height: 4rem;
   --footer-height: 4rem;
@@ -78,6 +95,9 @@
   --c-shadow-1: var(--c-shadow-light-1);
 
   --c-scrollbar: var(--c-scrollbar-light);
+  --c-scroll-shadows-0: #ffffff;
+  --c-scroll-shadows-2: #f2f2f2;
+  --c-scroll-shadows-shadow: rgba(0, 0, 0, 0.2);
 }
 
 .dark {
@@ -100,6 +120,9 @@
   --c-shadow-1: var(--c-shadow-dark-1);
 
   --c-scrollbar: var(--c-scrollbar-dark);
+  --c-scroll-shadows-0: #292929;
+  --c-scroll-shadows-2: #404040;
+  --c-scroll-shadows-shadow: rgba(0, 0, 0, 1);
 }
 
 .high-contrast {
@@ -122,6 +145,9 @@
   --c-shadow-1: var(--c-shadow-dark-1);
 
   --c-scrollbar: var(--c-scrollbar-dark);
+  --c-scroll-shadows-0: #181818;
+  --c-scroll-shadows-2: #282828;
+  --c-scroll-shadows-shadow: rgba(0, 0, 0, 1);
 }
 
 /* For system default */
@@ -146,6 +172,9 @@
     --c-shadow-1: var(--c-shadow-dark-1);
 
     --c-scrollbar: var(--c-scrollbar-dark);
+    --c-scroll-shadows-0: #292929;
+    --c-scroll-shadows-2: #404040;
+    --c-scroll-shadows-shadow: rgba(0, 0, 0, 1);
   }
 }
 @media (prefers-contrast: more) {
@@ -169,6 +198,9 @@
     --c-shadow-1: var(--c-shadow-dark-1);
 
     --c-scrollbar: var(--c-scrollbar-dark);
+    --c-scroll-shadows-0: #181818;
+    --c-scroll-shadows-2: #282828;
+    --c-scroll-shadows-shadow: rgba(0, 0, 0, 1);
   }
 }
 
@@ -184,7 +216,7 @@
 body {
   color: var(--c-text-0);
   background: var(--c-background-0);
-  transition: var(--theme-color-transition), var(--theme-bg-transition);
+  transition: var(--theme-color-transition), var(--theme-bgc-transition);
   line-height: 1.6;
   font-family:
     Inter,
@@ -203,4 +235,6 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-width: 350px;
+  min-height: 350px;
 }

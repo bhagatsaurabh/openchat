@@ -109,6 +109,7 @@ const handlePointerMove = (e) => {
   if (!isEditing.value) return;
   e.preventDefault();
   const pntr = pointers.find((pntr) => pntr.id === e.pointerId);
+  if (!pntr) return;
   pntr.x = e.pageX - pos.value.x;
   pntr.y = e.pageY - pos.value.y;
 
@@ -247,7 +248,7 @@ onBeforeUnmount(() => observer?.disconnect());
   touch-action: none;
   width: 70%;
   overflow: hidden;
-  transition: transform var(--fx-transition-duration-2) ease;
+  transition: transform var(--fx-duration-2) ease;
   transform: translateY(1.5rem);
 }
 .avatar-selector .container.editing {
@@ -258,7 +259,7 @@ onBeforeUnmount(() => observer?.disconnect());
   flex-direction: column;
   border-radius: 50%;
   opacity: 0;
-  transition: opacity var(--fx-transition-duration-0) linear;
+  transition: opacity var(--fx-duration-0) linear;
   user-select: none;
   justify-content: center;
   align-items: center;
