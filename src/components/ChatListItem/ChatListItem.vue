@@ -8,7 +8,11 @@ import { useMessagesStore } from '@/stores/messages';
 import Icon from '../Common/Icon/Icon.vue';
 
 const props = defineProps({
-  group: Object
+  group: Object,
+  active: {
+    type: Boolean,
+    default: false
+  }
 });
 
 const auth = useAuthStore();
@@ -50,7 +54,7 @@ const otherUserId = computed(() =>
 </script>
 
 <template>
-  <div class="chat-item" tabindex="0" @click="emit('select', group.id)">
+  <div class="chat-item" :class="{ active }" tabindex="0" @click="emit('select', group.id)">
     <span class="avatar" :class="{ default: defAvatar }">
       <img :src="avatarUrl" alt="group avatar" />
     </span>
@@ -97,6 +101,20 @@ const otherUserId = computed(() =>
   padding: 0.5rem 1rem 0.5rem 1rem;
   align-items: center;
   border-bottom: 1px solid var(--c-border-0);
+  transition: background-color var(--fx-duration-1) linear;
+}
+.chat-item::after {
+  content: '';
+  display: block;
+  position: absolute;
+  height: 100%;
+  width: 5px;
+  right: 0;
+  background-color: transparent;
+  transition: background-color var(--fx-duration-1) linear;
+}
+.chat-item.active::after {
+  background-color: var(--c-accent);
 }
 .avatar {
   margin-right: 1rem;
@@ -164,5 +182,12 @@ const otherUserId = computed(() =>
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+@media (hover: hover) {
+  .chat-item:hover {
+    background-color: var(--c-background-2);
+    cursor: pointer;
+  }
 }
 </style>

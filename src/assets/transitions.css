@@ -149,7 +149,7 @@
 /* slide (with vertical scale) */
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform var(--fx-transition-duration-0) linear;
+  transition: transform var(--fx-duration-0) linear;
 }
 .slide-enter-from,
 .slide-leave-to {
@@ -159,17 +159,17 @@
 /* scale-fade */
 .scale-fade-enter-active,
 .scale-fade-leave-active {
-  transition: transform var(--fx-transition-duration-2) cubic-bezier(0.53, 0, 0.53, 1);
+  transition: transform var(--fx-duration-2) cubic-bezier(0.53, 0, 0.53, 1);
 }
 .scale-fade-enter-from,
 .scale-fade-leave-to {
-  transform: translateY(-50%) scale(0) !important;
+  transform: translate(-50%, -50%) scale(0) !important;
 }
 
 /* slide-left */
 .slide-left-enter-active,
 .slide-left-leave-active {
-  transition: transform 0.3s ease;
+  transition: transform var(--fx-duration-2) ease;
 }
 .slide-left-enter-from,
 .slide-left-leave-to {

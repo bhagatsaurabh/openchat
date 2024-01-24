@@ -138,6 +138,7 @@ onBeforeUnmount(unregisterGuard);
   box-shadow: 0 0 10px 0px var(--c-shadow-0);
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 .profile section {
@@ -152,6 +153,7 @@ onBeforeUnmount(unregisterGuard);
   padding: 1rem;
   border-bottom: 1px solid var(--c-border-1);
   background-color: var(--c-accent-light-3);
+  z-index: 1;
 }
 .profile header button {
   background-color: transparent;
@@ -165,5 +167,17 @@ onBeforeUnmount(unregisterGuard);
 .profile .info {
   display: flex;
   flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .profile {
+    width: 390px;
+    z-index: 51;
+  }
+}
+@media (min-width: 1024px) {
+  .profile {
+    width: 425px;
+  }
 }
 </style>

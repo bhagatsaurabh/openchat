@@ -19,7 +19,7 @@ onBeforeMount(async () => {
     await preferences.load();
     deregPrefFn = local.registerPreferencesPersistence();
   } catch (error) {
-    // TODO: error-handling
+    //
   }
 });
 onBeforeUnmount(() => {

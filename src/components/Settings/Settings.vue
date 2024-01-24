@@ -68,10 +68,11 @@ onBeforeUnmount(unregisterGuard);
           :size="1.2"
           icon="back"
           :complementary="false"
+          :adaptive="false"
           circular
           flat
         />
-        <h2 class="ml-1">Settings</h2>
+        <h2 class="ml-1 c-black">Settings</h2>
       </header>
       <main>
         <section class="theme">
@@ -100,7 +101,7 @@ onBeforeUnmount(unregisterGuard);
 <style scoped>
 .settings {
   position: fixed;
-  z-index: 50;
+  z-index: 51;
   background-color: var(--c-background-0);
   width: 100vw;
   height: 100vh;
@@ -109,6 +110,10 @@ onBeforeUnmount(unregisterGuard);
   box-shadow: 0 0 10px 0px var(--c-shadow-0);
   display: flex;
   flex-direction: column;
+  transition:
+    var(--theme-bgc-transition),
+    var(--theme-shadow-transition),
+    transform var(--fx-duration-2) ease;
 }
 
 .settings section {
@@ -135,7 +140,7 @@ onBeforeUnmount(unregisterGuard);
 
 .settings .controls button {
   box-shadow: none !important;
-  background-color: none !important;
+  background-color: transparent !important;
   padding-left: 0;
   padding-right: 0;
 }
@@ -149,5 +154,16 @@ onBeforeUnmount(unregisterGuard);
 .settings .theme {
   margin-bottom: 1.5rem;
   margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .settings {
+    width: 390px;
+  }
+}
+@media (min-width: 1024px) {
+  .settings {
+    width: 425px;
+  }
 }
 </style>

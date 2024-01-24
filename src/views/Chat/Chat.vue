@@ -118,7 +118,7 @@ onBeforeUnmount(() => {
       <h2>{{ isBusy }}</h2>
     </div>
   </Backdrop>
-  <Header border>
+  <Header class="chat-header" border>
     <template #left>
       <Avatar class="ml-0p5" @open="showProfile = true" :url="auth.profile?.avatarUrl" />
     </template>
@@ -230,5 +230,19 @@ onBeforeUnmount(() => {
 .wait h2 {
   font-weight: lighter;
   text-shadow: 0px 0px 4px var(--c-background-1);
+}
+
+@media (min-width: 768px) {
+  .chat-header,
+  .chat-container {
+    max-width: 390px;
+    border-right: 1px solid var(--c-border-0);
+  }
+}
+@media (min-width: 1024px) {
+  .chat-header,
+  .chat-container {
+    max-width: 425px;
+  }
 }
 </style>

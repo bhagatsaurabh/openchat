@@ -55,6 +55,14 @@ defineProps({
   spinnerSize: {
     type: Number,
     default: 3
+  },
+  adaptive: {
+    type: Boolean,
+    default: true
+  },
+  invert: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -85,8 +93,9 @@ defineExpose({
       v-hide="busy"
       :alt="`${icon} icon`"
       :name="icon"
-      adaptive
-      :invert="complementary"
+      :adaptive="adaptive"
+      :singular="!adaptive"
+      :invert="complementary || invert"
       :size="size"
     />
     <Icon
@@ -94,8 +103,9 @@ defineExpose({
       v-hide="busy"
       :alt="`${icon} icon`"
       :name="icon"
-      adaptive
-      :invert="complementary"
+      :adaptive="adaptive"
+      :singular="!adaptive"
+      :invert="complementary || invert"
       :size="size"
     />
     <div class="content" v-hide="busy">
@@ -107,8 +117,9 @@ defineExpose({
       v-hide="busy"
       :alt="`${icon} icon`"
       :name="icon"
-      adaptive
-      :invert="complementary"
+      :adaptive="adaptive"
+      :singular="!adaptive"
+      :invert="complementary || invert"
       :size="size"
     />
     <Spinner
@@ -133,10 +144,10 @@ defineExpose({
   background-color: var(--c-background-0);
   border-radius: 0.5rem;
   transition:
-    var(--theme-bg-transition),
+    var(--theme-bgc-transition),
     var(--theme-color-transition),
     var(--theme-border-transition),
-    box-shadow var(--fx-transition-duration-0) linear,
+    box-shadow var(--fx-duration-0) linear,
     var(--theme-opacity-transition);
   box-shadow:
     2.5px 2.5px 5px 0 var(--c-shadow-0),

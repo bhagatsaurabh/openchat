@@ -34,6 +34,14 @@ const showModal = ref(null);
 const showLeave = ref(false);
 const editing = ref(null);
 const messageEl = ref(null);
+const profileOptions = computed(() => {
+  if (group.value.type !== 'private')
+    return [
+      { text: 'Profile', icon: 'user' },
+      { text: 'Leave', icon: 'leave' }
+    ];
+  return [{ text: 'Profile', icon: 'user' }];
+});
 const names = computed(() =>
   group.value.id === 'self' ? group.value.name : users.getNamesFromUIDs(group.value.members).join(', ')
 );
@@ -147,13 +155,7 @@ watch(() => groups.activeGroup, handleLoad);
           <h3 class="name">{{ group.name }}</h3>
           <h4 class="members">{{ names }}</h4>
         </div>
-        <Options
-          :options="[
-            { text: 'Profile', icon: 'user' },
-            { text: 'Leave', icon: 'leave' }
-          ]"
-          @select="(opt) => handleGroupOption(opt.text)"
-        />
+        <Options :options="profileOptions" @select="(opt) => handleGroupOption(opt.text)" />
       </template>
     </Header>
     <section ref="containerEl" class="messages-container" @scroll="throttledHandleScroll">
@@ -231,6 +233,10 @@ watch(() => groups.activeGroup, handleLoad);
   display: flex;
   flex-direction: column;
   z-index: 50;
+  transition:
+    var(--theme-bgc-transition),
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .window .messages-container {
@@ -254,6 +260,7 @@ watch(() => groups.activeGroup, handleLoad);
 .info {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
 }
 .info h3,
 .info h4 {
@@ -283,5 +290,20 @@ watch(() => groups.activeGroup, handleLoad);
 }
 .footer.edit {
   z-index: 150;
+}
+
+@media (min-width: 768px) {
+  .window {
+    width: calc(100% - 390px);
+    left: unset;
+    right: 0;
+  }
+}
+@media (min-width: 1024px) {
+  .window {
+    width: calc(100% - 425px);
+    left: unset;
+    right: 0;
+  }
 }
 </style>

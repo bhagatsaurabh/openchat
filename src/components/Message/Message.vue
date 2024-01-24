@@ -225,7 +225,7 @@ onBeforeUnmount(() => {
           <div class="initials" v-else>{{ initials }}</div>
         </div>
         <div class="content">
-          <h4 v-if="!isMine" class="name">{{ name }}</h4>
+          <h4 v-if="!isMine" class="name ellipsis">{{ name }}</h4>
           <span class="tail"><Tail :self="isMine" /></span>
           <div class="state" v-if="!['done', 'lost'].includes(state.stage)">
             <ProgressBar v-if="state.progress !== -2" class="progress" :value="state.progress" />
@@ -309,8 +309,7 @@ onBeforeUnmount(() => {
   margin-bottom: 0.5rem;
 }
 .message .container {
-  max-width: 90vw;
-  min-width: 25vw;
+  max-width: 75vw;
   margin-right: auto;
   margin-left: 3rem;
 }
@@ -333,7 +332,10 @@ onBeforeUnmount(() => {
   border-radius: 1rem;
   background-color: var(--c-accent-light-3);
 }
-.sys-content .text:focus + .time {
+html[data-theme='dark'] .sys-content .text {
+  background-color: var(--c-background-3);
+}
+.sys-content .text:focus + .footer .time {
   transform: translateY(0);
 }
 .sys-content .time {
@@ -341,7 +343,7 @@ onBeforeUnmount(() => {
   font-weight: lighter;
   transform: translateY(-120%);
   z-index: -1;
-  transition: transform var(--fx-transition-duration-1) ease;
+  transition: transform var(--fx-duration-1) ease;
 }
 .message .content {
   background-color: var(--c-background-2);
@@ -349,6 +351,16 @@ onBeforeUnmount(() => {
   border-radius: 0.5rem;
   padding: 0.25rem 0.5rem 0.25rem 0.5rem;
   border-top-left-radius: unset;
+}
+html[data-theme='dark'] .message .content {
+  background-color: #4a4a4a;
+  box-shadow: 3px 3px 6px -3px var(--c-shadow-1);
+}
+html[data-theme='dark'] .message .content::after {
+  box-shadow: 3px 3px 6px -3px var(--c-shadow-1);
+}
+html[data-theme='dark'] .message .content .tail {
+  color: #4a4a4a;
 }
 .message.me .content {
   border-top-left-radius: 0.5rem;
@@ -400,6 +412,7 @@ onBeforeUnmount(() => {
 .message .content .name {
   font-size: 0.85rem;
   font-weight: lighter;
+  max-width: 10rem;
 }
 .message .content .lost {
   font-weight: lighter;
@@ -528,7 +541,7 @@ onBeforeUnmount(() => {
 }
 
 @media (hover: hover) {
-  .sys-content .text:hover + .time {
+  .sys-content .text:hover + .footer .time {
     transform: translateY(0);
   }
 }

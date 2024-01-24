@@ -75,7 +75,7 @@ watch(
 .headings {
   display: flex;
   height: 0rem;
-  transition: height var(--fx-transition-duration-0) linear;
+  transition: height var(--fx-duration-0) linear;
   overflow: hidden;
 }
 .headings.show {
@@ -104,7 +104,7 @@ watch(
   left: 0;
   bottom: 0;
   height: 3px;
-  transition: left var(--fx-transition-duration-2) ease;
+  transition: left var(--fx-duration-2) ease;
   background-color: var(--c-accent);
 }
 .headings:deep(button img) {

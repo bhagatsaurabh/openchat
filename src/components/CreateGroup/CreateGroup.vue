@@ -140,10 +140,11 @@ onBeforeUnmount(unregisterGuard);
           :size="1.2"
           icon="back"
           :complementary="false"
+          :adaptive="false"
           circular
           flat
         />
-        <h2 class="ml-1">Create new group</h2>
+        <h2 class="ml-1 c-black">Create new group</h2>
       </header>
       <section class="name-input">
         <InputText
@@ -221,7 +222,7 @@ onBeforeUnmount(unregisterGuard);
 <style scoped>
 .container {
   position: fixed;
-  z-index: 50;
+  z-index: 55;
   background-color: var(--c-background-0);
   width: 100vw;
   height: 100vh;
@@ -269,5 +270,20 @@ footer .controls button:not(:last-child) {
 }
 .name-input:deep(.input) {
   width: 100%;
+}
+
+@media (min-width: 768px) {
+  .container {
+    width: 390px;
+    left: unset;
+    right: 0;
+  }
+}
+@media (min-width: 1024px) {
+  .container {
+    width: 425px;
+    left: unset;
+    right: 0;
+  }
 }
 </style>

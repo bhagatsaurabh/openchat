@@ -144,8 +144,8 @@ defineExpose({ openMenu });
   background-color: var(--c-background-1);
   overflow: hidden;
   transition:
-    max-height var(--fx-transition-duration-2) ease,
-    clip-path var(--fx-transition-duration-1) ease;
+    max-height var(--fx-duration-2) ease,
+    clip-path var(--fx-duration-1) ease;
   pointer-events: none;
   width: 14rem !important;
 }

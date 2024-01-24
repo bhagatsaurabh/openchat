@@ -31,6 +31,8 @@ defineProps({
   z-index: 10;
   background-color: var(--c-background-0);
   border-bottom: 1px solid var(--c-box-border);
+  transition: var(--theme-bgc-transition), var(--theme-color-transition), var(--theme-border-transition),
+    var(--theme-shadow-transition);
 }
 .header.fixed {
   position: fixed;

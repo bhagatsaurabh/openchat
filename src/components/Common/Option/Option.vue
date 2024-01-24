@@ -26,7 +26,7 @@ const emit = defineEmits(['select']);
 <style scoped>
 .option {
   padding: 0.75rem;
-  transition: background-color var(--fx-transition-duration-0) linear;
+  transition: background-color var(--fx-duration-0) linear;
   display: flex;
   align-items: center;
 }

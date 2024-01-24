@@ -143,8 +143,8 @@ watch(
   max-height: 0vh;
   overflow: hidden;
   transition:
-    max-height var(--fx-transition-duration-2) ease,
-    clip-path var(--fx-transition-duration-1) ease;
+    max-height var(--fx-duration-2) ease,
+    clip-path var(--fx-duration-1) ease;
   pointer-events: none;
   width: 21.5rem !important;
 }

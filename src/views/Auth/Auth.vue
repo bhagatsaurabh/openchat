@@ -50,7 +50,7 @@ const showHeaderBrand = ref(false);
   opacity: 0.4 !important;
 }
 .main {
-  width: 100vw;
+  width: 100%;
   min-height: calc(100vh - var(--header-height) - var(--footer-height));
   display: flex;
   justify-content: center;

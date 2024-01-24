@@ -143,7 +143,7 @@ watch(isOpen, () => isOpen.value && focusNext());
   color: var(--c-text-0);
   border: 1px solid var(--c-border-0);
   display: block;
-  transition: all var(--fx-transition-duration-1) ease;
+  transition: all var(--fx-duration-1) ease;
   background-color: var(--c-background-0);
   font-size: 0;
   border-radius: 1rem;
@@ -177,8 +177,8 @@ watch(isOpen, () => isOpen.value && focusNext());
   right: calc(100% + 1rem);
   transform: translate(10%, -50%);
   transition:
-    transform var(--fx-transition-duration-1) ease,
-    opacity var(--fx-transition-duration-1) ease;
+    transform var(--fx-duration-1) ease,
+    opacity var(--fx-duration-1) ease;
   padding: 0.4rem 1.2rem;
   pointer-events: none;
   background-color: var(--c-background-2);
@@ -228,7 +228,8 @@ watch(isOpen, () => isOpen.value && focusNext());
   border: 1px solid var(--c-border-0);
   border-radius: 1rem;
   background-color: transparent;
-  transition: background-color var(--fx-transition-duration-1) ease;
+  transition: background-color var(--fx-duration-1) ease;
+  cursor: pointer;
 }
 .theme-selector-hoz .theme-item-hoz.active {
   background-color: var(--c-background-3);
@@ -240,10 +241,15 @@ watch(isOpen, () => isOpen.value && focusNext());
   left: 50%;
   bottom: 0;
   transform: translate(-50%, calc(100% + 0.5rem));
+  transition: var(--theme-color-transition);
   font-size: 0.8rem;
+  color: var(--c-text-0);
 }
 
 .icon {
   opacity: 0.7;
+}
+.icon:deep(img) {
+  pointer-events: none !important;
 }
 </style>

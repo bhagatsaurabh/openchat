@@ -10,17 +10,17 @@
 
 .scroll-shadows-0 {
   background:
-    linear-gradient(var(--c-background-0) 30%, rgba(255, 255, 255, 0)) center top,
-    linear-gradient(rgba(255, 255, 255, 0), var(--c-background-0) 70%) center bottom,
-    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center top,
-    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center bottom;
+    linear-gradient(var(--c-scroll-shadows-0) 30%, rgba(255, 255, 255, 0)) center top,
+    linear-gradient(rgba(255, 255, 255, 0), var(--c-scroll-shadows-0) 70%) center bottom,
+    radial-gradient(farthest-side at 50% 0, var(--c-scroll-shadows-shadow), rgba(0, 0, 0, 0)) center top,
+    radial-gradient(farthest-side at 50% 100%, var(--c-scroll-shadows-shadow), rgba(0, 0, 0, 0)) center bottom;
 }
 .scroll-shadows-2 {
   background:
-    linear-gradient(var(--c-background-2) 30%, rgba(255, 255, 255, 0)) center top,
-    linear-gradient(rgba(255, 255, 255, 0), var(--c-background-2) 70%) center bottom,
-    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center top,
-    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center bottom;
+    linear-gradient(var(--c-scroll-shadows-2) 30%, rgba(255, 255, 255, 0)) center top,
+    linear-gradient(rgba(255, 255, 255, 0), var(--c-scroll-shadows-2) 70%) center bottom,
+    radial-gradient(farthest-side at 50% 0, var(--c-scroll-shadows-shadow), rgba(0, 0, 0, 0)) center top,
+    radial-gradient(farthest-side at 50% 100%, var(--c-scroll-shadows-shadow), rgba(0, 0, 0, 0)) center bottom;
 }
 .scroll-shadows {
   overflow: auto;
@@ -33,6 +33,9 @@
     100% 14px,
     100% 14px;
   background-attachment: local, local, scroll, scroll;
+  transition:
+    --c-scroll-shadows-0 var(--fx-duration-1) linear,
+    --c-scroll-shadows-2 var(--fx-duration-1) linear;
 }
 
 .mr-0p5 {
@@ -135,6 +138,15 @@
 }
 .p-0 {
   padding: 0 !important;
+}
+.c-black {
+  color: var(--c-black);
+}
+
+input[type='text'],
+input[type='tel'] {
+  color: var(--c-text-0);
+  transition: var(--theme-color-transition);
 }
 
 @media (hover: hover) {

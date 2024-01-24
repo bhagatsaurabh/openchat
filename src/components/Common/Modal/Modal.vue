@@ -126,11 +126,10 @@ onBeforeUnmount(unregisterGuard);
   z-index: 102;
   border: 1px solid var(--c-border-0);
   box-shadow: 0 0 10px 0px var(--c-shadow-0);
-  left: 10vw;
-  right: 10vw;
-  top: 50vh;
+  left: 50%;
+  top: 50%;
   background-color: var(--c-background-2);
-  transform: translateY(-50%) scale(1);
+  transform: translate(-50%, -50%) scale(1);
   padding: 1rem;
   color: var(--c-text-0);
   transform-origin: center;
@@ -152,5 +151,13 @@ onBeforeUnmount(unregisterGuard);
 .close-icon {
   margin-left: calc(100% - 1.1rem);
   vertical-align: unset;
+}
+
+@media (min-width: 768px) {
+  .modal {
+    min-width: 25%;
+  }
+}
+@media (min-width: 1024px) {
 }
 </style>

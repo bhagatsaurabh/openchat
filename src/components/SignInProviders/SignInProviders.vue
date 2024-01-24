@@ -6,10 +6,24 @@ const emit = defineEmits(['provider']);
 
 <template>
   <section class="signin-providers">
-    <Button @click="emit('provider', 'phone')" icon="phone" icon-left :complementary="false" :size="1">
+    <Button
+      @click="emit('provider', 'phone')"
+      icon="phone"
+      icon-left
+      :complementary="false"
+      :size="1"
+      :adaptive="false"
+    >
       Sign In with Phone
     </Button>
-    <Button @click="emit('provider', 'anonymous')" icon="guest" icon-left :complementary="false" :size="1">
+    <Button
+      @click="emit('provider', 'anonymous')"
+      icon="guest"
+      icon-left
+      :complementary="false"
+      :size="1"
+      :adaptive="false"
+    >
       Continue as Guest
     </Button>
   </section>
@@ -21,6 +35,7 @@ const emit = defineEmits(['provider']);
 }
 .signin-providers button {
   margin: auto;
+  display: block;
 }
 .signin-providers button:not(:last-child) {
   margin-bottom: 1rem;
