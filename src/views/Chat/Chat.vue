@@ -34,6 +34,7 @@ const showManage = ref(false);
 const activeTab = ref(0);
 const query = ref('');
 const forceHeader = ref(false);
+const filterUnread = ref(false);
 const tabs = ref([
   { name: 'My Chats', id: 'my-chats', icon: 'chats' },
   { name: 'Find', id: 'find', icon: 'globe' }
@@ -48,6 +49,15 @@ const handleSignOut = async () => {
 const switchToGroup = async (id) => {
   await groupsStore.setActiveGroup(id);
   router.push({ path: '/chat' });
+};
+const handleSelect = (otherUser) => {
+  const group = groupsStore.existsPrivateGroup(otherUser);
+  if (group) {
+    handleClearFilter();
+    switchToGroup(group.id);
+  } else {
+    handleCreateGroup(otherUser.name, 'private', [auth.profile, otherUser]);
+  }
 };
 const handleCreateGroup = async (name, type, members, avatarUrl) => {
   const id = await groupsStore.createGroup({ name, type, members, avatarUrl });
@@ -68,6 +78,10 @@ const handleAction = (action) => {
   else if (action === 'add-group') {
     showManage.value = true;
   }
+};
+const handleClearFilter = () => {
+  query.value = '';
+  filterUnread.value = false;
 };
 
 watch(query, () => {
@@ -147,7 +161,13 @@ onBeforeUnmount(() => {
     >
       {{ showConfirm.desc ?? 'Are you sure ?' }}
     </Modal>
-    <ChatSearch ref="searchEl" @search="(val) => (query = val)" />
+    <ChatSearch
+      ref="searchEl"
+      :query="query"
+      :unread="filterUnread"
+      @search="(val) => (query = val)"
+      @unread="filterUnread = !filterUnread"
+    />
     <Tabs
       class="tabs"
       :tabs="tabs"
@@ -159,16 +179,15 @@ onBeforeUnmount(() => {
         <ChatList
           :groups="Object.values(groupsStore.groups)"
           :query="query"
+          :unread="filterUnread"
           @select="(id) => switchToGroup(id)"
           @open-search="handleForceSearch"
           @self-chat="handleSelfChat"
+          @clear-filter="handleClearFilter"
         />
       </template>
       <template #find>
-        <ChatSearchList
-          :query="query"
-          @select="(otherUser) => handleCreateGroup(otherUser.name, 'private', [auth.profile, otherUser])"
-        />
+        <ChatSearchList :query="query" @select="handleSelect" />
       </template>
     </Tabs>
     <Profile v-if="showProfile" @back="() => (showProfile = false)" />

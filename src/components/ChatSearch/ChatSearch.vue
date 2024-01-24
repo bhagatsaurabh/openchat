@@ -7,23 +7,32 @@ import Icon from '@/components/Common/Icon/Icon.vue';
 import Button from '@/components/Common/Button/Button.vue';
 import Toggle from '@/components/Common/Toggle/Toggle.vue';
 
-defineProps({
+const props = defineProps({
   showUnread: {
     type: Boolean,
     default: true
+  },
+  unread: {
+    type: Boolean,
+    default: false
+  },
+  query: {
+    type: String,
+    default: ''
   }
 });
-const emit = defineEmits(['search']);
+const emit = defineEmits(['search', 'unread']);
 
-const query = ref('');
-const filterUnread = ref(false);
 const el = ref(null);
 
-const handleClear = () => (query.value = '');
-const throttledEmit = throttle(() => emit('search', query.value), 1000);
+const handleClear = () => emit('search', '');
+const throttledEmit = throttle(() => emit('search', props.query), 1000);
 const focus = () => el.value.native.focus();
 
-watch(query, () => throttledEmit());
+watch(
+  () => props.query,
+  () => throttledEmit()
+);
 
 defineExpose({ focus });
 </script>
@@ -40,7 +49,8 @@ defineExpose({ focus });
     />
     <InputText
       ref="el"
-      v-model="query"
+      :model-value="query"
+      @update:modelValue="(val) => emit('search', val)"
       class="search-input"
       type="text"
       placeholder="Search"
@@ -60,7 +70,14 @@ defineExpose({ focus });
         @click="handleClear"
       />
     </Transition>
-    <Toggle v-if="showUnread" :size="1.2" class="unread-filter" icon="unread" v-model="filterUnread" />
+    <Toggle
+      v-if="showUnread"
+      :size="1.2"
+      class="unread-filter"
+      icon="unread"
+      @update:modelValue="emit('unread')"
+      :model-value="unread"
+    />
   </section>
 </template>
 

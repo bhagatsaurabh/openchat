@@ -108,7 +108,7 @@ const handleScroll = async () => {
     busyNextChunk.value = false;
   }
 };
-const throttledHandleScroll = throttle(handleScroll, 100);
+const throttledHandleScroll = throttle(handleScroll, 250);
 const handleEdit = (msg, text) => {
   editing.value = msg;
   message.value = text;

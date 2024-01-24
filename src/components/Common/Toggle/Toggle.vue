@@ -1,7 +1,7 @@
 <script setup>
 import Button from '@/components/Common/Button/Button.vue';
 
-defineProps({
+const props = defineProps({
   size: {
     type: Number,
     default: 1
@@ -10,12 +10,17 @@ defineProps({
   modelValue: Boolean
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'change']);
+
+const handleClick = () => {
+  emit('update:modelValue', !props.modelValue);
+  emit('change', !props.modelValue);
+}
 </script>
 
 <template>
   <Button
-    @click="emit('update:modelValue', !modelValue)"
+    @click="handleClick"
     class="toggle"
     :class="{ active: modelValue }"
     :icon="icon"
