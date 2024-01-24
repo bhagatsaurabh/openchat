@@ -2,6 +2,7 @@
 import { watch, ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
 import { useRemoteDBStore } from '@/stores/remote';
+import { useAuthStore } from '@/stores/auth';
 import ChatSearchListItem from '@/components/ChatSearchListItem/ChatSearchListItem.vue';
 import Button from '../Common/Button/Button.vue';
 
@@ -22,6 +23,7 @@ const props = defineProps({
 const emit = defineEmits(['select']);
 
 const remote = useRemoteDBStore();
+const auth = useAuthStore();
 const list = ref([]);
 const page = ref(0);
 const numPages = ref(0);
@@ -37,16 +39,21 @@ const fbType = computed(() => {
 
 const searchUsers = async () => {
   isBusy.value = true;
+  let newList;
   if (!page.value) {
     const { users, nbPages } = await remote.searchUsers(props.query, page.value);
-    list.value = users;
+    newList = users;
     numPages.value = nbPages;
     if (numPages.value > 0) page.value += 1;
   } else {
     const { users } = await remote.searchUsers(props.query, page.value);
-    list.value = [...list.value, ...users];
+    newList = [...list.value, ...users];
     page.value += 1;
   }
+
+  const selfIdx = newList.findIndex((user) => user.id === auth.user.uid);
+  if (selfIdx > -1) newList.splice(selfIdx, 1);
+  list.value = newList;
   isBusy.value = false;
 };
 const handleNextPage = async (entries) => {

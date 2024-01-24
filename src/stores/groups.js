@@ -117,9 +117,11 @@ export const useGroupsStore = defineStore('groups', () => {
     if (id && groups.value[id]) {
       activeGroup.value = groups.value[id];
       activeGroupKey.value = await local.getGroupKey(auth.user.uid, id);
-      await messages.openStream(id);
-      await resetUnseenCount(id);
-      await remote.updateSeenTimestamp(auth.user.uid, id);
+
+      // These tasks can run in parallel
+      messages.openStream(id);
+      resetUnseenCount(id);
+      remote.updateSeenTimestamp(auth.user.uid, id);
     } else {
       activeGroup.value = null;
       activeGroupKey.value = null;
@@ -340,6 +342,11 @@ export const useGroupsStore = defineStore('groups', () => {
     await local.updateGroup(auth.user.uid, group.id, { unseenCount: 0 });
     groups.value[group.id] = { ...groups.value[group.id], unseenCount: 0 };
   }
+  function existsPrivateGroup(user) {
+    return Object.values(groups.value).find(
+      (group) => group.type === 'private' && group.members[1] === user.id
+    );
+  }
 
   return {
     groups,
@@ -364,6 +371,7 @@ export const useGroupsStore = defineStore('groups', () => {
     notifyNewMembers,
     notifyRemovedMembers,
     leave,
-    resetUnseenCount
+    resetUnseenCount,
+    existsPrivateGroup
   };
 });

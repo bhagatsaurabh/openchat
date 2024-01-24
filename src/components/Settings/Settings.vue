@@ -23,6 +23,7 @@ const handleDismiss = () => {
   }
 };
 const handleLeave = () => emit('back');
+const handleLogout = () => emit('logout');
 
 let unregisterGuard = () => {};
 watch(
@@ -81,7 +82,7 @@ onBeforeUnmount(unregisterGuard);
           <h2 class="fw-lighter mb-1 pb-0p5 border-b-1">Account</h2>
           <Button
             class="control-logout"
-            @click="emit('logout')"
+            @click="handleLogout"
             :size="1.2"
             icon="logout"
             :complementary="false"

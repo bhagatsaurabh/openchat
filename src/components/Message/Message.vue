@@ -11,6 +11,7 @@ import Tail from '@/components/Common/Tail/Tail.vue';
 import ProgressBar from '../Common/ProgressBar/ProgressBar.vue';
 import Button from '../Common/Button/Button.vue';
 import Options from '@/components/Common/Options/Options.vue';
+import { msInAnHour } from '@/utils/constants';
 
 const props = defineProps({
   message: Object,
@@ -170,7 +171,13 @@ const handleRemoteMessage = async () => {
 const handleContextMenu = (e) => {
   e.stopPropagation();
   e.preventDefault();
-  if (!isSystem.value && !props.message.deleted && isMine.value) optionsEl.value.openMenu();
+  if (
+    !isSystem.value &&
+    !props.message.deleted &&
+    isMine.value &&
+    (new Date() - props.message.timestamp) / msInAnHour <= 24
+  )
+    optionsEl.value.openMenu();
 };
 const handleMessageAction = async (option) => {
   if (option.text === 'Delete') {
@@ -337,7 +344,7 @@ onBeforeUnmount(() => {
   transition: transform var(--fx-transition-duration-1) ease;
 }
 .message .content {
-  background-color: var(--c-accent-light-4);
+  background-color: var(--c-background-2);
   box-shadow: 3px 3px 6px -3px var(--c-text-0);
   border-radius: 0.5rem;
   padding: 0.25rem 0.5rem 0.25rem 0.5rem;
@@ -346,6 +353,7 @@ onBeforeUnmount(() => {
 .message.me .content {
   border-top-left-radius: 0.5rem;
   border-top-right-radius: unset;
+  background-color: var(--c-accent-light-4);
 }
 .message .content .tail {
   position: absolute;
