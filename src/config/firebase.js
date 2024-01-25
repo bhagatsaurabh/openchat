@@ -10,13 +10,10 @@ export const auth = getAuth(app);
 export const remoteDB = getFirestore(app);
 export const storage = getStorage(app);
 const functions = getFunctions(app);
-export const rtdb = getDatabase(
-  app,
-  'https://openchat-a5cec-default-rtdb.asia-southeast1.firebasedatabase.app/'
-);
+export const rtdb = getDatabase(app);
 export const deleteMessageFunction = httpsCallable(functions, 'deleteMessage');
 
-if (location.hostname === 'localhost') {
+if (JSON.parse(import.meta.env.VITE_EMULATION_ENABLED) === true) {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   connectFirestoreEmulator(remoteDB, '127.0.0.1', 8080);
   connectStorageEmulator(storage, '127.0.0.1', 9199);

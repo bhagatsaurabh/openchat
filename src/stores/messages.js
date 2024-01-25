@@ -207,7 +207,7 @@ export const useMessagesStore = defineStore('messages', () => {
   }
   async function updateSync(message) {
     if (message.groupId === 'self') return;
-    await remote.updateSyncTimestamp(auth.user.uid, message.groupId);
+    await remote.updateSyncTimestamp(auth.user.uid, message.groupId, groups.groups[message.groupId].type);
     if (isSynced(message)) {
       try {
         await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });
@@ -218,7 +218,11 @@ export const useMessagesStore = defineStore('messages', () => {
   }
   async function updateSeenAndSync(message) {
     if (message.groupId === 'self') return;
-    await remote.updateSeenAndSyncTimestamp(auth.user.uid, message.groupId);
+    await remote.updateSeenAndSyncTimestamp(
+      auth.user.uid,
+      message.groupId,
+      groups.groups[message.groupId].type
+    );
     if (isSynced(message)) {
       try {
         await deleteMessageFunction({ messageId: message.id, groupId: message.groupId });

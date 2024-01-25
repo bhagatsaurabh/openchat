@@ -130,7 +130,7 @@ export const useGroupsStore = defineStore('groups', () => {
       // These tasks can run in parallel
       messages.openStream(id);
       resetUnseenCount(id);
-      activeGroup.value?.active && remote.updateSeenTimestamp(auth.user.uid, id);
+      activeGroup.value?.active && remote.updateSeenTimestamp(auth.user.uid, id, activeGroup.value.type);
     } else {
       activeGroup.value = null;
       activeGroupKey.value = null;
