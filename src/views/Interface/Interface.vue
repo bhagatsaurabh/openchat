@@ -35,7 +35,7 @@ const showLeave = ref(false);
 const editing = ref(null);
 const messageEl = ref(null);
 const profileOptions = computed(() => {
-  if (group.value.type !== 'private')
+  if (group.value.type !== 'private' && group.value.active)
     return [
       { text: 'Profile', icon: 'user' },
       { text: 'Leave', icon: 'leave' }
@@ -68,7 +68,7 @@ const handleGroupOption = (option) => {
   }
 };
 const handleLeave = async () => {
-  await groups.leave(group.value.id);
+  await groups.leave(group.value);
 };
 const handleAttachOption = (option) => {
   let accept = 'image/*,video/*,audio/*';
@@ -171,7 +171,7 @@ watch(() => groups.activeGroup, handleLoad);
       </div>
       <div v-if="busyNextChunk" class="wait"><Spinner /></div>
     </section>
-    <Footer class="footer" :class="{ edit: !!editing }">
+    <Footer v-if="group.active" class="footer" :class="{ edit: !!editing }">
       <template #left>
         <Options
           v-show="!editing"

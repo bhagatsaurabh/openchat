@@ -140,7 +140,7 @@ export const getIconFromFileType = (mime) => {
 };
 
 export const sysMsgUserAdded = (groupId) => ({
-  by: 'system',
+  by: 'system:added',
   groupId,
   id: uuid(),
   text: 'You were added',
@@ -148,7 +148,7 @@ export const sysMsgUserAdded = (groupId) => ({
   type: 'text'
 });
 export const sysMsgUserRemoved = (groupId) => ({
-  by: 'system',
+  by: 'system:removed',
   groupId,
   id: uuid(),
   text: 'You were removed',
@@ -156,10 +156,18 @@ export const sysMsgUserRemoved = (groupId) => ({
   type: 'text'
 });
 export const sysMsgLeft = (groupId) => ({
-  by: 'system',
+  by: 'system:left',
   groupId,
   id: uuid(),
   text: 'You left the group',
+  timestamp: new Date(),
+  type: 'text'
+});
+export const sysMsgUserLeft = (uid, groupId) => ({
+  by: 'system:left',
+  groupId,
+  id: uuid(),
+  text: `##${uid} left the group`,
   timestamp: new Date(),
   type: 'text'
 });

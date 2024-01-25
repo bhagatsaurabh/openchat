@@ -105,6 +105,20 @@ service cloud.firestore {
                  input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
                : true);
     }
+    function validateBCGroupMemberLeave(input, existing, affected) {
+      return (request.auth.uid in existing.admins
+               ? affected.hasOnly(['members', 'modifiedBy', 'admins'])
+               : affected.hasOnly(['members', 'modifiedBy'])) &&
+             validateExistingMembership(request.auth.uid, existing) &&
+             input.members.size() == (existing.members.size() - 1);
+    }
+    function validateBCGroupAdminLeave(input, existing, affected) {
+      return (request.auth.uid in existing.admins
+               ? affected.hasOnly(['members', 'modifiedBy', 'admins'])
+               : affected.hasOnly(['members', 'modifiedBy'])) &&
+             validateExistingMembership(request.auth.uid, existing) &&
+             input.admins.size() == (existing.admins.size() - 1);
+    }
     function validateBCGroupUpdation(input, existing) {
       let validKeys = ['seen', 'sync', 'name', 'members', 'admins', 'active', 'avatarUrl', 'modifiedBy'];
       let affected = input.diff(existing).affectedKeys();
@@ -117,26 +131,32 @@ service cloud.firestore {
                : true) &&
              ('members' in affected
                ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
-                 validateExistingAdminship(request.auth.uid, existing) &&
-                 input.members is list && validateNewMembership(request) &&
-                 input.members.toSet().size() > 2 &&
-                 input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0])) &&
-                 input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1])) &&
-                 input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2])))
+                 (!(request.auth.uid in input.members)
+                   ? validateBCGroupMemberLeave(input, existing, affected)
+                   : (validateExistingAdminship(request.auth.uid, existing) &&
+                     input.members is list && validateNewMembership(request) &&
+                     input.members.toSet().size() > 2 &&
+                     input.members[0] is string && exists(/databases/$(database)/documents/users/$(input.members[0])) &&
+                     input.members[1] is string && exists(/databases/$(database)/documents/users/$(input.members[1])) &&
+                     input.members[2] is string && exists(/databases/$(database)/documents/users/$(input.members[2])))))
                : true) &&
              ('admins' in affected
                ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
-                 validateExistingAdminship(request.auth.uid, existing) &&
-                 input.admins is list && validateNewAdminship(request) &&
-                 input.admins.toSet().size() > 0)
+                 (!(request.auth.uid in input.admins)
+                   ? validateBCGroupAdminLeave(input, existing, affected)
+                   : (validateExistingAdminship(request.auth.uid, existing) &&
+                     input.admins is list && validateNewAdminship(request) &&
+                     input.admins.toSet().size() > 0)))
                : true) &&
              ('seen' in affected
-               ? (validateExistingMembership(request.auth.uid, existing) &&
+               ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
+                 validateExistingMembership(request.auth.uid, existing) &&
                  input.seen is map && input.seen.diff(existing.seen).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.seen[request.auth.uid] is timestamp && input.seen[request.auth.uid] == request.time)
                : true) &&
              ('sync' in affected
-               ? (validateExistingMembership(request.auth.uid, existing) &&
+               ? ('modifiedBy' in input && input.modifiedBy == request.auth.uid &&
+                 validateExistingMembership(request.auth.uid, existing) &&
                  input.sync is map && input.sync.diff(existing.sync).affectedKeys().hasOnly([request.auth.uid]) &&
                  input.sync[request.auth.uid] is timestamp && input.sync[request.auth.uid] == request.time)
                : true) &&

@@ -115,16 +115,22 @@ export const useMessagesStore = defineStore('messages', () => {
       await local.storeMessage(message);
       addMessage(message);
     }
-    // For text messages, update sync info right-away
-    // For messages with files, update sync info only when downloaded successfully
-    if (message.type === 'text') {
-      if (groups.activeGroup?.id === message.groupId) await updateSeenAndSync(message);
-      else await updateSync(message);
-    }
+
+    await handleSync(message);
   };
   const handleError = (error) => console.log({ ...error });
   function stop() {
     Object.values(unsubFns.value).forEach((unsubscribe) => unsubscribe());
+  }
+  function clear() {
+    messages.value = {};
+    messageIdx.value = {};
+    busy.value = false;
+    outBusy.value = false;
+    streams.value = {};
+    outQueueIdx.value = {};
+    outQueue.clear();
+    queue.clear();
   }
   function attachListener(groupId) {
     if (!unsubFns.value[groupId]) {
@@ -138,6 +144,10 @@ export const useMessagesStore = defineStore('messages', () => {
       );
       unsubFns.value[groupId] = unsubscribe;
     }
+  }
+  function stopListener(groupId) {
+    unsubFns.value[groupId]?.();
+    unsubFns.value[groupId] = undefined;
   }
   function addMessage(message) {
     setStatus(message);
@@ -186,6 +196,14 @@ export const useMessagesStore = defineStore('messages', () => {
       }
     });
     return numMembers <= 0;
+  }
+  async function handleSync(message) {
+    // For text messages, update sync info right-away
+    // For messages with files, update sync info only when downloaded successfully
+    if (message.type === 'text') {
+      if (groups.activeGroup?.id === message.groupId) await updateSeenAndSync(message);
+      else await updateSync(message);
+    }
   }
   async function updateSync(message) {
     if (message.groupId === 'self') return;
@@ -283,7 +301,7 @@ export const useMessagesStore = defineStore('messages', () => {
   async function setLastMessage(message) {
     let text, type;
     if (message.type === 'text') {
-      text = message.by !== 'system' ? await decrypt(message) : message.text;
+      text = !message.by.startsWith('system') ? await decrypt(message) : message.text;
       type = 'text';
     } else {
       type = getIconFromFileType(message.mimetype);
@@ -345,6 +363,7 @@ export const useMessagesStore = defineStore('messages', () => {
     messageIdx,
     stop,
     attachListener,
+    stopListener,
     openStream,
     loadChunk,
     unload,
@@ -355,6 +374,8 @@ export const useMessagesStore = defineStore('messages', () => {
     updateSync,
     updateSeenAndSync,
     parseSysMsg,
-    modifyMessage
+    modifyMessage,
+    addMessage,
+    clear
   };
 });

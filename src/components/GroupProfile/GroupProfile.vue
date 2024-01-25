@@ -146,10 +146,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
         <GroupMemberList :group="group" :admin="isAdmin" />
       </section>
       <section v-if="!isPrivate" class="controls">
-        <Button v-if="isAdmin" @click="showManage = true" icon="manage" :complementary="false" flat
-          >Manage Members</Button
+        <Button v-if="isAdmin" @click="showManage = true" icon="manage" :complementary="false" flat>
+          Manage Members
+        </Button>
+        <Button
+          v-if="group.active"
+          @click="() => handleControl('leave')"
+          icon="leave"
+          :complementary="false"
+          flat
         >
-        <Button @click="() => handleControl('leave')" icon="leave" :complementary="false" flat>Leave</Button>
+          Leave
+        </Button>
       </section>
       <section class="promise">
         <Icon class="mr-0p5" name="badge-lock" alt="lock icon" adaptive />

@@ -10,14 +10,16 @@ import {
 import { doc, getDoc } from 'firebase/firestore';
 import { PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 
-import { app, remoteDB } from '@/config/firebase';
 import { useNotificationStore } from './notification';
 import { useRecaptchaStore } from './recaptcha';
 import { useRemoteDBStore } from '@/stores/remote';
-import { generatePrivateKey } from '@/utils/crypto';
-import * as local from '@/database/driver';
 import { useUsersStore } from './users';
 import { usePresenceStore } from './presence';
+import { useGroupsStore } from './groups';
+import { useMessagesStore } from './messages';
+import { app, remoteDB } from '@/config/firebase';
+import { generatePrivateKey } from '@/utils/crypto';
+import * as local from '@/database/driver';
 
 const auth = getAuth(app);
 auth.useDeviceLanguage();
@@ -35,6 +37,8 @@ export const useAuthStore = defineStore('auth', () => {
   const remote = useRemoteDBStore();
   const users = useUsersStore();
   const presence = usePresenceStore();
+  const groups = useGroupsStore();
+  const messages = useMessagesStore();
 
   function setUser(signedInUser) {
     user.value = signedInUser;
@@ -130,6 +134,8 @@ export const useAuthStore = defineStore('auth', () => {
       name.value = null;
       encKey.value = null;
       profile.value = null;
+      groups.clear();
+      messages.clear();
     } catch (error) {
       console.log(error);
       notify.push({ type: 'snackbar', status: 'warn', message: 'Something went wrong, please try again' });
