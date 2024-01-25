@@ -1,17 +1,17 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 import { useAuthStore } from './auth';
-import * as local from '@/database/driver';
 import { useRemoteDBStore } from './remote';
+import { useUsersStore } from './users';
+import { useMessagesStore } from './messages';
+import { remoteDB } from '@/config/firebase';
+import * as local from '@/database/driver';
+import { schemaChange } from '@/database/database';
 import { base64ToBuf, bufToBase64, sysMsgLeft, sysMsgUserAdded, sysMsgUserRemoved } from '@/utils/utils';
 import { Queue } from '@/utils/queue';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { remoteDB } from '@/config/firebase';
 import { encryptGroupKey, generateGroupKey, importPublicKey } from '@/utils/crypto';
-import { useUsersStore } from './users';
-import { schemaChange } from '@/database/database';
-import { useMessagesStore } from './messages';
 
 export const useGroupsStore = defineStore('groups', () => {
   const auth = useAuthStore();
@@ -21,7 +21,7 @@ export const useGroupsStore = defineStore('groups', () => {
   const groups = ref({});
   const activeGroup = ref(null);
   const activeGroupKey = ref(null);
-  const unsubFns = ref([]);
+  const unsubFns = ref({});
   const busy = ref(false);
   const queue = new Queue();
 
@@ -87,13 +87,15 @@ export const useGroupsStore = defineStore('groups', () => {
     }
   };
   const handleLocalGroup = async (group) => {
+    await users.saveProfiles((group.pastMembers ?? []).concat(group.members));
+
     addGroup(group);
 
     if (activeGroup.value?.id === group.id) {
       activeGroup.value = { ...group };
     }
   };
-  const handleError = (error) => console.log({ ...error });
+  const handleError = (error) => console.log(error, { ...error });
 
   async function listen() {
     const localGroups = await local.getAllGroups(auth.user.uid);
@@ -107,11 +109,18 @@ export const useGroupsStore = defineStore('groups', () => {
       .filter((group) => group.active && group.id !== 'self')
       .forEach((group) => {
         const unsubscribe = onSnapshot(doc(remoteDB, 'groups', group.id), listener, handleError);
-        unsubFns.value.push(unsubscribe);
+        unsubFns.value[group.id] = unsubscribe;
       });
   }
   function stop() {
-    unsubFns.value.forEach((unsubscribe) => unsubscribe());
+    Object.values(unsubFns.value).forEach((unsubscribe) => unsubscribe());
+  }
+  function clear() {
+    groups.value = {};
+    activeGroup.value = null;
+    activeGroupKey.value = null;
+    busy.value = false;
+    queue.clear();
   }
   async function setActiveGroup(id) {
     if (id && groups.value[id]) {
@@ -121,7 +130,7 @@ export const useGroupsStore = defineStore('groups', () => {
       // These tasks can run in parallel
       messages.openStream(id);
       resetUnseenCount(id);
-      remote.updateSeenTimestamp(auth.user.uid, id);
+      activeGroup.value?.active && remote.updateSeenTimestamp(auth.user.uid, id);
     } else {
       activeGroup.value = null;
       activeGroupKey.value = null;
@@ -141,22 +150,29 @@ export const useGroupsStore = defineStore('groups', () => {
     attachListener(id);
     await remote.deleteNotification(data.id);
   }
-  async function userRemoved(data) {
+  async function userRemoved(data, self = false) {
     const { id } = data.payload;
 
-    const sysMsg = sysMsgUserRemoved(id);
+    messages.stopListener(id);
+    stopListener(id);
+
+    const sysMsg = self ? sysMsgLeft(id) : sysMsgUserRemoved(id);
     await local.storeMessage(sysMsg);
-    await local.deleteGroupKey(auth.user.uid, id);
     await local.updateGroup(auth.user.uid, id, {
       active: false,
-      unseenCount: 1,
+      unseenCount: activeGroup.value?.id === id ? 0 : 1,
       lastMsg: { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text }
     });
-    if (groups[id]) {
+    if (groups.value[id]) {
       const updatedGroup = await local.getGroup(auth.user.uid, id);
       groups.value[id] = { ...updatedGroup };
     }
-    await remote.deleteNotification(id);
+    if (activeGroup.value?.id === id) {
+      activeGroup.value = { ...groups.value[id] };
+    }
+    if (!self) await remote.deleteNotification(id);
+
+    return sysMsg;
   }
   function addGroup(group) {
     groups.value[group.id] = { ...group };
@@ -236,7 +252,11 @@ export const useGroupsStore = defineStore('groups', () => {
   }
   function attachListener(groupId) {
     const unsubscribe = onSnapshot(doc(remoteDB, 'groups', groupId), listener, handleError);
-    unsubFns.value.push(unsubscribe);
+    unsubFns.value[groupId] = unsubscribe;
+  }
+  function stopListener(groupId) {
+    unsubFns.value[groupId]?.();
+    unsubFns.value[groupId] = undefined;
   }
 
   function getDMGroupByUID(otherUserId) {
@@ -324,17 +344,23 @@ export const useGroupsStore = defineStore('groups', () => {
   }
 
   async function leave(group) {
-    const idx = group.members.indexOf(auth.user.uid);
-    if (idx >= 0) {
-      const newMembers = [...group.members];
-      newMembers.splice(idx, 1);
-      await updateGroup(group.id, { members: newMembers });
+    const midx = group.members.indexOf(auth.user.uid);
+    const aidx = group.admins.indexOf(auth.user.uid);
 
-      const sysMsg = sysMsgLeft(group.id);
-      await local.storeMessage(sysMsg);
-      group.lastMsg = { by: sysMsg.by, timestamp: sysMsg.timestamp, type: sysMsg.type, text: sysMsg.text };
-      await local.updateGroup(auth.user.uid, group.id, { ...group, active: false });
-      groups.value[group.id] = { ...group };
+    if (midx >= 0) {
+      const sysMsg = await userRemoved({ payload: { id: group.id } }, true);
+
+      const newMembers = [...group.members];
+      newMembers.splice(midx, 1);
+      let newAdmins;
+      if (aidx >= 0) {
+        newAdmins = [...group.admins];
+        newAdmins.splice(aidx, 1);
+        await updateGroup(group.id, { members: newMembers, admins: newAdmins });
+      } else {
+        await updateGroup(group.id, { members: newMembers });
+      }
+      messages.addMessage(sysMsg);
     }
   }
   async function resetUnseenCount(groupId) {
@@ -364,6 +390,7 @@ export const useGroupsStore = defineStore('groups', () => {
     createGroup,
     createSelfGroup,
     attachListener,
+    stopListener,
     removeMember,
     makeAdmin,
     revokeAdmin,
@@ -372,6 +399,7 @@ export const useGroupsStore = defineStore('groups', () => {
     notifyRemovedMembers,
     leave,
     resetUnseenCount,
-    existsPrivateGroup
+    existsPrivateGroup,
+    clear
   };
 });

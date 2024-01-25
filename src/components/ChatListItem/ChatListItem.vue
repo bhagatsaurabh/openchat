@@ -67,7 +67,7 @@ const otherUserId = computed(() =>
           {{ timestamp }}
         </span>
       </div>
-      <div class="msg" :class="{ sys: group.lastMsg?.by === 'system' }">
+      <div class="msg" :class="{ sys: group.lastMsg?.by.startsWith('system') }">
         <div class="text">
           <span
             v-if="lastMsgBy && (group.type !== 'private' || group.lastMsg?.by !== otherUserId)"
@@ -84,7 +84,7 @@ const otherUserId = computed(() =>
             adaptive
           />
           <span v-if="lastMsgText" class="d-inline-block ellipsis">{{
-            group.lastMsg?.by !== 'system' ? lastMsgText : messages.parseSysMsg(lastMsgText)
+            !group.lastMsg?.by.startsWith('system') ? lastMsgText : messages.parseSysMsg(lastMsgText)
           }}</span>
         </div>
         <span v-if="group.unseenCount > 0" class="count">

@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Build
+        run: |
+          npm i
+          npm run build
+        env:
+          VITE_OPENCHAT_PUBLIC_KEY: ${{ secrets.VITE_OPENCHAT_PUBLIC_KEY }}
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@master
+        with:
+          name: openchat-dist
+          path: dist
+
+  Deploy-Firebase:
+    needs: [Build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: openchat-dist
+          path: dist
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_OPENCHAT_A5CEC }}'
+          channelId: live
+          projectId: openchat-a5cec
+
+  Cleanup:
+    needs: [Deploy-Firebase]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete dist artifacts
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: openchat-dist

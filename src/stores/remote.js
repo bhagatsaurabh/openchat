@@ -105,7 +105,8 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function updateSeenTimestamp(uid, groupId) {
     try {
       await updateDoc(doc(remoteDB, 'groups', groupId), {
-        [`seen.${uid}`]: serverTimestamp()
+        [`seen.${uid}`]: serverTimestamp(),
+        modifiedBy: auth.user.uid
       });
     } catch (error) {
       console.log(error);
@@ -115,7 +116,8 @@ export const useRemoteDBStore = defineStore('remote', () => {
     try {
       await updateDoc(doc(remoteDB, 'groups', groupId), {
         [`seen.${uid}`]: serverTimestamp(),
-        [`sync.${uid}`]: serverTimestamp()
+        [`sync.${uid}`]: serverTimestamp(),
+        modifiedBy: auth.user.uid
       });
     } catch (error) {
       console.log(error);
@@ -124,7 +126,8 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function updateSyncTimestamp(uid, groupId) {
     try {
       await updateDoc(doc(remoteDB, 'groups', groupId), {
-        [`sync.${uid}`]: serverTimestamp()
+        [`sync.${uid}`]: serverTimestamp(),
+        modifiedBy: auth.user.uid
       });
     } catch (error) {
       console.log(error);

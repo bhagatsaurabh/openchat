@@ -4,9 +4,8 @@ import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { connectDatabaseEmulator, getDatabase } from 'firebase/database';
 import { connectStorageEmulator, getStorage } from 'firebase/storage';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
-import firebaseConfig from '../../key.json';
 
-export const app = initializeApp(firebaseConfig);
+export const app = initializeApp(JSON.parse(import.meta.env.VITE_OPENCHAT_PUBLIC_KEY));
 export const auth = getAuth(app);
 export const remoteDB = getFirestore(app);
 export const storage = getStorage(app);

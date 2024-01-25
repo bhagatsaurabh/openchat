@@ -31,7 +31,7 @@ const contentType = ref(null);
 const imgLoaded = ref(false);
 const state = ref({ stage: 'pending' });
 const objUrl = ref(null);
-const isSystem = ref(props.message.by === 'system');
+const isSystem = ref(props.message.by.startsWith('system'));
 const optionsEl = ref(null);
 
 const time = computed(() => props.message.timestamp.toTimeString().substring(0, 5));
@@ -198,7 +198,7 @@ onMounted(async () => {
     return;
   }
 
-  if (props.message.by === 'system') {
+  if (isSystem.value) {
     content.value = props.message.text;
     contentType.value = 'text';
     state.value = { stage: 'done' };
