@@ -95,7 +95,8 @@ export const useMessagesStore = defineStore('messages', () => {
 
     if (outQueueIdx.value[message.id]) {
       if (!message.type.startsWith('meta')) {
-        messageIdx.value[message.groupId][message.id].value.local = null;
+        message.status = 'sent';
+        updateMessage(message, true);
         await local.storeMessage(message);
       }
       outQueueIdx.value[message.id] = undefined;
