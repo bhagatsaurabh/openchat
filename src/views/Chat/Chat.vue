@@ -53,11 +53,11 @@ const switchToGroup = async (id) => {
 const handleSelect = (otherUser) => {
   const group = groupsStore.existsPrivateGroup(otherUser);
   if (group) {
-    handleClearFilter();
     switchToGroup(group.id);
   } else {
     handleCreateGroup(otherUser.name, 'private', [auth.profile, otherUser]);
   }
+  handleClearFilter();
 };
 const handleCreateGroup = async (name, type, members, avatarUrl) => {
   const id = await groupsStore.createGroup({ name, type, members, avatarUrl });

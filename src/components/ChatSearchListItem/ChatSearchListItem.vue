@@ -54,6 +54,7 @@ const isVerified = computed(() => !!props.meta.phone);
   padding: 0.5rem 1rem 0.5rem 1rem;
   align-items: center;
   border-bottom: 1px solid var(--c-border-0);
+  transition: background-color var(--fx-duration-1) linear;
 }
 .avatar {
   margin-right: 1rem;
@@ -122,5 +123,12 @@ const isVerified = computed(() => !!props.meta.phone);
 }
 .state.selected {
   background-color: var(--c-accent-light-3);
+}
+
+@media (hover: hover) {
+  .user-item:hover {
+    background-color: var(--c-background-2);
+    cursor: pointer;
+  }
 }
 </style>
