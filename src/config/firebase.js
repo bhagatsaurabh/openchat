@@ -10,7 +10,10 @@ export const auth = getAuth(app);
 export const remoteDB = getFirestore(app);
 export const storage = getStorage(app);
 const functions = getFunctions(app);
-export const rtdb = getDatabase(app);
+export const rtdb = getDatabase(
+  app,
+  'https://openchat-a5cec-default-rtdb.asia-southeast1.firebasedatabase.app/'
+);
 export const deleteMessageFunction = httpsCallable(functions, 'deleteMessage');
 
 if (location.hostname === 'localhost') {
