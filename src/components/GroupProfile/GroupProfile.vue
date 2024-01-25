@@ -6,6 +6,7 @@ import { trapBetween, trapFocus } from '@/utils/utils';
 import { useStorageStore } from '@/stores/storage';
 import { useGroupsStore } from '@/stores/groups';
 import { useAuthStore } from '@/stores/auth';
+import { useUsersStore } from '@/stores/users';
 import { nameRegex } from '@/utils/constants';
 import Button from '@/components/Common/Button/Button.vue';
 import InputText from '@/components/Common/InputText/InputText.vue';
@@ -19,6 +20,7 @@ const router = useRouter();
 const storage = useStorageStore();
 const groups = useGroupsStore();
 const auth = useAuthStore();
+const users = useUsersStore();
 const el = ref(null);
 const bound = ref(null);
 const nameEl = ref(null);
@@ -29,6 +31,15 @@ const showManage = ref(false);
 const group = ref(groups.activeGroup);
 const isPrivate = computed(() => group.value.type === 'private');
 const isAdmin = computed(() => group.value.id !== 'self' && group.value.admins.includes(auth.user.uid));
+const avatarUrl = computed(() => {
+  let url = group.value.avatarUrl;
+  if (group.value.id === 'self') url = auth.profile?.avatarUrl;
+  else if (group.value.type === 'private') {
+    const otherUserId = group.value.members.find((id) => id !== auth.user.uid);
+    url = users.users[otherUserId]?.avatarUrl;
+  }
+  return url || `/assets/icons/avatar${group.value.type === 'broadcast' ? '-group' : ''}.png`;
+});
 
 const keyListener = (event) => trapFocus(event, el.value, bound.value);
 
@@ -108,7 +119,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyListener));
     <main>
       <AvatarSelector
         :disabled="isPrivate || !isAdmin"
-        :url="group.avatarUrl"
+        :url="avatarUrl"
         :updater="async (blob) => handleUpdate('avatar', { blob })"
       />
       <section class="name">
