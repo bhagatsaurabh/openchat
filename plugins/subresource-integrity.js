@@ -10,6 +10,8 @@ const SRI = () => ({
     const bundle = context.bundle;
 
     const calculateIntegrityHashes = async (element) => {
+      if (element.attribs?.src?.includes('libphonenumber')) return;
+
       let source;
       let attributeName = element.attribs.src ? 'src' : 'href';
       const resourcePath = element.attribs[attributeName];
