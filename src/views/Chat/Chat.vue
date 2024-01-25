@@ -211,6 +211,7 @@ onBeforeUnmount(() => {
   width: 100vw;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 .chat-control:deep(img) {
   filter: invert(51%) sepia(3%) saturate(99%) hue-rotate(20deg) brightness(90%) contrast(88%);
