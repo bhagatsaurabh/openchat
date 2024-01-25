@@ -102,33 +102,48 @@ export const useRemoteDBStore = defineStore('remote', () => {
   async function deleteNotification(id) {
     await deleteDoc(doc(remoteDB, 'users', auth.user.uid, 'notify', id));
   }
-  async function updateSeenTimestamp(uid, groupId) {
+  async function updateGroup(group, groupId) {
+    if (group.type !== 'private') {
+      group.modifiedBy = auth.user.uid;
+    }
+    await updateDoc(doc(remoteDB, 'groups', groupId), group);
+  }
+  async function updateSeenTimestamp(uid, groupId, type) {
     try {
-      await updateDoc(doc(remoteDB, 'groups', groupId), {
-        [`seen.${uid}`]: serverTimestamp(),
-        modifiedBy: auth.user.uid
-      });
+      const data = {
+        [`seen.${uid}`]: serverTimestamp()
+      };
+      if (type !== 'private') {
+        data.modifiedBy = auth.user.uid;
+      }
+      await updateDoc(doc(remoteDB, 'groups', groupId), data);
     } catch (error) {
       console.log(error);
     }
   }
-  async function updateSeenAndSyncTimestamp(uid, groupId) {
+  async function updateSeenAndSyncTimestamp(uid, groupId, type) {
     try {
-      await updateDoc(doc(remoteDB, 'groups', groupId), {
+      const data = {
         [`seen.${uid}`]: serverTimestamp(),
-        [`sync.${uid}`]: serverTimestamp(),
-        modifiedBy: auth.user.uid
-      });
+        [`sync.${uid}`]: serverTimestamp()
+      };
+      if (type !== 'private') {
+        data.modifiedBy = auth.user.uid;
+      }
+      await updateDoc(doc(remoteDB, 'groups', groupId), data);
     } catch (error) {
       console.log(error);
     }
   }
-  async function updateSyncTimestamp(uid, groupId) {
+  async function updateSyncTimestamp(uid, groupId, type) {
     try {
-      await updateDoc(doc(remoteDB, 'groups', groupId), {
-        [`sync.${uid}`]: serverTimestamp(),
-        modifiedBy: auth.user.uid
-      });
+      const data = {
+        [`sync.${uid}`]: serverTimestamp()
+      };
+      if (type !== 'private') {
+        data.modifiedBy = auth.user.uid;
+      }
+      await updateDoc(doc(remoteDB, 'groups', groupId), data);
     } catch (error) {
       console.log(error);
     }
@@ -146,10 +161,6 @@ export const useRemoteDBStore = defineStore('remote', () => {
     } catch (error) {
       console.log(error);
     }
-  }
-  async function updateGroup(group, groupId) {
-    group.modifiedBy = auth.user.uid;
-    await updateDoc(doc(remoteDB, 'groups', groupId), group);
   }
 
   return {
