@@ -59,6 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Delete dist artifacts
-        uses: geekyeggo/delete-artifact@v1
+        uses: GeekyEggo/delete-artifact@v5.0.0
         with:
           name: openchat-dist
+          failOnError: false
