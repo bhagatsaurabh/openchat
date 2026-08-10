@@ -1,5 +1,5 @@
 <p align="center">
-<a href="https://openchat.saurabhagat.me">
+<a href="https://openchat.saurabhagat.dev">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bhagatsaurabh/openchat/main/public/assets/images/cover-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/bhagatsaurabh/openchat/main/public/assets/images/cover-light.png">
@@ -18,7 +18,7 @@
 
 An end-to-end encrypted messaging solution, no need to install an app or register, message-away !
 
-[Check it out](https://openchat.saurabhagat.me/) !
+[Check it out](https://openchat.saurabhagat.dev/) !
 
 <br/>
 
